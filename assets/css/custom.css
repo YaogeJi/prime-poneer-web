@@ -33,6 +33,16 @@ html {
   gap: clamp(0.5rem, 1.5dvh, 1rem);
 }
 
+/* Custom avatar size */
+.avatar-wrapper {
+  width: 240px !important;
+  height: 240px !important;
+}
+.avatar-wrapper .avatar {
+  width: 240px !important;
+  height: 240px !important;
+}
+
 /* Larger font for citation view */
 .hb-citation-view {
   font-size: 1.1rem;

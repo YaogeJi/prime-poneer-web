@@ -17,7 +17,7 @@ sections:
         url: ''
       headings:
         about: ''
-        education: 'Education'
+        education: 'Experience & Education'
         interests: ''
     design:
       background:
@@ -36,6 +36,15 @@ sections:
         folders:
           - publications
         featured_only: true
+    design:
+      view: citation
+  - block: collection
+    id: presentations
+    content:
+      title: Presentations
+      filters:
+        folders:
+          - presentations
     design:
       view: citation
   - block: collection

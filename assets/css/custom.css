@@ -50,6 +50,13 @@ html {
 .hb-citation-view .citation-title {
   font-size: 1.2rem;
 }
+/* Reduce gap between section title and citation content */
+.blox-collection .mt-16 {
+  margin-top: 1rem !important;
+}
+.blox-collection .sm\:mt-20 {
+  margin-top: 1rem !important;
+}
 .view-citation {
   font-size: 1.15rem;
   line-height: 1.6;

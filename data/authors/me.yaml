@@ -2,115 +2,82 @@ schema: hugoblox/author/v1
 slug: me
 is_owner: true
 name:
-  display: Dr. Alex Johnson
-  given: Alex
-  family: Johnson
-  alternate: ''  # Example: 王伟
-  pronunciation: ''  # Example: Wáng Wěi
-  pronouns: he/him
+  display: Yao Ji
+  given: Yao
+  family: Ji
+  alternate: ''
+  pronunciation: ''
+  pronouns: ''
 postnominals:
   - PhD
-  - MIEEE
 status:
-  icon: "☕️"
-role: Senior AI Research Scientist
+  icon: ""
+role: H. Milton Stewart Postdoctoral Fellow
 bio: |
-  Alex Johnson is a Senior AI Research Scientist at Meta AI. His research
-  has been published in top conferences like NeurIPS and ICML, with over
-  10,000 citations. Alex is passionate about pushing the boundaries of AI
-  while ensuring ethical development.
+  I am an H. Milton Stewart Postdoctoral Fellow in the [H. Milton Stewart School of Industrial and Systems Engineering (ISyE)](https://www.isye.gatech.edu/) at [Georgia Institute of Technology](https://www.gatech.edu/). My postdoctoral mentor is [Prof. Guanghui (George) Lan](https://sites.gatech.edu/guanghui-lan/).
+
+  I earned my Ph.D. in [Industrial Engineering](https://engineering.purdue.edu/IE) at [Purdue University](https://www.purdue.edu/) (2024). Prior to that, I received my B.S. (2016) and M.S. (2019) degrees in the [School of Mathematic Science](https://english.bnu.edu.cn/schoolsdepartments/byx/113297.htm) from [Beijing Normal University](https://english.bnu.edu.cn/).
 
 affiliations:
-  - name: Meta AI
-    url: https://ai.meta.com/
+  - name: H. Milton Stewart School of ISyE, Georgia Tech
+    url: https://www.isye.gatech.edu/
 
 links:
   - icon: at-symbol
-    url: mailto:alex.johnson@example.com
+    url: mailto:jiyao@purdue.edu
     label: E-mail Me
-  - icon: brands/x
-    url: https://x.com/example
   - icon: brands/github
-    url: https://github.com/example
+    url: https://github.com/YaogeJi/
   - icon: brands/linkedin
-    url: https://www.linkedin.com/in/example/
+    url: https://www.linkedin.com/in/yao-ji-522a751a9/
   - icon: academicons/google-scholar
-    url: https://scholar.google.com/citations?user=example
-  - icon: academicons/orcid
-    url: https://orcid.org/0000-0002-1825-0097
+    url: https://scholar.google.com/citations?user=Z3bDxfYAAAAJ&hl=en
 
 interests:
-  - Large Language Models
-  - Computer Vision
+  - Stochastic Optimization
   - Reinforcement Learning
-  - AI Ethics
+  - Auto-Condition Optimization
+  - Variational Inequality
+  - Reinforcement Learning in Health Care
+  - Higher Order Optimization
 
 education:
-  - degree: PhD Computer Science
-    institution: Stanford University
-    start: 2015-09-01
+  - degree: Ph.D. in Operation Research
+    institution: Purdue University
+    start: 2019-08-01
+    end: 2024-08-31
+  - degree: M.S. in Probability and Stochastic Process
+    institution: Beijing Normal University
+    start: 2016-09-01
     end: 2019-06-30
-    summary: |
-      Thesis on scaling laws for neural language models. Published 5 papers in NeurIPS and ICML.
-    button:
-      text: Download dissertation
-      url: /resume.pdf
-      icon: hero/arrow-down-tray
-  - degree: MS Computer Science
-    institution: Carnegie Mellon University
-    start: 2013-09-01
-    end: 2015-05-31
-  - degree: BS Computer Science
-    institution: MIT
-    start: 2009-09-01
-    end: 2013-05-31
+  - degree: B.S. in Mathematics and Statistics
+    institution: Beijing Normal University
+    start: 2012-09-01
+    end: 2016-06-30
 
 experience:
-  - role: Senior AI Research Scientist
-    org: Meta AI
-    start: 2020-01-01
+  - role: H. Milton Stewart Postdoctoral Fellow
+    org: Georgia Institute of Technology
+    start: 2024-09-01
     summary: |
-      Leading research on multimodal AI systems. Contributed to Llama 2 and other open-source models.
-    button:
-      text: View portfolio
-      url: /
-      icon: hero/arrow-down-tray
-  - role: AI Research Intern
-    org: OpenAI
-    start: 2019-06-01
-    end: 2019-12-31
-    summary: |
-      Worked on GPT-3 scaling. Co-authored paper on prompt engineering.
+      Postdoctoral researcher at ISyE advised by Prof. Guanghui (George) Lan. Research on high-order optimization methods, stochastic optimization, and distributed optimization.
 
 skills:
   - name: Technical Skills
     items:
+      - label: Optimization
+        level: 5
+      - label: Statistics
+        level: 5
       - label: Python
         level: 5
       - label: Machine Learning
-        level: 5
-      - label: Cloud Computing
-        level: 4
-  - name: Research & Communication
-    items:
-      - label: Academic Writing
-        level: 5
-      - label: Conference Presentations
-        level: 4
-      - label: Grant Proposals
         level: 4
 
 languages:
   - name: English
     level: 5
-    label: Native
-  - name: Spanish
-    level: 4
     label: Fluent
-
-awards:
-  - title: Best Paper Award
-    awarder: NeurIPS
-    date: "2022-12-01"
-    summary: Awarded for groundbreaking work on efficient training of large models.
-    icon: hero/trophy
+  - name: Chinese
+    level: 5
+    label: Native

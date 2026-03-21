@@ -20,6 +20,8 @@ summary: Distributed sparse linear regression via penalized consensus over netwo
 tags:
   - Distributed Optimization
   - High-Dimension Statistics
+  - Linear Convergence
+  - Sparse Linear Regression
 
 featured: true
 

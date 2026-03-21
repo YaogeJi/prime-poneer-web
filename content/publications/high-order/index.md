@@ -19,6 +19,7 @@ tags:
   - Convex Optimization
   - High-Order Methods
   - Higher Order Optimization
+  - Gradient Minimization
 
 featured: true
 

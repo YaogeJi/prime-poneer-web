@@ -36,7 +36,7 @@ links:
 interests:
   - Stochastic Optimization
   - Higher Order Optimization
-  - Auto-Condition Optimization
+  - Parameter-Free Optimization
   - Variational Inequality
   - Reinforcement Learning
   - Reinforcement Learning in Health Care
@@ -60,7 +60,7 @@ experience:
     org: Georgia Institute of Technology
     start: 2024-09-01
     summary: |
-      Research on auto-condition optimization, stochastic optimization, higher order optimization, variational inequality, reinforcement learning and its application in health care.
+      Research on parameter-free optimization, stochastic optimization, higher order optimization, variational inequality, reinforcement learning and its application in health care.
 
 skills:
   - name: Technical Skills

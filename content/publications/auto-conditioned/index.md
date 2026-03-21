@@ -18,6 +18,7 @@ summary: ''
 tags:
   - Stochastic Optimization
   - Auto-Condition Optimization
+  - Parameter-Free Optimization
 
 featured: true
 ---

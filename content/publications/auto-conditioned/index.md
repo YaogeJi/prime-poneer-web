@@ -20,8 +20,4 @@ tags:
   - Auto-Condition Optimization
 
 featured: true
-
-links:
-  - name: Slides
-    url: /slides/stochastic-ac-fgm.pdf
 ---

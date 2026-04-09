@@ -27,4 +27,6 @@ featured: true
 links:
   - type: pdf
     url: https://arxiv.org/abs/2604.06525
+  - name: Slides (INFORMS OS 2026)
+    url: /slides/informs-os-2026-stochastic-acfgm.pdf
 ---

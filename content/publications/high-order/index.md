@@ -18,7 +18,7 @@ summary: A unified high-order framework that closes the gap between fast functio
 tags:
   - Convex Optimization
   - High-Order Methods
-  - Higher Order Optimization
+  - High Order Optimization
   - Gradient Minimization
 
 featured: true

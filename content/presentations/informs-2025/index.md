@@ -1,5 +1,5 @@
 ---
-title: 'Higher-order Accumulative Regularization Methods for Gradient Minimization'
+title: 'High-order Accumulative Regularization Methods for Gradient Minimization'
 
 authors:
   - me

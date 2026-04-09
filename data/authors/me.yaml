@@ -34,11 +34,11 @@ links:
     url: https://scholar.google.com/citations?user=Z3bDxfYAAAAJ&hl=en
 
 interests:
-  - Stochastic Optimization
-  - Higher Order Optimization
   - Parameter-Free Optimization
   - Variational Inequality
+  - Stochastic Optimization
   - Gradient Minimization
+  - High Order Optimization
   - Reinforcement Learning
   - Reinforcement Learning in Health Care
 

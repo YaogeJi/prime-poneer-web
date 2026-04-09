@@ -26,4 +26,6 @@ featured: true
 links:
   - type: pdf
     url: https://arxiv.org/abs/2511.03723
+  - name: Slides (INFORMS 2025)
+    url: /slides/informs-2025-high-order-ar.pdf
 ---

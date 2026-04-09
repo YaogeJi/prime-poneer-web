@@ -1,5 +1,5 @@
 ---
-title: 'Optimal Stochastic Auto-Conditioned Method'
+title: 'Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates'
 
 authors:
   - me

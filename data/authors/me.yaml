@@ -47,12 +47,12 @@ education:
     institution: Purdue University
     start: 2019-08-01
     end: 2024-09-30
-    thesis: "High-dimensional inference over networks: statistical and computational guarantees"
+    summary: "Thesis: High-dimensional inference over networks: statistical and computational guarantees"
   - degree: M.S. in Probability and Stochastic Process
     institution: Beijing Normal University
     start: 2016-09-01
     end: 2019-06-30
-    thesis: "Conditional Limit Theorem for Bellman-Harris Branching Process"
+    summary: "Thesis: Conditional Limit Theorem for Bellman-Harris Branching Process"
   - degree: B.S. in Mathematics and Statistics
     institution: Beijing Normal University
     start: 2012-09-01

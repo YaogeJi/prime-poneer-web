@@ -16,10 +16,10 @@ role: H. Milton Stewart Postdoctoral Fellow
 bio: |
   I am an H. Milton Stewart Postdoctoral Fellow in the [H. Milton Stewart School of Industrial and Systems Engineering (ISyE)](https://www.isye.gatech.edu/) at [Georgia Institute of Technology](https://www.gatech.edu/). My postdoctoral mentor is [Prof. Guanghui (George) Lan](https://sites.gatech.edu/guanghui-lan/).
 
-  I earned my Ph.D. in [Industrial Engineering](https://engineering.purdue.edu/IE) at [Purdue University](https://www.purdue.edu/) (2024). Prior to that, I received my B.S. (2016) and M.S. (2019) degrees in the [School of Mathematic Science](https://english.bnu.edu.cn/schoolsdepartments/byx/113297.htm) from [Beijing Normal University](https://english.bnu.edu.cn/).
+  I earned my Ph.D. in [Industrial Engineering](https://engineering.purdue.edu/IE) at [Purdue University](https://www.purdue.edu/) (2024). Prior to that, I received my B.S. (2016) and M.S. (2019) degrees in the [School of Mathematical Sciences](https://english.bnu.edu.cn/schoolsdepartments/byx/113297.htm) from [Beijing Normal University](https://english.bnu.edu.cn/).
 
 affiliations:
-  - name: H. Milton Stewart School of ISyE, Georgia Tech
+  - name: H. Milton Stewart School of Industrial and Systems Engineering
     url: https://www.isye.gatech.edu/
 
 links:
@@ -46,11 +46,13 @@ education:
   - degree: Ph.D. in Operation Research
     institution: Purdue University
     start: 2019-08-01
-    end: 2024-08-31
+    end: 2024-09-30
+    thesis: "High-dimensional inference over networks: statistical and computational guarantees"
   - degree: M.S. in Probability and Stochastic Process
     institution: Beijing Normal University
     start: 2016-09-01
     end: 2019-06-30
+    thesis: "Conditional Limit Theorem for Bellman-Harris Branching Process"
   - degree: B.S. in Mathematics and Statistics
     institution: Beijing Normal University
     start: 2012-09-01
@@ -59,7 +61,7 @@ education:
 experience:
   - role: H. Milton Stewart Postdoctoral Fellow
     org: Georgia Institute of Technology
-    start: 2024-09-01
+    start: 2024-10-01
     summary: |
       Research on parameter-free optimization, stochastic optimization, higher order optimization, variational inequality, reinforcement learning and its application in health care.
 

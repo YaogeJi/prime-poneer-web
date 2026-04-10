@@ -15,6 +15,7 @@ I will attend the [INFORMS Optimization Society Conference 2026](https://www.inf
 We have a fantastic speaker lineup:
 - [Dr. Yuyuan Ouyang](https://www.clemson.edu/science/academics/departments/mathstat/about/profiles/yuyuano)
 - [Dr. Hongcheng Liu](https://sites.google.com/view/hongchengliu)
+- [Dr. Zhenwei Lin](https://zhenweilin.github.io)
 - [Dr. Vasilis Charisopoulos](https://vchariso.gitlab.io)
 - [Dr. Ying Cui](https://sites.google.com/site/optyingcui/)
 

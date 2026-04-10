@@ -19,4 +19,4 @@ We have a fantastic speaker lineup:
 - [Dr. Vasilis Charisopoulos](https://vchariso.gitlab.io)
 - [Dr. Ying Cui](https://sites.google.com/site/optyingcui/)
 
-If you're interested in optimization research or just want to chat, feel free to reach out — I'm always happy to connect!
+Come by and say hi if you are interested in any of these fantastic talks!

@@ -54,7 +54,7 @@ sections:
       subtitle: ''
       text: ''
       page_type: blog
-      count: 3
+      count: 0
       filters:
         author: ''
         category: ''
@@ -65,6 +65,8 @@ sections:
         publication_type: ''
       offset: 0
       order: desc
+      archive:
+        enable: false
     design:
       view: news-feed
       spacing:

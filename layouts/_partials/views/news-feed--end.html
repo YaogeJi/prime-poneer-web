@@ -1,2 +1,26 @@
+    </div>
+    <div class="news-feed-fade pointer-events-none absolute bottom-0 left-0 right-0"
+         style="height: 3rem; background: linear-gradient(to top, var(--color-background), transparent);"
+         aria-hidden="true"></div>
   </div>
 </div>
+<script>
+  (function() {
+    var wrap = document.querySelector('.news-feed-scroll');
+    if (!wrap) return;
+    var items = wrap.querySelector('.news-feed-items');
+    var fade = wrap.querySelector('.news-feed-fade');
+    if (!items || !fade) return;
+
+    function update() {
+      var noOverflow = items.scrollHeight <= items.clientHeight + 1;
+      var atBottom = items.scrollHeight - items.scrollTop - items.clientHeight < 2;
+      fade.style.opacity = (noOverflow || atBottom) ? '0' : '1';
+    }
+
+    fade.style.transition = 'opacity 0.3s ease';
+    update();
+    items.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+  })();
+</script>

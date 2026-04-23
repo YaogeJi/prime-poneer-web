@@ -1,0 +1,13 @@
+{{ if .IsHome }}
+<script>
+  (function() {
+    var bg = document.getElementById('page-bg');
+    if (!bg) return;
+    bg.innerHTML = '<div class="gradient-mesh-global">' +
+      '<div class="gradient-mesh-orb gradient-mesh-orb-1"></div>' +
+      '<div class="gradient-mesh-orb gradient-mesh-orb-2"></div>' +
+      '<div class="gradient-mesh-orb gradient-mesh-orb-3"></div>' +
+      '</div>';
+  })();
+</script>
+{{ end }}

@@ -20,9 +20,6 @@ sections:
         education: 'Experience & Education'
         interests: ''
     design:
-      background:
-        gradient_mesh:
-          enable: true
       name:
         size: md
       avatar:

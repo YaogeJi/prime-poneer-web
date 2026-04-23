@@ -97,3 +97,66 @@ html {
 .dark .news-feed-items {
   scrollbar-color: rgba(161, 161, 170, 0.2) transparent;
 }
+
+/* ── Full-page Gradient Mesh Background ───────────────── */
+
+.gradient-mesh-global {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gradient-mesh-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.gradient-mesh-orb-1 {
+  width: 28rem;
+  height: 28rem;
+  top: 5%;
+  left: 15%;
+  background: color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  animation: mesh-float-1 12s ease-in-out infinite;
+}
+
+.gradient-mesh-orb-2 {
+  width: 24rem;
+  height: 24rem;
+  top: 40%;
+  right: 10%;
+  background: color-mix(in oklch, var(--color-secondary-500) 18%, transparent);
+  animation: mesh-float-2 14s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.gradient-mesh-orb-3 {
+  width: 20rem;
+  height: 20rem;
+  bottom: 10%;
+  left: 35%;
+  background: color-mix(in oklch, var(--color-primary-500) 12%, transparent);
+  animation: mesh-float-3 16s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+@keyframes mesh-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes mesh-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-30px, 40px) scale(0.95); }
+  66% { transform: translate(25px, -25px) scale(1.05); }
+}
+
+@keyframes mesh-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(25px, 30px) scale(1.08); }
+  66% { transform: translate(-35px, -15px) scale(0.92); }
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Yao Ji optimization favicon">
+  <title>Yao Ji Optimization Logo</title>
+  <desc>Square academic favicon with YJ monogram, optimization contour lines, and descent path.</desc>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#FFFFFF"/>
+
+  <!-- Contour / level-set rings -->
+  <g stroke="#91A5BF" stroke-width="10" stroke-linecap="round" opacity="0.9">
+    <ellipse cx="272" cy="330" rx="190" ry="86" transform="rotate(4 272 330)"/>
+    <ellipse cx="272" cy="330" rx="138" ry="62" transform="rotate(4 272 330)"/>
+    <ellipse cx="272" cy="330" rx="88" ry="38" transform="rotate(4 272 330)"/>
+    <ellipse cx="272" cy="330" rx="48" ry="22" transform="rotate(4 272 330)"/>
+  </g>
+
+  <!-- YJ monogram -->
+  <g fill="#062B55">
+    <!-- Y -->
+    <path d="M130 88H184C193 88 197 99 190 104L176 114L250 235V307C250 317 258 325 268 325H287V344H190V325H211C221 325 229 317 229 307V239L150 114L136 104C129 99 121 88 130 88Z"/>
+    <path d="M300 88H363C371 88 374 99 367 104L350 115L268 241L250 216L326 114L309 104C302 99 292 88 300 88Z"/>
+    <!-- J -->
+    <path d="M322 144H420V163H399C389 163 381 171 381 181V340C381 396 343 429 287 429C270 429 255 426 243 421L251 399C261 404 273 407 286 407C322 407 340 385 340 341V181C340 171 332 163 322 163V144Z"/>
+  </g>
+
+  <!-- Descent path -->
+  <g stroke="#5F7FA5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M101 146C143 165 174 202 196 247C211 278 225 309 253 329"/>
+  </g>
+
+  <!-- Path nodes -->
+  <g fill="#5F7FA5">
+    <circle cx="101" cy="146" r="14"/>
+    <circle cx="141" cy="177" r="13"/>
+    <circle cx="177" cy="224" r="13"/>
+    <circle cx="219" cy="302" r="13"/>
+  </g>
+
+  <!-- Optimum point -->
+  <circle cx="270" cy="342" r="20" fill="#062B55"/>
+
+  <!-- Small arrow head toward optimum -->
+  <path d="M247 318L270 342L238 346Z" fill="#5F7FA5"/>
+</svg>

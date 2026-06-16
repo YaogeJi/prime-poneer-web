@@ -1,0 +1,4886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 1 — How Machines Learn to Play</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<style>
+/* ===========================================
+   PASTEL LAB — Lecture 1
+   - Cream paper bg, hard 2.5px ink borders
+   - Pastel accents (mint/peach/lilac/sun)
+   - 3-4px hard drop shadows (no blur — that "sticker" feel)
+   - Cabinet Grotesk display, General Sans body, JetBrains Mono labels
+   =========================================== */
+
+:root{
+  /* palette */
+  --bg:#fef8f0;
+  --paper:#ffffff;
+  --ink:#1f1d2b;
+  --dim:#6c6a7a;
+  --mint:#bff0d0;
+  --peach:#ffd6c2;
+  --lilac:#d8c8ff;
+  --sun:#ffe27a;
+  --rose:#ffb4b4;
+  --sky:#bfe4ff;
+  --line:#1f1d2b;
+  --good:#22aa55;
+  --bad:#e23e3e;
+
+  /* type — clamp() for viewport fit */
+  --font-display:'Cabinet Grotesk',sans-serif;
+  --font-body:'General Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --title-size:clamp(2rem,6vw,6.5rem);
+  --h2-size:clamp(1.6rem,4vw,3.8rem);
+  --h3-size:clamp(1.1rem,2vw,1.95rem);
+  --body-size:clamp(1.05rem,1.4vw,1.6rem);
+  --small-size:clamp(.9rem,1.15vw,1.25rem);
+  --tiny-size:clamp(.75rem,.9vw,1rem);
+
+  --slide-padding:clamp(1.25rem,4vw,5rem);
+  --content-gap:clamp(.75rem,2vw,1.75rem);
+  --element-gap:clamp(.4rem,1vw,.85rem);
+
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow-x:hidden}
+html{scroll-snap-type:y mandatory;scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:var(--body-size);
+  line-height:1.5;
+}
+
+/* ---- slide container — viewport lock ---- */
+.slide{
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  padding:var(--slide-padding);
+  scroll-snap-align:start;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+.slide-inner{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  max-height:100%;
+  overflow:hidden;
+  position:relative;
+  z-index:2;
+}
+.slide-inner.center-all{align-items:center;text-align:center}
+
+/* ---- shared decorative shapes ---- */
+.shape{position:absolute;pointer-events:none;z-index:1}
+.shape.s-mint{background:var(--mint)}
+.shape.s-peach{background:var(--peach)}
+.shape.s-lilac{background:var(--lilac)}
+.shape.s-sun{background:var(--sun)}
+.shape.s-rose{background:var(--rose)}
+.shape.s-sky{background:var(--sky)}
+.shape.bordered{border:2.5px solid var(--line)}
+.shape.blob{border-radius:48% 52% 60% 40%/40% 60% 38% 62%}
+.shape.circle{border-radius:50%}
+.shape.pill{border-radius:999px}
+.shape.square{border-radius:8px}
+
+@keyframes wobble{
+  0%,100%{transform:translate(0,0) rotate(0deg)}
+  50%{transform:translate(8px,-12px) rotate(6deg)}
+}
+@keyframes wobble-r{
+  0%,100%{transform:translate(0,0) rotate(0deg)}
+  50%{transform:translate(-10px,10px) rotate(-8deg)}
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-12px)}
+}
+
+.anim-wobble{animation:wobble 9s ease-in-out infinite}
+.anim-wobble-r{animation:wobble-r 11s ease-in-out infinite}
+.anim-spin-slow{animation:spin 30s linear infinite}
+.anim-float{animation:float 4s ease-in-out infinite}
+
+/* ---- common typography ---- */
+h1.title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:var(--title-size);
+  line-height:.95;
+  letter-spacing:-.03em;
+  margin-bottom:var(--content-gap);
+}
+h2.h2{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:var(--h2-size);
+  line-height:1;
+  letter-spacing:-.02em;
+  margin-bottom:var(--content-gap);
+}
+h3.h3{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:var(--h3-size);
+  line-height:1.1;
+  letter-spacing:-.01em;
+  margin-bottom:.5rem;
+}
+p.body{
+  font-size:var(--body-size);
+  color:var(--ink);
+  max-width:62ch;
+  line-height:1.55;
+}
+p.dim{color:var(--dim)}
+
+/* highlight */
+.hl{position:relative;display:inline-block;white-space:nowrap}
+.hl::after{
+  content:'';position:absolute;
+  left:-3px;right:-3px;bottom:6%;height:38%;
+  background:var(--sun);
+  z-index:-1;
+  transform:skewX(-6deg);
+}
+.hl.mint::after{background:var(--mint)}
+.hl.peach::after{background:var(--peach)}
+.hl.lilac::after{background:var(--lilac)}
+.hl.rose::after{background:var(--rose)}
+
+/* tag */
+.tag{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--peach);
+  border:2px solid var(--line);
+  padding:.4rem 1rem;border-radius:99px;
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  font-weight:500;
+  align-self:flex-start;
+  box-shadow:3px 3px 0 var(--line);
+  margin-bottom:1rem;
+}
+.tag.mint{background:var(--mint)}
+.tag.lilac{background:var(--lilac)}
+.tag.sun{background:var(--sun)}
+.tag.sky{background:var(--sky)}
+.tag.rose{background:var(--rose)}
+.tag::before{
+  content:'';width:8px;height:8px;border-radius:50%;background:var(--good);
+}
+
+/* card */
+.card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  padding:1rem 1.2rem;
+  box-shadow:4px 4px 0 var(--line);
+  position:relative;
+}
+.card.tinted-mint{background:var(--mint)}
+.card.tinted-peach{background:var(--peach)}
+.card.tinted-lilac{background:var(--lilac)}
+.card.tinted-sun{background:var(--sun)}
+.card.tinted-sky{background:var(--sky)}
+.card.tinted-rose{background:var(--rose)}
+
+.card .icon{
+  font-size:clamp(1.6rem,2.5vw,2.2rem);
+  margin-bottom:.5rem;
+  display:block;
+}
+.card .ct-label{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:.3rem;
+}
+
+/* page meta */
+.slide-num{
+  position:absolute;
+  bottom:1rem;right:1.25rem;
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  z-index:10;
+}
+.slide-name{
+  position:absolute;
+  bottom:1rem;left:1.25rem;
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  z-index:10;
+}
+
+/* ---- reveal animation ---- */
+.reveal{
+  opacity:0;
+  transform:translateY(28px);
+  transition:opacity .7s var(--ease), transform .7s var(--ease);
+}
+.slide.visible .reveal{opacity:1;transform:translateY(0)}
+.slide.visible .reveal:nth-child(1){transition-delay:.05s}
+.slide.visible .reveal:nth-child(2){transition-delay:.15s}
+.slide.visible .reveal:nth-child(3){transition-delay:.25s}
+.slide.visible .reveal:nth-child(4){transition-delay:.35s}
+.slide.visible .reveal:nth-child(5){transition-delay:.45s}
+.slide.visible .reveal:nth-child(6){transition-delay:.55s}
+.slide.visible .reveal:nth-child(7){transition-delay:.65s}
+
+.reveal.scale{transform:translateY(0) scale(.94)}
+.slide.visible .reveal.scale{transform:translateY(0) scale(1)}
+
+/* ---- progress bar ---- */
+.progress{
+  position:fixed;top:0;left:0;height:4px;
+  background:var(--ink);
+  z-index:1000;
+  transition:width .25s var(--ease);
+  width:0;
+}
+
+/* ---- nav dots ---- */
+.nav{
+  position:fixed;right:18px;top:50%;
+  transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:8px;
+  z-index:100;
+}
+.nav button{
+  width:10px;height:10px;border-radius:50%;
+  border:1.5px solid var(--line);
+  background:transparent;cursor:pointer;
+  padding:0;transition:all .3s var(--ease);
+}
+.nav button.active{background:var(--ink);transform:scale(1.4)}
+.nav button:hover{background:var(--sun)}
+
+/* ---- keyboard hint ---- */
+.hint{
+  position:fixed;bottom:8px;left:50%;
+  transform:translateX(-50%);
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  pointer-events:none;
+  z-index:100;
+  background:var(--bg);
+  padding:.25rem .75rem;
+  border-radius:99px;
+  border:1px solid rgba(31,29,43,0.1);
+}
+
+/* ============================================================
+   SLIDE-SPECIFIC STYLES
+   ============================================================ */
+
+/* Slide 1 — title */
+.s1-cards{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
+.s1-cards .card{padding:.5rem .9rem;font-weight:500;display:flex;align-items:center;gap:.5rem;font-size:var(--small-size)}
+
+/* Slide 2 — two-column compare */
+.compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.5rem;
+  align-items:stretch;
+}
+.compare .col{
+  display:flex;flex-direction:column;
+  padding:clamp(1rem,2vw,1.6rem);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+}
+.compare .col.sl{background:var(--sky)}
+.compare .col.rl{background:var(--mint)}
+.compare .col h3{font-size:clamp(1.2rem,2.2vw,1.7rem);margin-bottom:.3rem}
+.compare .col .sub{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:.8rem;
+}
+.compare .col ul{list-style:none;padding:0;margin-top:.5rem}
+.compare .col li{
+  font-size:clamp(.8rem,1.1vw,1rem);
+  padding:.3rem 0 .3rem 1.4rem;
+  position:relative;line-height:1.4;
+}
+.compare .col li::before{
+  content:'';position:absolute;left:0;top:.65em;
+  width:8px;height:8px;background:var(--ink);border-radius:50%;
+}
+.vs{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  width:clamp(46px,5vw,68px);
+  height:clamp(46px,5vw,68px);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(.9rem,1.4vw,1.2rem);
+  box-shadow:3px 3px 0 var(--line);
+  z-index:5;
+}
+
+/* Slide 4 — supervised learning */
+.flashcards{
+  display:flex;gap:1rem;justify-content:center;
+  margin-top:1rem;flex-wrap:wrap;
+}
+.flashcard{
+  width:clamp(120px,14vw,160px);
+  aspect-ratio:3/4;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:.5rem;
+  font-family:var(--font-display);
+  font-weight:700;
+  position:relative;
+  transition:transform .3s var(--ease);
+}
+.flashcard:hover{transform:translateY(-6px) rotate(-2deg)}
+.flashcard .pic{font-size:clamp(2.5rem,5vw,4rem);margin-bottom:.4rem}
+.flashcard .ans{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.7rem,1vw,.85rem);
+  letter-spacing:.18em;
+  background:var(--ink);color:var(--bg);
+  padding:.25rem .6rem;border-radius:6px;
+}
+.flashcard:nth-child(1){transform:rotate(-3deg)}
+.flashcard:nth-child(2){transform:rotate(2deg) translateY(-8px)}
+.flashcard:nth-child(3){transform:rotate(-1deg)}
+.flashcard:nth-child(4){transform:rotate(3deg) translateY(-4px)}
+
+/* Slide 5 — classification grid */
+.grid-demo{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2vw,2rem);
+  align-items:center;
+  margin-top:.5rem;
+}
+.grid-demo .left-col{display:flex;flex-direction:column;gap:.5rem}
+.image-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:.6rem;
+}
+.img-cell{
+  aspect-ratio:1;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(1.5rem,3vw,2.4rem);
+  position:relative;
+  box-shadow:3px 3px 0 var(--line);
+}
+.img-cell .pred{
+  position:absolute;
+  bottom:-4px;left:50%;
+  transform:translateX(-50%) translateY(50%);
+  font-family:var(--font-mono);
+  font-size:clamp(.55rem,.8vw,.7rem);
+  font-weight:700;
+  background:var(--ink);color:var(--bg);
+  padding:.15rem .5rem;border-radius:6px;
+  letter-spacing:.1em;
+}
+.img-cell.cat .pred{background:var(--peach);color:var(--ink)}
+.img-cell.dog .pred{background:var(--mint);color:var(--ink)}
+
+.flow{
+  display:flex;align-items:center;gap:.6rem;
+  font-family:var(--font-mono);font-size:var(--small-size);
+  font-weight:500;
+  margin-top:1.5rem;
+  flex-wrap:wrap;
+}
+.flow .box{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .8rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+.flow .arrow{font-weight:700;font-size:1.2em}
+
+/* Slide 6 — math */
+.formula-box{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1.5rem,3vw,2.5rem) clamp(2rem,4vw,3.5rem);
+  text-align:center;
+  margin:1rem auto;
+  max-width:1100px;
+}
+.formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:600;
+  font-size:clamp(2rem,5vw,3.6rem);
+  line-height:1.2;
+  letter-spacing:-.01em;
+}
+.formula sub,.formula sup{
+  font-size:.55em;font-style:normal;font-weight:500;
+}
+.formula .greek{font-style:normal}
+
+/* MathJax responsive sizing — display equations shrink to fit container */
+.formula mjx-container[jax="SVG"]{max-width:100%}
+.formula mjx-container[jax="SVG"] svg{max-width:100%;height:auto}
+.formula-box mjx-container[jax="SVG"]{max-width:100%}
+.formula-box mjx-container[jax="SVG"] svg{max-width:100%;height:auto}
+
+.math-legend{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:.8rem;
+  margin-top:1.2rem;
+  max-width:1400px;
+  margin-left:auto;margin-right:auto;
+}
+.legend-item{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.7rem .9rem;
+  box-shadow:3px 3px 0 var(--line);
+  text-align:left;
+}
+.legend-item .sym{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.6vw,1.3rem);
+  margin-right:.4rem;
+}
+.legend-item .desc{font-size:clamp(.75rem,1vw,.9rem);color:var(--dim);line-height:1.3}
+@media (max-width:1100px){.math-legend{grid-template-columns:1fr}}
+
+/* Slide 7 — generation */
+.gen-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1rem;
+  margin-top:1rem;
+}
+.gen-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem;
+  display:flex;flex-direction:column;
+}
+.gen-card.peach{background:var(--peach)}
+.gen-card.lilac{background:var(--lilac)}
+.gen-card.mint{background:var(--mint)}
+.gen-card .gen-icon{font-size:clamp(2rem,3.5vw,3rem);margin-bottom:.4rem}
+.gen-card .gen-title{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.4vw,1.25rem);
+  margin-bottom:.3rem;
+}
+.gen-card .gen-input{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.9vw,.82rem);
+  background:rgba(255,255,255,0.6);
+  border:1.5px solid var(--line);
+  border-radius:6px;
+  padding:.4rem .6rem;
+  margin:.3rem 0;
+  color:var(--dim);
+}
+.gen-card .gen-output{
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  margin-top:.3rem;
+  line-height:1.3;
+}
+@media (max-width:1100px){.gen-grid{grid-template-columns:1fr}}
+
+/* Slide 8 — pivot quote */
+.big-quote{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(2.2rem,7vw,5.5rem);
+  line-height:1.05;
+  letter-spacing:-.025em;
+  text-align:center;
+  max-width:1400px;
+  margin:0 auto;
+}
+.big-quote .strike{
+  position:relative;display:inline-block;
+}
+.big-quote .strike::after{
+  content:'';position:absolute;
+  left:-4px;right:-4px;top:50%;height:6px;
+  background:var(--bad);
+  transform:rotate(-3deg);
+}
+.quote-sub{
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.3vw,1.1rem);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);
+  text-align:center;
+  margin-top:1.5rem;
+}
+
+/* Slide 9 — RL loop diagram */
+.loop-wrap{
+  display:flex;align-items:center;justify-content:center;
+  margin-top:.5rem;
+  flex:1;min-height:0;
+}
+.loop-svg{width:min(75vw,900px);height:auto;max-height:55vh}
+
+@keyframes pulse-node{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+}
+.loop-svg .agent-node,.loop-svg .env-node{
+  transform-origin:center;
+  animation:pulse-node 3s ease-in-out infinite;
+}
+.loop-svg .env-node{animation-delay:1.5s}
+
+@keyframes dash-flow{to{stroke-dashoffset:-30}}
+.loop-svg path.flow{
+  stroke-dasharray:6 4;
+  animation:dash-flow 1.4s linear infinite;
+}
+
+/* Slide 10 — reward signal */
+.reward-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1rem;
+  margin-top:1rem;
+}
+.reward-item{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem;
+  text-align:center;
+}
+.reward-item .ico{font-size:clamp(2rem,3.5vw,3rem);margin-bottom:.3rem}
+.reward-item .num{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.5rem,2.5vw,2.2rem);
+  line-height:1;
+}
+.reward-item .lbl{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.1em;
+  margin-top:.3rem;
+}
+.reward-item.win{background:var(--mint)}
+.reward-item.lose{background:var(--rose)}
+.reward-item.zero{background:var(--paper)}
+@media (max-width:1100px){.reward-grid{grid-template-columns:1fr}}
+
+/* Slide 11 — explore vs exploit */
+.ee-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.5rem;
+}
+.ee-col{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem;
+  display:flex;flex-direction:column;
+}
+.ee-col.explore{background:var(--lilac)}
+.ee-col.exploit{background:var(--peach)}
+.ee-col h3{font-size:clamp(1.2rem,2vw,1.6rem);margin-bottom:.4rem}
+.ee-col .ee-tag{
+  display:inline-block;
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  background:var(--paper);
+  border:2px solid var(--line);
+  padding:.2rem .6rem;border-radius:99px;
+  margin-bottom:.6rem;
+  align-self:flex-start;
+}
+.ee-col p{font-size:clamp(1rem,1.35vw,1.2rem);line-height:1.5}
+.ee-col .icon-row{
+  display:flex;gap:.5rem;margin-top:.7rem;
+  font-size:clamp(1.6rem,2.5vw,2.2rem);
+}
+
+/* Slide 12 — AlphaGo */
+.go-layout{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  align-items:center;
+  margin-top:.5rem;
+}
+.go-board{
+  width:min(40vh,360px);
+  aspect-ratio:1;
+  background:#e8c97a;
+  border:3px solid var(--line);
+  border-radius:6px;
+  position:relative;
+  margin:auto;
+  box-shadow:6px 6px 0 var(--line);
+}
+.go-photo{
+  display:block;
+  width:min(55vh,560px);
+  max-width:100%;
+  aspect-ratio:1;
+  object-fit:cover;
+  border-radius:8px;
+  margin:auto;
+}
+.m37-photo{
+  display:block;
+  width:min(58vh,580px);
+  max-width:100%;
+  aspect-ratio:1;
+  object-fit:cover;
+  border-radius:8px;
+  margin:auto;
+}
+.go-board .grid-lines{
+  position:absolute;inset:8%;
+  background-image:
+    linear-gradient(to right,#1f1d2b 1px,transparent 1px),
+    linear-gradient(to bottom,#1f1d2b 1px,transparent 1px);
+  background-size:calc(100%/8) calc(100%/8);
+}
+.go-board .stone{
+  position:absolute;
+  width:11%;height:11%;
+  border-radius:50%;
+  border:1.5px solid var(--line);
+  transform:translate(-50%,-50%);
+}
+.go-board .stone.black{background:#1a1a1a}
+.go-board .stone.white{background:#fafafa}
+
+.go-stats{display:flex;flex-direction:column;gap:.7rem}
+.go-stat{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.8rem 1rem;
+}
+.go-stat .num{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.6rem,3vw,2.4rem);
+  line-height:1;letter-spacing:-.02em;
+}
+.go-stat .num sup{font-size:.6em;font-weight:600}
+.go-stat .lbl{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.1em;
+  margin-top:.3rem;
+}
+.go-stat.tinted-mint{background:var(--mint)}
+.go-stat.tinted-peach{background:var(--peach)}
+.go-stat.tinted-lilac{background:var(--lilac)}
+
+@media (max-width:1100px){.go-layout{grid-template-columns:1fr}}
+
+/* Slide 13 — how AlphaGo learned */
+.alphago-steps{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.8rem,2vw,1.5rem);
+  margin-top:1rem;
+  position:relative;
+}
+.ag-step{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1rem;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+.ag-step .badge{
+  position:absolute;top:-12px;left:14px;
+  background:var(--ink);color:var(--bg);
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  padding:.25rem .65rem;border-radius:99px;
+  letter-spacing:.15em;
+}
+.ag-step h3{
+  font-size:clamp(1rem,1.5vw,1.2rem);
+  margin-top:.3rem;margin-bottom:.5rem;
+}
+.ag-step .ico{font-size:clamp(1.8rem,3vw,2.6rem);margin-bottom:.4rem}
+.ag-step p{font-size:clamp(.95rem,1.2vw,1.1rem);line-height:1.45;color:var(--dim)}
+.ag-step:nth-child(1){background:var(--sky)}
+.ag-step:nth-child(2){background:var(--mint)}
+.ag-step:nth-child(3){background:var(--sun)}
+
+@media (max-width:1100px){.alphago-steps{grid-template-columns:1fr}}
+
+/* Slide 14 — Move 37 */
+.m37-layout{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,3vw,3rem);
+  align-items:center;
+  margin-top:.5rem;
+}
+.m37-quote{
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(1.2rem,2.2vw,1.7rem);
+  line-height:1.25;
+  font-style:italic;
+}
+.m37-quote::before{
+  content:'"';font-size:3em;line-height:0;
+  vertical-align:-0.4em;color:var(--bad);
+  margin-right:.05em;
+}
+.m37-attr{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);
+  margin-top:1rem;
+}
+.m37-board{
+  width:min(38vh,300px);
+  aspect-ratio:1;
+  background:#e8c97a;
+  border:3px solid var(--line);
+  border-radius:6px;
+  position:relative;
+  margin:auto;
+  box-shadow:6px 6px 0 var(--line);
+}
+.m37-board .grid-lines{
+  position:absolute;inset:8%;
+  background-image:
+    linear-gradient(to right,#1f1d2b 1px,transparent 1px),
+    linear-gradient(to bottom,#1f1d2b 1px,transparent 1px);
+  background-size:calc(100%/8) calc(100%/8);
+}
+.m37-board .stone{
+  position:absolute;width:11%;height:11%;border-radius:50%;
+  border:1.5px solid var(--line);transform:translate(-50%,-50%);
+}
+.m37-board .stone.black{background:#1a1a1a}
+.m37-board .stone.white{background:#fafafa}
+.m37-board .stone.move37{
+  background:#1a1a1a;
+  border-color:var(--bad);border-width:3px;
+  animation:m37-pulse 2s ease-in-out infinite;
+  z-index:5;
+}
+.m37-board .stone.move37::after{
+  content:'37';
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  font-family:var(--font-mono);font-weight:700;
+  color:var(--bg);
+  font-size:9px;
+}
+@keyframes m37-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(226,62,62,0.6)}
+  50%{box-shadow:0 0 0 12px rgba(226,62,62,0)}
+}
+@media (max-width:1100px){.m37-layout{grid-template-columns:1fr}}
+
+/* Slide 15 — your turn */
+.your-turn{
+  text-align:center;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.your-turn .arrow-down{
+  font-size:clamp(2.5rem,5vw,4.5rem);
+  margin-top:1.5rem;
+  color:var(--bad);
+  animation:bounce-down 1.6s ease-in-out infinite;
+}
+@keyframes bounce-down{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(15px)}
+}
+
+/* Slide 16 — GAME (multi-armed bandit) */
+.game-wrap{
+  display:flex;flex-direction:column;
+  align-items:center;
+  height:100%;
+  gap:clamp(.6rem,1.5vh,1.2rem);
+}
+.game-header{
+  display:flex;justify-content:space-between;align-items:center;
+  width:100%;max-width:1300px;
+  margin-bottom:.4rem;
+}
+.game-header h2{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.2rem,2.2vw,1.8rem);
+  line-height:1;
+}
+.game-header .help{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+}
+.game-stats{
+  display:flex;gap:.8rem;
+  flex-wrap:wrap;justify-content:center;
+}
+.gs{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.5rem 1rem;
+  text-align:center;
+  min-width:110px;
+}
+.gs .gs-num{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.3rem,2.2vw,1.8rem);
+  line-height:1;
+}
+.gs .gs-lbl{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.15em;color:var(--dim);
+  margin-top:.2rem;text-transform:uppercase;
+}
+.gs.tinted-sun{background:var(--sun)}
+.gs.tinted-mint{background:var(--mint)}
+.gs.tinted-peach{background:var(--peach)}
+
+.boxes{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.5vw,1.1rem);
+  width:100%;max-width:1200px;
+  margin:0 auto;
+}
+.box-btn{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:clamp(.7rem,1.4vw,1.1rem);
+  cursor:pointer;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  text-align:center;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+  font-family:var(--font-body);
+  position:relative;gap:.25rem;
+  min-height:0;
+  overflow:hidden;
+}
+.box-btn:hover:not(:disabled){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.box-btn:active:not(:disabled){
+  transform:translate(2px,2px);
+  box-shadow:2px 2px 0 var(--line);
+}
+.box-btn:disabled{opacity:.6;cursor:not-allowed}
+.box-btn.A{background:var(--peach)}
+.box-btn.B{background:var(--mint)}
+.box-btn.C{background:var(--lilac)}
+.box-btn .b-emoji{
+  font-size:clamp(1.7rem,2.6vw,2.4rem);
+  line-height:1;margin:.1rem 0;
+  transition:transform .3s var(--ease);
+}
+.box-btn.shake .b-emoji{animation:shake .4s ease-out}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-6px) rotate(-5deg)}
+  75%{transform:translateX(6px) rotate(5deg)}
+}
+.box-btn .b-name{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.1rem,1.5vw,1.35rem);
+  line-height:1;letter-spacing:-.01em;
+  margin-bottom:.15rem;
+}
+.box-btn .b-stats{
+  font-family:var(--font-mono);
+  font-size:clamp(.82rem,1vw,.95rem);
+  color:var(--ink);
+  line-height:1.35;
+  width:100%;
+}
+.box-btn .b-stats .row{
+  display:flex;justify-content:space-between;
+  padding:0 .3rem;gap:.5rem;
+}
+.box-btn .b-stats b{font-weight:700}
+.box-btn .b-last{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.82rem,1.05vw,.98rem);
+  margin-top:.3rem;
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  padding:.18rem .55rem;
+  border-radius:99px;
+  display:inline-block;
+  min-height:1.5em;
+}
+.box-btn .b-last.flash{animation:flash .5s ease-out}
+@keyframes flash{
+  0%{background:var(--sun);transform:scale(1.15)}
+  100%{background:var(--paper);transform:scale(1)}
+}
+.box-btn .b-true{
+  font-family:var(--font-mono);
+  font-size:clamp(.65rem,.85vw,.8rem);
+  margin-top:.3rem;
+  color:var(--dim);
+  display:none;
+}
+.box-btn.revealed .b-true{display:block}
+
+.game-controls{
+  display:flex;gap:.8rem;align-items:center;
+  flex-wrap:wrap;justify-content:center;
+}
+.game-btn{
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  padding:.6rem 1.4rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.1em;
+  cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.game-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.game-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.game-btn.secondary{background:var(--paper);color:var(--ink)}
+
+.game-result{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.8rem 1.2rem;
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(.85rem,1.2vw,1rem);
+  text-align:center;
+  display:none;
+  max-width:1200px;
+  line-height:1.4;
+}
+.game-result.show{display:block}
+.game-result b{color:var(--bad)}
+
+@media (max-width:1100px){
+  .boxes{grid-template-columns:1fr;gap:.6rem}
+  .box-btn .b-emoji{font-size:2.5rem}
+}
+@media (max-height:700px){
+  .game-header h2{font-size:1.1rem}
+  .gs{padding:.4rem .8rem;min-width:90px}
+  .gs .gs-num{font-size:1.2rem}
+  .box-btn{padding:.6rem}
+  .box-btn .b-emoji{font-size:2.5rem;margin:.1rem 0}
+}
+
+/* Slide 17 — debrief mapping */
+.map-grid{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:clamp(.5rem,1.5vw,1rem);
+  align-items:center;
+  margin-top:.5rem;
+}
+.map-row{display:contents}
+.map-game,.map-rl{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.7rem 1rem;
+  font-size:clamp(.85rem,1.15vw,1.05rem);
+}
+.map-game{background:var(--peach)}
+.map-rl{background:var(--mint);font-family:var(--font-mono);font-weight:600}
+.map-arrow{
+  font-family:var(--font-mono);font-weight:700;
+  color:var(--dim);font-size:1.4em;
+  text-align:center;
+}
+@media (max-width:1100px){
+  .map-grid{grid-template-columns:1fr}
+  .map-arrow{display:none}
+}
+
+/* Slide 18 — takeaways */
+.takeaways-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  margin-top:.8rem;
+}
+.take-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem;
+  display:flex;flex-direction:column;
+}
+.take-card .num{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  margin-bottom:.3rem;
+}
+.take-card h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.5vw,1.25rem);
+  margin-bottom:.3rem;
+  line-height:1.15;
+}
+.take-card p{
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  color:var(--dim);line-height:1.45;
+}
+.take-card:nth-child(1){background:var(--mint)}
+.take-card:nth-child(2){background:var(--peach)}
+.take-card:nth-child(3){background:var(--lilac)}
+.take-card:nth-child(4){background:var(--sun)}
+.next-up{
+  margin-top:1rem;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  padding:.9rem 1.2rem;
+  display:flex;align-items:center;gap:1rem;
+  box-shadow:4px 4px 0 var(--line);
+}
+.next-up .lbl{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.2em;
+  color:var(--sun);
+}
+.next-up .ttl{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.4vw,1.2rem);
+}
+@media (max-width:1100px){.takeaways-grid{grid-template-columns:1fr}}
+
+/* Slide 8 — check-in / pause */
+.checkin-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.9rem,2vw,1.4rem);
+  margin-top:1.2rem;
+  width:100%;
+  max-width:1300px;
+  margin-left:auto;margin-right:auto;
+}
+.checkin-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(1.1rem,2.2vw,1.7rem);
+  display:flex;flex-direction:column;
+  align-items:center;text-align:center;
+  gap:.4rem;
+}
+.checkin-card.mint{background:var(--mint)}
+.checkin-card.peach{background:var(--peach)}
+.checkin-card.lilac{background:var(--lilac)}
+.checkin-card .ck-icon{
+  font-size:clamp(2.4rem,4.5vw,3.6rem);
+  line-height:1;margin-bottom:.2rem;
+}
+.checkin-card .ck-title{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.1rem,1.7vw,1.45rem);
+  line-height:1.1;letter-spacing:-.01em;
+}
+.checkin-card .ck-desc{
+  font-size:clamp(.85rem,1.1vw,1.02rem);
+  color:var(--ink);
+  line-height:1.45;
+}
+@media (max-width:1100px){.checkin-grid{grid-template-columns:1fr}}
+
+/* Slide 10 — why supervised learning fails */
+.why-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:clamp(1rem,2vw,1.8rem);
+  margin-top:1rem;
+  width:100%;
+  max-width:1500px;
+  margin-left:auto;margin-right:auto;
+}
+.why-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1.1rem,2vw,1.9rem);
+  display:flex;
+  align-items:flex-start;
+  gap:clamp(.8rem,1.4vw,1.4rem);
+}
+.why-card.peach{background:var(--peach)}
+.why-card.mint{background:var(--mint)}
+.why-card.lilac{background:var(--lilac)}
+.why-card.sun{background:var(--sun)}
+.why-card.sky{background:var(--sky)}
+.why-card.rose{background:var(--rose)}
+.why-card .wc-icon{
+  font-size:clamp(2.2rem,3.5vw,3.6rem);
+  line-height:1;flex-shrink:0;
+}
+.why-card .wc-body{
+  display:flex;flex-direction:column;
+  gap:.3rem;flex:1;min-width:0;
+}
+.why-card .wc-title{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.1rem,1.5vw,1.55rem);
+  line-height:1.15;letter-spacing:-.01em;
+}
+.why-card .wc-q{
+  font-family:var(--font-mono);font-weight:600;
+  font-size:clamp(1rem,1.25vw,1.25rem);
+  color:var(--ink);line-height:1.4;font-style:italic;
+}
+.why-card .wc-q::before{content:"Q: ";font-style:normal;font-weight:800}
+.why-card .wc-fail{
+  font-size:clamp(.95rem,1.15vw,1.18rem);
+  color:var(--ink);line-height:1.35;
+  margin-top:.1rem;
+}
+.why-card .wc-fail b{font-weight:700}
+@media (max-width:1100px){.why-grid{grid-template-columns:1fr}}
+
+/* Slide 20 — meet ε-greedy */
+.eg-modes{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.8rem,2vw,1.4rem);
+  margin-top:.9rem;margin-bottom:.6rem;
+  width:100%;max-width:1500px;
+  margin-left:auto;margin-right:auto;
+}
+.eg-mode{
+  border:2.5px solid var(--line);
+  border-radius:16px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(.8rem,1.6vw,1.1rem) clamp(.95rem,1.8vw,1.3rem);
+  display:flex;flex-direction:column;
+  gap:.3rem;
+}
+.eg-mode.explore{background:var(--lilac)}
+.eg-mode.exploit{background:var(--mint)}
+.eg-mode .eg-mode-tag{
+  font-family:var(--font-mono);font-weight:800;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  letter-spacing:.18em;
+  color:var(--ink);
+}
+.eg-mode .eg-mode-def{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.4vw,1.2rem);
+  line-height:1.2;
+}
+.eg-mode .eg-mode-why{
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  color:var(--ink);line-height:1.4;
+  font-style:italic;
+}
+@media (max-width:1100px){.eg-modes{grid-template-columns:1fr}}
+
+.eg-grid{
+  display:grid;
+  grid-template-columns:1.25fr 1fr;
+  gap:clamp(1rem,2vw,1.6rem);
+  margin-top:.4rem;
+  width:100%;
+  max-width:1500px;
+  margin-left:auto;margin-right:auto;
+}
+.eg-pseudo{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(1rem,2vw,1.4rem);
+  display:flex;flex-direction:column;
+  gap:.55rem;
+}
+.eg-pseudo .eg-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.18em;color:var(--dim);
+  margin-bottom:.4rem;
+}
+.eg-pseudo .eg-line{
+  font-size:clamp(.92rem,1.2vw,1.08rem);
+  line-height:1.5;
+  display:flex;align-items:flex-start;gap:.55rem;
+}
+.eg-pseudo .eg-step{
+  font-family:var(--font-display);font-weight:800;
+  font-size:1.25em;
+  flex-shrink:0;
+  width:1.25em;text-align:center;
+  color:var(--ink);
+}
+.eg-pseudo .eg-step.eg-explore{color:#7a4dc2}
+.eg-pseudo .eg-step.eg-exploit{color:#1a8a4a}
+
+.eg-spec{display:flex;flex-direction:column;gap:.6rem}
+.eg-spec-row{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.15rem;
+}
+.eg-spec-row:nth-child(1){background:var(--rose)}
+.eg-spec-row:nth-child(2){background:var(--mint)}
+.eg-spec-row:nth-child(3){background:var(--lilac)}
+.eg-spec-row .eg-spec-label{
+  font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;
+  font-size:clamp(1.05rem,1.4vw,1.3rem);
+}
+.eg-spec-row .eg-spec-desc{
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  line-height:1.4;
+}
+@media (max-width:1100px){.eg-grid{grid-template-columns:1fr}}
+
+/* Slide 21 — ε-greedy vs you */
+.egp-wrap{
+  display:flex;flex-direction:column;
+  gap:clamp(.7rem,1.5vh,1.1rem);
+  margin-top:.7rem;
+  flex:1;min-height:0;
+}
+.egp-controls{
+  display:flex;align-items:center;gap:.8rem;
+  flex-wrap:wrap;justify-content:center;
+}
+.egp-controls .eg-eps-pill{
+  font-family:var(--font-mono);font-size:clamp(1rem,1.35vw,1.2rem);
+  display:flex;align-items:center;gap:.4rem;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:99px;padding:.45rem 1rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+.egp-controls .eg-eps-pill b{
+  font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:800;
+  font-size:1.1em;
+}
+
+.egp-die{
+  display:flex;align-items:center;justify-content:center;
+  gap:clamp(.9rem,2vw,1.4rem);
+  margin:0 auto;
+  width:fit-content;max-width:100%;
+}
+.dice{
+  width:clamp(58px,6.5vw,74px);
+  aspect-ratio:1;
+  background:#fdfaf3;
+  background-image:linear-gradient(135deg,#ffffff 0%,#f1ece1 100%);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:4px 4px 0 var(--line);
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(3,1fr);
+  gap:3%;padding:6%;
+  flex-shrink:0;
+  transform-origin:center center;
+}
+.dice > span{
+  border-radius:50%;
+  background:transparent;
+  align-self:center;justify-self:center;
+  width:100%;height:100%;
+  transition:background .15s var(--ease),box-shadow .15s var(--ease);
+}
+.dice > span.on{
+  background:var(--ink);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgba(255,255,255,.18),
+    inset -1px -1px 0 rgba(0,0,0,.25);
+}
+/* dice = 1 means EXPLORE — make the lone center dot pop in red */
+.dice[data-value="1"] > span.on{
+  background:var(--bad);
+  transform:scale(1.7);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgba(255,255,255,.28),
+    inset -1px -1px 0 rgba(0,0,0,.25),
+    0 0 0 2px rgba(226,62,62,.25);
+}
+.dice.rolling{
+  animation:dice-tumble .45s cubic-bezier(.2,.85,.3,1.15);
+}
+@keyframes dice-tumble{
+  0%   {transform:translateY(0)   rotate(0)    scale(1)}
+  20%  {transform:translateY(-12px) rotate(-26deg) scale(1.08)}
+  45%  {transform:translateY(-16px) rotate(22deg)  scale(1.12)}
+  70%  {transform:translateY(-7px)  rotate(-10deg) scale(1.04)}
+  100% {transform:translateY(0)   rotate(0)    scale(1)}
+}
+.egp-die .die-msg{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.18rem);
+  line-height:1.2;
+}
+.egp-die .die-msg .die-arrow{font-weight:800;margin:0 .35em}
+.egp-die .die-msg .die-explore{color:#7a4dc2}
+.egp-die .die-msg .die-exploit{color:#1a8a4a}
+.egp-controls input[type=range]{accent-color:var(--ink);width:130px}
+.egp-controls #eg-epsilon-val{
+  font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:800;
+  min-width:2.6em;text-align:right;
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+}
+.eg-speed-pill{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  display:flex;align-items:center;gap:.35rem;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:99px;padding:.3rem .6rem .3rem .9rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+.eg-speed-btn{
+  background:transparent;
+  border:1.5px solid transparent;
+  border-radius:99px;
+  width:30px;height:30px;
+  font-size:1.05rem;line-height:1;
+  cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:0;
+  transition:transform .12s var(--ease),background .15s var(--ease);
+}
+.eg-speed-btn:hover:not(.active){transform:translateY(-1px);background:rgba(31,29,43,.06)}
+.eg-speed-btn.active{
+  background:var(--sun);
+  border-color:var(--line);
+}
+
+.egp-boxes{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.5vw,1.1rem);
+  width:100%;max-width:1200px;
+  margin:0 auto;
+}
+.egp-box{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.85rem 1rem;
+  display:flex;flex-direction:column;
+  align-items:center;text-align:center;
+  position:relative;gap:.15rem;
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.egp-box.A{background:var(--peach)}
+.egp-box.B{background:var(--mint)}
+.egp-box.C{background:var(--lilac)}
+.egp-box.active{
+  transform:translate(-3px,-3px);
+  box-shadow:7px 7px 0 var(--line);
+}
+.egp-box .b-name{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.4rem,2.2vw,1.8rem);
+  line-height:1;
+}
+.egp-box .b-pulls{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  color:var(--ink);
+}
+.egp-box .b-avg{
+  font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;
+  font-size:clamp(1rem,1.4vw,1.25rem);
+}
+.egp-box .b-mode{
+  position:absolute;top:-10px;right:-8px;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  background:var(--ink);color:var(--bg);
+  padding:.2rem .65rem;border-radius:99px;
+  letter-spacing:.12em;text-transform:uppercase;
+  opacity:0;
+  transition:opacity .2s var(--ease);
+  border:1.5px solid var(--line);
+}
+.egp-box.active .b-mode{opacity:1}
+.egp-box .b-mode.explore{background:#7a4dc2;color:white}
+.egp-box .b-mode.exploit{background:#1a8a4a;color:white}
+
+.egp-progress{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  text-align:center;color:var(--dim);
+  letter-spacing:.1em;
+  min-height:1.2em;
+}
+
+.egp-scoreboard{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.5vw,1.1rem);
+  width:100%;max-width:1200px;
+  margin:0 auto;
+}
+.egp-score{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem 1rem;
+  text-align:center;
+  background:var(--paper);
+}
+.egp-score.you{background:var(--sky)}
+.egp-score.ai{background:var(--sun)}
+.egp-score .esl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);
+  margin-bottom:.25rem;
+}
+.egp-score .esn{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.5rem,2.5vw,2.1rem);
+  line-height:1;letter-spacing:-.02em;
+}
+.egp-score .esd{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);
+  margin-top:.25rem;
+}
+@media (max-width:1100px){.egp-boxes,.egp-scoreboard{grid-template-columns:1fr}}
+
+/* Slide 22 — discussion: what do you think of ε-greedy? */
+.discuss-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.9rem,2vw,1.4rem);
+  margin-top:1.1rem;
+  width:100%;
+  max-width:1400px;
+  margin-left:auto;margin-right:auto;
+}
+.discuss-card{
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(1.1rem,2.2vw,1.6rem);
+  display:flex;flex-direction:column;
+  align-items:flex-start;
+  gap:.45rem;
+}
+.discuss-card.mint{background:var(--mint)}
+.discuss-card.peach{background:var(--peach)}
+.discuss-card.lilac{background:var(--lilac)}
+.discuss-card .dq-icon{
+  font-size:clamp(2.3rem,4.2vw,3.2rem);
+  line-height:1;margin-bottom:.2rem;
+}
+.discuss-card .dq-q{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.05rem,1.6vw,1.35rem);
+  line-height:1.15;letter-spacing:-.01em;
+}
+.discuss-card .dq-hint{
+  font-size:clamp(.95rem,1.2vw,1.12rem);
+  color:var(--ink);line-height:1.4;
+  font-style:italic;
+}
+@media (max-width:1100px){.discuss-grid{grid-template-columns:1fr}}
+
+/* Slide 26 — RL in LLMs (side-by-side with AlphaGo) */
+.llm-compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2vw,1.8rem);
+  margin-top:1rem;
+  width:100%;
+  max-width:1500px;
+  margin-left:auto;margin-right:auto;
+}
+.llm-col{
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1rem,1.8vw,1.5rem);
+  display:flex;flex-direction:column;
+  gap:.7rem;
+}
+.llm-col.alphago{background:var(--mint)}
+.llm-col.llm{background:var(--peach)}
+.llm-col-head{
+  display:flex;align-items:center;gap:.7rem;
+  border-bottom:2.5px dashed var(--line);
+  padding-bottom:.6rem;margin-bottom:.2rem;
+}
+.llm-col-icon{
+  font-size:clamp(1.8rem,2.8vw,2.6rem);
+  line-height:1;
+}
+.llm-col-title{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.3rem,1.9vw,1.7rem);
+  letter-spacing:-.02em;line-height:1;
+}
+.llm-stage{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.85rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.25rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.llm-stage-num{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.8rem,1vw,.95rem);
+  letter-spacing:.18em;
+  color:var(--ink);
+  align-self:flex-start;
+  background:var(--bg);
+  border:1.5px solid var(--line);
+  padding:.15rem .55rem;border-radius:99px;
+}
+.llm-stage-h{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.1rem,1.45vw,1.35rem);
+  line-height:1.15;letter-spacing:-.01em;
+  margin-top:.25rem;
+}
+.llm-stage-p{
+  font-size:clamp(.95rem,1.2vw,1.15rem);
+  color:var(--ink);line-height:1.45;
+}
+@media (max-width:1100px){.llm-compare{grid-template-columns:1fr}}
+
+/* Slide 18 — Beyond Humans: progressive reveal */
+.bh-card{
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+.bh-card.bh-hidden{
+  opacity:0;
+  transform:translateY(24px) scale(.96);
+  pointer-events:none;
+  visibility:hidden;
+}
+.bh-controls{
+  display:flex;align-items:center;justify-content:center;
+  gap:1rem;margin-top:.9rem;
+  flex-wrap:wrap;
+}
+.bh-counter{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.15em;
+}
+
+/* Slide 23 — Debrief: matching quiz + small RL loop */
+.quiz-layout{
+  display:grid;
+  grid-template-columns:1.1fr 1.3fr;
+  gap:clamp(.9rem,2vw,1.5rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.quiz-loop{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:16px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(.8rem,1.6vw,1.2rem);
+  display:flex;align-items:center;justify-content:center;
+  min-height:0;
+}
+.quiz-loop svg{
+  width:100%;max-width:720px;height:auto;
+}
+.quiz-match{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.7rem,1.5vw,1.1rem);
+  align-items:start;
+}
+.quiz-col{
+  display:flex;flex-direction:column;
+  gap:.45rem;
+  min-width:0;
+}
+.quiz-col-label{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--ink);
+  text-align:center;
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:99px;
+  padding:.25rem .7rem;
+  align-self:center;
+  margin-bottom:.15rem;
+}
+.quiz-item{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.55rem .8rem;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:clamp(.95rem,1.2vw,1.12rem);
+  text-align:left;
+  line-height:1.25;
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease), background .2s;
+  color:var(--ink);
+  min-height:2.6em;
+}
+.quiz-item.right{
+  font-family:var(--font-mono);
+  font-weight:700;
+  letter-spacing:.05em;
+  text-align:center;
+}
+.quiz-item:hover:not(.matched):not(:disabled){
+  transform:translate(-1px,-1px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.quiz-item.selected{
+  background:var(--sun);
+  outline:3px solid var(--ink);
+  outline-offset:2px;
+}
+.quiz-item.wrong{
+  background:var(--rose);
+  animation:quiz-shake .4s ease-out;
+}
+@keyframes quiz-shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-7px)}
+  50%{transform:translateX(7px)}
+  75%{transform:translateX(-4px)}
+}
+.quiz-item.matched{
+  background:var(--mint);
+  cursor:default;
+  opacity:.78;
+  pointer-events:none;
+  position:relative;
+}
+.quiz-item.matched::after{
+  content:'✓';
+  position:absolute;top:50%;right:.7em;
+  transform:translateY(-50%);
+  font-family:var(--font-mono);font-weight:800;
+  color:var(--good);font-size:1.2em;
+}
+.quiz-status{
+  margin-top:.7rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.88rem,1.15vw,1.05rem);
+  text-align:center;
+  letter-spacing:.1em;
+  color:var(--dim);
+}
+.quiz-status.done{
+  color:var(--ink);
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  box-shadow:3px 3px 0 var(--line);
+  display:inline-block;padding:.45rem 1.2rem;
+  letter-spacing:.05em;
+}
+.quiz-status.done b{color:var(--ink)}
+@media (max-width:1100px){
+  .quiz-layout{grid-template-columns:1fr}
+  .quiz-loop{display:none}
+}
+
+.egp-legend{
+  display:flex;flex-wrap:wrap;
+  justify-content:center;gap:.7rem;
+  margin-top:.4rem;margin-bottom:.2rem;
+}
+.egp-leg-item{
+  font-family:var(--font-mono);
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  border:2px solid var(--line);
+  border-radius:99px;
+  padding:.3rem .85rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+.egp-leg-item.explore{background:var(--lilac)}
+.egp-leg-item.exploit{background:var(--mint)}
+.egp-leg-item b{font-weight:700}
+
+/* Slide 7 — Predict the next word */
+.nwp-wrap{
+  display:flex;flex-direction:column;
+  gap:clamp(.6rem,1.5vh,1rem);
+  flex:1;min-height:0;
+  margin-top:.5rem;
+}
+.nwp-story{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem 1.2rem;
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:clamp(1.2rem,2.2vw,1.7rem);
+  line-height:1.35;
+  min-height:clamp(60px,10vh,90px);
+  display:flex;align-items:center;
+}
+.nwp-story .blank{
+  display:inline-block;min-width:120px;
+  border-bottom:3px solid var(--bad);
+  margin:0 .25em;color:var(--bad);
+  font-style:italic;
+}
+.nwp-story .gen-word{
+  background:var(--sun);
+  padding:0 .15em;
+  border-radius:4px;
+  animation:nwp-pop .3s var(--ease);
+}
+@keyframes nwp-pop{
+  0%{transform:scale(.7);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.nwp-options{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:.5rem;
+}
+.nwp-btn{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem .8rem;
+  cursor:pointer;
+  text-align:left;
+  font-family:var(--font-body);
+  display:flex;flex-direction:column;
+  gap:.4rem;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+  position:relative;
+  overflow:hidden;
+}
+.nwp-btn:hover:not(:disabled){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.nwp-btn:active:not(:disabled){
+  transform:translate(2px,2px);
+  box-shadow:2px 2px 0 var(--line);
+}
+.nwp-btn:disabled{opacity:.5;cursor:not-allowed}
+.nwp-btn .word{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+  line-height:1.1;
+}
+.nwp-btn .prob-row{
+  display:flex;align-items:center;gap:.4rem;
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);
+}
+.nwp-btn .prob-bar{
+  flex:1;height:8px;
+  background:rgba(31,29,43,0.08);
+  border-radius:99px;
+  overflow:hidden;
+  border:1.5px solid var(--line);
+}
+.nwp-btn .prob-fill{
+  height:100%;
+  background:var(--ink);
+  border-radius:99px;
+  width:0;
+  transition:width .8s var(--ease);
+}
+.nwp-btn.high .prob-fill{background:var(--good)}
+.nwp-btn.low .prob-fill{background:var(--bad)}
+.nwp-controls{
+  display:flex;gap:.6rem;align-items:center;
+  justify-content:center;flex-wrap:wrap;
+  margin-top:.3rem;
+}
+.nwp-final{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem 1rem;
+  font-family:var(--font-body);
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  text-align:center;
+  display:none;line-height:1.45;
+}
+.nwp-final.show{display:block}
+.nwp-final b{font-weight:700}
+@media (max-width:1100px){
+  .nwp-options{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Slide 17 — Move 37 reaction */
+.m37r-layout{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:clamp(1rem,3vw,2.5rem);
+  align-items:center;
+  margin-top:.5rem;
+}
+.m37r-quote{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-style:italic;
+  font-size:clamp(1.05rem,1.85vw,1.4rem);
+  line-height:1.4;
+}
+.m37r-quote::before{
+  content:'\201C';
+  font-size:3em;line-height:0;
+  vertical-align:-.4em;
+  color:var(--bad);
+  margin-right:.05em;
+}
+.m37r-attr{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  margin-top:1rem;
+}
+.video-frame{
+  aspect-ratio:16/10;
+  background:var(--ink);
+  border:3px solid var(--line);
+  border-radius:14px;
+  box-shadow:6px 6px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:var(--bg);
+  padding:1rem;
+  position:relative;
+  overflow:hidden;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+a.video-frame:hover{
+  transform:translate(-2px,-2px);
+  box-shadow:8px 8px 0 var(--line);
+}
+a.video-frame:hover .play-btn{
+  background:var(--sun);
+  transform:scale(1.06);
+}
+.video-frame::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 30% 20%,rgba(255,226,122,0.15),transparent 50%),
+    radial-gradient(ellipse at 70% 70%,rgba(216,200,255,0.12),transparent 50%);
+}
+.video-frame .play-btn{
+  width:clamp(48px,7vw,72px);
+  height:clamp(48px,7vw,72px);
+  border-radius:50%;
+  background:var(--bg);
+  border:3px solid var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 4px rgba(254,248,240,0.15);
+  font-size:clamp(1.2rem,2vw,1.8rem);
+  color:var(--ink);
+  margin-bottom:.8rem;
+  position:relative;z-index:2;
+  transition:background .2s var(--ease), transform .2s var(--ease);
+}
+.video-frame .v-title{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.9rem,1.3vw,1.15rem);
+  text-align:center;line-height:1.3;
+  position:relative;z-index:2;
+}
+.video-frame .v-meta{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--sun);
+  margin-top:.4rem;
+  position:relative;z-index:2;
+}
+.m37r-stat{
+  margin-top:1rem;
+  display:inline-flex;align-items:center;gap:.6rem;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.5rem 1rem;
+  align-self:flex-start;
+}
+.m37r-stat .num{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.2rem,2vw,1.6rem);
+  color:var(--bad);line-height:1;
+}
+.m37r-stat .lbl{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.1em;
+}
+@media (max-width:1100px){.m37r-layout{grid-template-columns:1fr}}
+
+/* Slide 20 — GridWorld game */
+.gw-wrap{
+  display:flex;flex-direction:column;
+  gap:clamp(.5rem,1.2vh,.9rem);
+  flex:1;min-height:0;
+  margin-top:.3rem;
+}
+.gw-header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:.5rem;
+}
+.gw-header h2{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.2rem,2.2vw,1.8rem);
+  line-height:1;margin:0;
+}
+.gw-header .help{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  color:var(--dim);
+}
+.gw-stats{
+  display:flex;gap:.6rem;flex-wrap:wrap;
+}
+.gw-stats .gs{flex:1;min-width:110px;max-width:180px;padding:.45rem .9rem}
+
+.gw-main{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:clamp(.8rem,2vw,1.5rem);
+  align-items:center;
+  flex:1;min-height:0;
+}
+.gw-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  grid-template-rows:repeat(5,1fr);
+  gap:3px;
+  background:var(--line);
+  border:3px solid var(--line);
+  border-radius:12px;
+  padding:3px;
+  width:clamp(280px,42vh,440px);
+  height:clamp(280px,42vh,440px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.gw-cell{
+  background:var(--paper);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  transition:background .2s var(--ease);
+}
+.gw-cell .cell-emoji{
+  font-size:clamp(1.1rem,2.4vw,1.6rem);
+  line-height:1;
+  z-index:1;
+}
+.gw-cell.start{background:var(--peach)}
+.gw-cell.goal{background:var(--mint)}
+.gw-cell.trap{background:var(--rose)}
+.gw-cell.skate{background:var(--sun)}
+.gw-cell.water{background:var(--sky)}
+.gw-cell.visited{
+  background:rgba(216,200,255,0.35);
+}
+.gw-cell.start.agent,.gw-cell.goal.agent,.gw-cell.trap.agent,
+.gw-cell.skate.agent,.gw-cell.water.agent{
+  /* keep the bg color even when agent is on it */
+}
+.gw-cell.agent .cell-emoji{display:none}
+.gw-cell.agent::after{
+  content:'\01F916';
+  position:absolute;
+  font-size:clamp(1.1rem,2.4vw,1.6rem);
+  animation:agent-pop .3s var(--ease);
+  z-index:4;
+  line-height:1;
+}
+
+/* Q-value labels: tiny numbers on each cell edge */
+.gw-cell .qval{
+  position:absolute;
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:clamp(7px,1vw,10px);
+  pointer-events:none;
+  letter-spacing:-.04em;
+  z-index:3;
+  line-height:1;
+  background:rgba(254,248,240,0.85);
+  padding:0 1px;
+  border-radius:2px;
+}
+.gw-cell .q-up{top:1px;left:50%;transform:translateX(-50%)}
+.gw-cell .q-down{bottom:1px;left:50%;transform:translateX(-50%)}
+.gw-cell .q-left{left:1px;top:50%;transform:translateY(-50%)}
+.gw-cell .q-right{right:1px;top:50%;transform:translateY(-50%)}
+.gw-cell .q-pos{color:#1a8a4a}
+.gw-cell .q-neg{color:#c2331a}
+.gw-cell .q-zero{color:rgba(31,29,43,0.4)}
+
+@keyframes agent-pop{
+  0%{transform:scale(.7)}
+  50%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+
+.gw-side{
+  display:flex;flex-direction:column;
+  gap:clamp(.4rem,1vw,.8rem);
+  min-width:0;
+  height:100%;
+  justify-content:flex-start;
+}
+.gw-controls{
+  display:grid;
+  grid-template-columns:repeat(3,clamp(34px,5vw,42px));
+  grid-template-rows:repeat(3,clamp(34px,5vw,42px));
+  gap:4px;
+  margin:0 auto;
+}
+.gw-controls button{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:8px;
+  box-shadow:2px 2px 0 var(--line);
+  cursor:pointer;
+  font-size:1.05rem;font-weight:700;
+  font-family:var(--font-mono);
+  transition:transform .1s,box-shadow .1s;
+  padding:0;
+}
+.gw-controls button:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--line)}
+.gw-controls button:active:not(:disabled){transform:translate(1px,1px);box-shadow:1px 1px 0 var(--line)}
+.gw-controls button:disabled{opacity:.4;cursor:not-allowed}
+.gw-controls .up{grid-column:2;grid-row:1}
+.gw-controls .left{grid-column:1;grid-row:2}
+.gw-controls .right{grid-column:3;grid-row:2}
+.gw-controls .down{grid-column:2;grid-row:3}
+
+.gw-chart{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.6rem .8rem;
+  flex:1;min-height:80px;
+  display:flex;flex-direction:column;
+}
+.gw-chart .ch-label{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:.4rem;
+}
+.gw-chart .bars-wrap{
+  flex:1;
+  position:relative;
+  min-height:60px;
+}
+.gw-chart .axis{
+  position:absolute;left:0;right:0;top:50%;
+  height:1.5px;background:var(--line);
+  z-index:1;
+}
+.gw-chart .bars{
+  position:absolute;inset:0;
+  z-index:2;
+}
+.gw-chart .bar{
+  position:absolute;
+  border:1.5px solid var(--line);
+  border-radius:3px;
+  background:var(--mint);
+  transition:height .4s var(--ease),width .4s var(--ease);
+  min-height:2px;
+}
+.gw-chart .bar.neg{background:var(--rose)}
+.gw-chart .ch-axis{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  margin-top:.3rem;
+  display:flex;justify-content:space-between;
+}
+
+.gw-tip{
+  background:var(--sun);
+  border:2px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .7rem;
+  font-size:var(--tiny-size);
+  font-family:var(--font-mono);
+  text-align:center;
+  display:none;
+}
+.gw-tip.show{display:block}
+
+@media (max-width:1100px){
+  .gw-main{grid-template-columns:1fr;justify-items:center}
+}
+@media (max-height:700px){
+  .gw-grid{width:clamp(240px,36vh,340px);height:clamp(240px,36vh,340px)}
+  .gw-controls{grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px)}
+}
+
+/* Slide 22 — Challenges: clickable RL-loop ingredients */
+.ch-canvas{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(1rem,2.5vw,2.2rem);
+  margin:.7rem auto;
+  max-width:1900px;
+  flex-wrap:nowrap;
+}
+.ch-part{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1.2rem,2vw,1.8rem) clamp(1.4rem,2.4vw,2.1rem);
+  cursor:pointer;
+  display:flex;flex-direction:column;
+  align-items:center;gap:.55rem;
+  font-family:var(--font-display);font-weight:700;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+  min-width:clamp(180px,18vw,260px);
+}
+.ch-part.agent{background:var(--mint)}
+.ch-part.environment{background:var(--peach)}
+.ch-part.policy{
+  background:var(--lilac);
+  min-width:clamp(150px,15vw,220px);
+  padding:clamp(.9rem,1.6vw,1.4rem) clamp(1.1rem,2vw,1.7rem);
+}
+.ch-part.policy .ch-icon{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:800;
+  font-size:clamp(2.2rem,3.8vw,3.2rem);
+}
+.ch-agent-stack{
+  display:flex;flex-direction:column;
+  gap:clamp(.6rem,1.2vw,1rem);
+  align-items:center;
+}
+.ch-part:hover:not(.active){
+  transform:translate(-2px,-2px);
+  box-shadow:8px 8px 0 var(--line);
+}
+.ch-part.active{
+  outline:3px solid var(--ink);
+  outline-offset:3px;
+  transform:translate(2px,2px);
+  box-shadow:2px 2px 0 var(--line);
+}
+.ch-part .ch-icon{
+  font-size:clamp(2.6rem,4.5vw,3.8rem);
+  line-height:1;
+}
+.ch-part .ch-label{
+  font-size:clamp(1.2rem,1.7vw,1.6rem);
+  letter-spacing:.13em;
+}
+
+.ch-arrows{
+  display:flex;flex-direction:column;
+  gap:.65rem;
+  flex:1;
+  max-width:480px;
+  min-width:240px;
+}
+.ch-arrow{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:99px;
+  padding:.65rem 1.2rem;
+  cursor:pointer;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(1rem,1.3vw,1.2rem);
+  letter-spacing:.15em;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;
+  gap:.55rem;
+  color:var(--ink);
+}
+.ch-arrow.action{background:var(--sky)}
+.ch-arrow.state{background:var(--lilac)}
+.ch-arrow.reward{background:var(--sun)}
+.ch-arrow .dir{font-size:1.2em;font-weight:800}
+.ch-arrow:hover:not(.active){
+  transform:translate(-1px,-1px);
+  box-shadow:4px 4px 0 var(--line);
+}
+.ch-arrow.active{
+  outline:2.5px solid var(--ink);
+  outline-offset:3px;
+  transform:translate(1px,1px);
+  box-shadow:1px 1px 0 var(--line);
+}
+
+.ch-detail{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:16px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem 1.4rem;
+  margin-top:.8rem;
+  min-height:clamp(180px,26vh,260px);
+  display:flex;flex-direction:column;
+}
+.ch-detail.empty{
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,0.55);
+  border-style:dashed;
+}
+.empty-hint{
+  font-family:var(--font-mono);
+  color:var(--dim);
+  letter-spacing:.15em;
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  text-align:center;
+  text-transform:uppercase;
+}
+.ch-d-head{
+  display:flex;align-items:baseline;gap:.8rem;
+  margin-bottom:.8rem;flex-wrap:wrap;
+}
+.ch-d-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.9rem,1.15vw,1.05rem);
+  letter-spacing:.15em;text-transform:uppercase;
+  background:var(--ink);color:var(--bg);
+  padding:.3rem .9rem;border-radius:99px;
+  white-space:nowrap;
+}
+.ch-d-tagline{
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(1.15rem,1.55vw,1.45rem);
+  font-style:italic;
+  color:var(--ink);
+}
+.ch-d-list{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1rem;
+  flex:1;
+}
+.ch-d-item{
+  background:var(--bg);
+  border:1.5px solid var(--line);
+  border-radius:12px;
+  padding:.85rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.3rem;
+}
+.ch-d-item h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.1rem,1.4vw,1.3rem);
+  line-height:1.2;
+}
+.ch-d-item p{
+  font-size:clamp(.95rem,1.2vw,1.12rem);
+  color:var(--ink);line-height:1.45;
+  margin:0;
+}
+.ch-detail.fade-in{animation:ch-fade .25s var(--ease)}
+@keyframes ch-fade{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+@media (max-width:1100px){
+  .ch-canvas{flex-direction:column}
+  .ch-arrows{max-width:none;flex-direction:row;flex-wrap:wrap;justify-content:center}
+  .ch-d-list{grid-template-columns:1fr}
+}
+
+/* Slide — Roadmap of next lectures (7 cards, 4+3 centered, 2 rows) */
+.roadmap-grid{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:clamp(.9rem,1.7vw,1.4rem);
+  margin-top:1.2rem;
+  max-width:1700px;
+  margin-left:auto;margin-right:auto;
+}
+.rm-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:clamp(1rem,1.6vw,1.4rem);
+  display:flex;flex-direction:column;
+  position:relative;
+  flex:0 1 calc(25% - 1.4rem);
+  min-width:240px;
+  max-width:420px;
+}
+.rm-card .num{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.8rem,1.05vw,1rem);
+  letter-spacing:.18em;
+  color:var(--ink);
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  padding:.22rem .7rem;border-radius:99px;
+  align-self:flex-start;
+  box-shadow:1px 1px 0 var(--line);
+  margin-bottom:.55rem;
+}
+.rm-card .ttl{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.1rem,1.5vw,1.45rem);
+  line-height:1.15;letter-spacing:-.01em;
+  margin-bottom:.45rem;
+}
+.rm-card .desc{
+  font-size:clamp(.92rem,1.15vw,1.1rem);
+  color:var(--ink);line-height:1.45;
+}
+.rm-card:nth-child(1){background:var(--mint)}
+.rm-card:nth-child(2){background:var(--peach)}
+.rm-card:nth-child(3){background:var(--lilac)}
+.rm-card:nth-child(4){background:var(--sky)}
+.rm-card:nth-child(5){background:var(--sun)}
+.rm-card:nth-child(6){background:var(--rose)}
+.rm-card:nth-child(7){background:var(--mint)}
+@media (max-width:1100px){
+  .rm-card{flex:1 1 100%;max-width:none}
+}
+@media (min-width:781px) and (max-width:1100px){
+  .rm-card{flex:0 1 calc(33.333% - 1rem)}
+}
+
+/* ===========================================
+   RESPONSIVE — height-driven scaling
+   =========================================== */
+@media (max-height:700px){
+  :root{
+    --slide-padding:clamp(.75rem,3vw,2rem);
+    --content-gap:clamp(.4rem,1.5vw,1rem);
+    --title-size:clamp(1.5rem,4.5vw,3rem);
+    --h2-size:clamp(1.2rem,3vw,2rem);
+  }
+}
+@media (max-height:600px){
+  :root{
+    --slide-padding:clamp(.5rem,2.5vw,1.5rem);
+    --title-size:clamp(1.25rem,4vw,2.5rem);
+    --body-size:clamp(.75rem,1.1vw,.9rem);
+  }
+  .nav{display:none}
+  .hint{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    transition-duration:.2s!important;
+  }
+  html{scroll-behavior:auto}
+}
+</style>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint" id="hint">← → / SPACE to navigate</div>
+
+<!-- ====================================================== -->
+<!-- SLIDE 1 — TITLE                                          -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Title">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag reveal" style="background:var(--peach)">LECTURE 01 · INTRO TO RL</span>
+    <h1 class="title reveal">How machines learn<br>to <span class="hl">play, win, repeat.</span></h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.6vw,1.3rem);max-width:1300px;margin-bottom:1.5rem;">
+      From spotting cats in photos to mastering Go — we'll trace the leap from
+      <b>supervised learning</b> to <b>reinforcement learning</b>, and play a tiny RL game ourselves.
+    </p>
+    <div class="s1-cards reveal">
+      <span class="card tinted-mint"><span>🎯</span> Classification</span>
+      <span class="card tinted-peach"><span>✨</span> Generation</span>
+      <span class="card tinted-lilac"><span>⚫</span> AlphaGo</span>
+      <span class="card tinted-sun"><span>🎮</span> Play a game</span>
+    </div>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">01 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 2 — TWO WAYS TO LEARN                             -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Two Ways">
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:60px;height:60px;top:8%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:6%;right:10%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">THE BIG PICTURE</span>
+    <h2 class="h2 reveal">Two ways a machine can learn.</h2>
+
+    <div class="compare reveal" style="position:relative">
+      <div class="col sl">
+        <span class="sub">Style A</span>
+        <h3>Supervised<br>Learning</h3>
+        <p style="font-size:clamp(1rem,1.35vw,1.2rem);margin-bottom:.6rem">"Here are 10,000 examples <i>with the right answer</i>. Learn the pattern."</p>
+        <ul>
+          <li>Needs a teacher with answers</li>
+          <li>One shot per example</li>
+          <li>Great for: spam detection, photo tagging, translation</li>
+        </ul>
+      </div>
+      <div class="vs">VS</div>
+      <div class="col rl">
+        <span class="sub">Style B</span>
+        <h3>Reinforcement<br>Learning</h3>
+        <p style="font-size:clamp(1rem,1.35vw,1.2rem);margin-bottom:.6rem">"Here's a world. <i>Try things.</i> I'll tell you when you do well."</p>
+        <ul>
+          <li>No answers — only rewards</li>
+          <li>Many tries, learning from each</li>
+          <li>Great for: games, robots, self-driving</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Two Ways</div>
+  <div class="slide-num">02 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 4 — SUPERVISED LEARNING                           -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Supervised">
+  <span class="shape s-sky pill bordered anim-wobble" style="width:130px;height:55px;top:10%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:12%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">PART 1 · SUPERVISED LEARNING</span>
+    <h2 class="h2 reveal">Like studying with <span class="hl">flashcards.</span></h2>
+    <p class="body reveal" style="margin-bottom:1rem">
+      Show the model an example, tell it the right answer, and let it adjust.
+      Repeat <b>millions of times</b> with new examples — until it gets the pattern right on cards it has never seen.
+    </p>
+
+    <div class="flashcards reveal">
+      <div class="flashcard"><span class="pic">🐱</span><span class="ans">CAT</span></div>
+      <div class="flashcard"><span class="pic">🐶</span><span class="ans">DOG</span></div>
+      <div class="flashcard"><span class="pic">🦊</span><span class="ans">FOX</span></div>
+      <div class="flashcard"><span class="pic">🐰</span><span class="ans">RABBIT</span></div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1.2rem;text-align:center;font-style:italic;font-size:clamp(1rem,1.35vw,1.2rem)">
+      Each card = one labeled example. The model's job: predict the label of a new card.
+    </p>
+  </div>
+  <div class="slide-name">Supervised Learning</div>
+  <div class="slide-num">03 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 5 — CLASSIFICATION                                -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Classification">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:6%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:60px;height:60px;bottom:10%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">EXAMPLE · CLASSIFICATION</span>
+    <h2 class="h2 reveal">Cat or dog?</h2>
+
+    <div class="grid-demo reveal">
+      <div class="left-col">
+        <p class="body" style="margin-bottom:.6rem">
+          A trained model takes any image and sorts it into one of a fixed set of <b>classes</b>.
+          The output is a single guess.
+        </p>
+        <div class="flow">
+          <span class="box">📷 Image</span>
+          <span class="arrow">→</span>
+          <span class="box" style="background:var(--lilac)">🧠 Model</span>
+          <span class="arrow">→</span>
+          <span class="box" style="background:var(--sun)">🏷️ "Dog"</span>
+        </div>
+        <p class="body dim" style="margin-top:.7rem;font-size:clamp(.95rem,1.2vw,1.1rem)">
+          Real systems power photo apps, medical scans, even sorting recyclables.
+        </p>
+      </div>
+
+      <div class="image-grid">
+        <div class="img-cell cat">🐱<span class="pred">CAT</span></div>
+        <div class="img-cell dog">🐶<span class="pred">DOG</span></div>
+        <div class="img-cell cat">😺<span class="pred">CAT</span></div>
+        <div class="img-cell dog">🐕<span class="pred">DOG</span></div>
+        <div class="img-cell cat">🐈<span class="pred">CAT</span></div>
+        <div class="img-cell dog">🦮<span class="pred">DOG</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Classification</div>
+  <div class="slide-num">04 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 6 — THE MATH                                      -->
+<!-- ====================================================== -->
+<section class="slide" data-name="The Math">
+  <span class="shape s-lilac circle bordered anim-wobble" style="width:90px;height:90px;top:8%;left:6%"></span>
+  <span class="shape s-peach blob bordered anim-wobble-r" style="width:130px;height:130px;bottom:6%;right:6%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag lilac reveal">THE MATH UNDER THE HOOD</span>
+    <h2 class="h2 reveal">Make <span class="hl">wrong</span> as small as possible.</h2>
+    <p class="body dim reveal" style="text-align:center;margin-bottom:.6rem;max-width:1100px">
+      Every supervised learning problem boils down to one line of math — find the model that makes its mistakes as small as possible.
+    </p>
+
+    <div class="formula-box reveal scale">
+      <div class="formula">
+        \[ \min_{f} \; \ell\bigl(f(x),\, y\bigr) \]
+      </div>
+    </div>
+
+    <div class="math-legend reveal">
+      <div class="legend-item">
+        <span class="sym">\(x\)</span>
+        <span class="desc">The <b>input</b> — e.g. a photo of an animal.</span>
+      </div>
+      <div class="legend-item">
+        <span class="sym">\(y\)</span>
+        <span class="desc">The <b>right answer</b> — e.g. the label "cat".</span>
+      </div>
+      <div class="legend-item">
+        <span class="sym">\(f\)</span>
+        <span class="desc">The <b>model</b>. Feed it \(x\) and it guesses: \(f(x)\).</span>
+      </div>
+      <div class="legend-item">
+        <span class="sym">\(\ell\)</span>
+        <span class="desc">The <b>loss</b> — how far the guess \(f(x)\) is from the truth \(y\).</span>
+      </div>
+      <div class="legend-item">
+        <span class="sym">\(\min\)</span>
+        <span class="desc"><b>Find the smallest.</b> Tweak \(f\) until the loss is as tiny as possible.</span>
+      </div>
+    </div>
+    <p class="body dim reveal" style="text-align:center;margin-top:1rem;font-style:italic;font-size:clamp(.95rem,1.2vw,1.1rem)">
+      Training = searching through millions of possible \(f\)'s to find the one that's wrong the least.
+    </p>
+  </div>
+  <div class="slide-name">The Math · Loss</div>
+  <div class="slide-num">05 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 6 — GENERATION (still supervised)                  -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Generation">
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;top:10%;right:6%"></span>
+  <span class="shape s-mint blob bordered anim-wobble" style="width:100px;height:100px;bottom:8%;left:4%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">STILL SUPERVISED LEARNING · ANOTHER EXAMPLE</span>
+    <h2 class="h2 reveal">Even ChatGPT is just<br>predicting the <span class="hl">next word.</span></h2>
+    <p class="body reveal" style="max-width:1100px">
+      Same recipe as cat-vs-dog. Show the model billions of sentences, hide the next word, ask it to guess, shrink the loss. The only twist — instead of one label, it produces something <b>one piece at a time</b>.
+    </p>
+
+    <div class="gen-grid reveal">
+      <div class="gen-card peach">
+        <span class="gen-icon">📝</span>
+        <span class="gen-title">Text</span>
+        <div class="gen-input">"Write a haiku about cats"</div>
+        <div class="gen-output">A whisker twitches.<br>Sunlight pools on the carpet —<br>nap is non-negotiable.</div>
+      </div>
+      <div class="gen-card lilac">
+        <span class="gen-icon">🎨</span>
+        <span class="gen-title">Image</span>
+        <div class="gen-input">"A cat astronaut"</div>
+        <div class="gen-output">→ starts from random noise, refined into a picture step by step</div>
+      </div>
+      <div class="gen-card mint">
+        <span class="gen-icon">🎵</span>
+        <span class="gen-title">Music / Code / Video</span>
+        <div class="gen-input">"Lo-fi beat for studying"</div>
+        <div class="gen-output">→ predicts the next note, then the next, then the next…</div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin:.8rem auto 0;font-style:italic;font-size:clamp(.95rem,1.2vw,1.1rem);max-width:none;text-align:center">
+      Same \(\min \, \ell(f(x), y)\) — but now \(y\) is a piece of the output (a word, a note, a slice of noise), not a label.
+    </p>
+  </div>
+  <div class="slide-name">Generation</div>
+  <div class="slide-num">06 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 9 — PREDICT THE NEXT WORD (interactive)            -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Next Word" id="nwp-slide">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:5%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">TRY IT · PREDICT THE NEXT WORD</span>
+    <h2 class="h2 reveal">You're the language model.</h2>
+    <p class="body reveal" style="max-width:1100px;font-size:clamp(1.05rem,1.4vw,1.22rem)">
+      An LLM picks the next word from a probability distribution — over and over. Tap a word to add it. Watch the sentence grow.
+    </p>
+
+    <div class="nwp-wrap reveal">
+      <div class="nwp-story" id="nwp-story">The cat sat on the <span class="blank">___</span></div>
+
+      <div class="nwp-options" id="nwp-options"></div>
+
+      <div class="nwp-final" id="nwp-final"></div>
+
+      <div class="nwp-controls">
+        <button class="game-btn secondary" id="nwp-reset">Try Again</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Next Word</div>
+  <div class="slide-num">07 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 8 — CHECK-IN · PAUSE FOR QUESTIONS                 -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Check-in">
+  <span class="shape s-sun circle bordered anim-wobble" style="width:120px;height:120px;top:8%;right:8%"></span>
+  <span class="shape s-mint blob bordered anim-wobble-r" style="width:130px;height:130px;bottom:10%;left:6%"></span>
+  <span class="shape s-lilac square bordered anim-spin-slow" style="width:60px;height:60px;top:20%;left:10%"></span>
+  <span class="shape s-peach pill bordered anim-wobble" style="width:110px;height:46px;bottom:18%;right:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag sun reveal">PAUSE · QUICK CHECK-IN</span>
+    <h2 class="h2 reveal">How are we<br><span class="hl">doing so far?</span></h2>
+    <p class="body reveal" style="max-width:1100px;font-size:clamp(1rem,1.4vw,1.2rem);text-align:center">
+      That was a lot — flashcards, math, even ChatGPT. Before we leave supervised learning behind and try something completely different, let's pause.
+    </p>
+
+    <div class="checkin-grid reveal">
+      <div class="checkin-card mint">
+        <span class="ck-icon">✋</span>
+        <span class="ck-title">Got a question?</span>
+        <span class="ck-desc">Anything fuzzy? Speak up — no question is too small.</span>
+      </div>
+      <div class="checkin-card peach">
+        <span class="ck-icon">🔁</span>
+        <span class="ck-title">Want a replay?</span>
+        <span class="ck-desc">The math, the loss, generation — I can rewind any of it.</span>
+      </div>
+      <div class="checkin-card lilac">
+        <span class="ck-icon">🚀</span>
+        <span class="ck-title">All good?</span>
+        <span class="ck-desc">Next up: the kind of learning that beat humans at Go.</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Check-in</div>
+  <div class="slide-num">08 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 10 — PIVOT: NO ANSWER KEY                          -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Pivot" style="background:#1f1d2b;color:#fef8f0">
+  <span class="shape s-sun circle anim-wobble" style="width:120px;height:120px;top:12%;right:10%;border-color:#fef8f0"></span>
+  <span class="shape s-rose blob anim-wobble-r" style="width:140px;height:140px;bottom:10%;left:8%;border-color:#fef8f0"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag reveal" style="background:#fef8f0;color:#1f1d2b;border-color:#fef8f0">A PROBLEM</span>
+    <p class="big-quote reveal" style="color:#fef8f0">
+      But what about<br>problems with <span class="strike">no answer key</span>?
+    </p>
+    <p class="quote-sub reveal" style="color:#bff0d0">
+      How do you learn to ride a bike, win a chess match, or land a rocket — when no one can show you the "right answer" at every step?
+    </p>
+  </div>
+  <div class="slide-name" style="color:#bff0d0">Pivot to RL</div>
+  <div class="slide-num" style="color:#bff0d0">09 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 10 — WHY SUPERVISED LEARNING FAILS                 -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Why SL Fails">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+  <span class="shape s-lilac square bordered anim-spin-slow" style="width:55px;height:55px;top:20%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">WHY SUPERVISED LEARNING ISN'T ENOUGH</span>
+    <h2 class="h2 reveal">Where's the <span class="hl">answer key?</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      Try to imagine a flashcard set for any of these. <b>You can't</b> — not because nobody tried, but because <i>no human knows the right answer at every moment</i>.
+    </p>
+
+    <div class="why-grid reveal">
+      <div class="why-card peach">
+        <span class="wc-icon">🚴</span>
+        <div class="wc-body">
+          <span class="wc-title">Learning to ride a bike</span>
+          <span class="wc-q">What's the right amount to lean — right now?</span>
+          <span class="wc-fail">→ No parent can label every micro-second of balance.</span>
+        </div>
+      </div>
+      <div class="why-card mint">
+        <span class="wc-icon">🎮</span>
+        <div class="wc-body">
+          <span class="wc-title">Beating a video game</span>
+          <span class="wc-q">Should I jump now? Run? Duck?</span>
+          <span class="wc-fail">→ You only find out it was wrong <b>after</b> the game ends.</span>
+        </div>
+      </div>
+      <div class="why-card lilac">
+        <span class="wc-icon">🤖</span>
+        <div class="wc-body">
+          <span class="wc-title">A robot learning to walk</span>
+          <span class="wc-q">What's the perfect motor angle for this step?</span>
+          <span class="wc-fail">→ No engineer can write down every joint of every gait.</span>
+        </div>
+      </div>
+      <div class="why-card sun">
+        <span class="wc-icon">🐶</span>
+        <div class="wc-body">
+          <span class="wc-title">Training a puppy to sit</span>
+          <span class="wc-q">How would you make 10,000 flashcards for "sit"?</span>
+          <span class="wc-fail">→ You don't. You give a treat when it works — that's it.</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin-top:.9rem;font-style:italic;font-size:clamp(1rem,1.35vw,1.2rem);max-width:1200px;margin-left:auto;margin-right:auto">
+      No teacher. No labels. Just <b>try things, see what happens, get rewarded</b>. Sound familiar? That's how <i>you</i> learn most things — and it's where RL lives.
+    </p>
+  </div>
+  <div class="slide-name">Why SL Fails</div>
+  <div class="slide-num">10 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 11 — RL LOOP (MODELING THE PROBLEM)                -->
+<!-- ====================================================== -->
+<section class="slide" data-name="RL Loop">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-lilac square bordered anim-spin-slow" style="width:60px;height:60px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">PART 3 · MODELING THE PROBLEM</span>
+    <h2 class="h2 reveal">Two characters, talking in a <span class="hl">loop.</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      To do math on bikes, games, and puppies, we need a picture that fits all of them. RL boils every one of those situations down to two characters — an <b>agent</b> and an <b>environment</b> — passing messages back and forth.
+    </p>
+
+    <div class="loop-wrap reveal">
+      <svg class="loop-svg" viewBox="0 0 700 360">
+        <defs>
+          <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1d2b"/>
+          </marker>
+        </defs>
+
+        <!-- Agent box (left) -->
+        <g class="agent-node">
+          <rect x="20" y="100" width="200" height="160" rx="14"
+                fill="#bff0d0" stroke="#1f1d2b" stroke-width="3"/>
+          <text x="120" y="148" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="34" fill="#1f1d2b">Agent</text>
+          <text x="120" y="174" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#5a5a5a" letter-spacing="2">THE LEARNER</text>
+          <text x="120" y="202" text-anchor="middle" font-size="22">🤖</text>
+          <!-- inner policy chip -->
+          <rect x="50" y="218" width="140" height="28" rx="14" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="120" y="237" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="13" fill="#1f1d2b" letter-spacing="2">POLICY π</text>
+        </g>
+
+        <!-- Environment box (right) -->
+        <g class="env-node">
+          <rect x="480" y="100" width="200" height="160" rx="14"
+                fill="#ffd6c2" stroke="#1f1d2b" stroke-width="3"/>
+          <text x="580" y="160" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="28" fill="#1f1d2b">Environment</text>
+          <text x="580" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#5a5a5a" letter-spacing="2">THE WORLD</text>
+          <text x="580" y="216" text-anchor="middle" font-size="22">🌍</text>
+        </g>
+
+        <!-- Action arrow (top, agent → env) -->
+        <path class="flow" d="M 220 145 Q 350 60 480 145"
+              fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead)"/>
+        <rect x="305" y="60" width="90" height="32" rx="16" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="350" y="81" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="14" fill="#1f1d2b" letter-spacing="2">ACTION</text>
+
+        <!-- Reward + State arrow (bottom, env → agent) -->
+        <path class="flow" d="M 480 215 Q 350 300 220 215"
+              fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead)"/>
+        <rect x="270" y="290" width="160" height="32" rx="16" fill="#ffe27a" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="350" y="312" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="14" fill="#1f1d2b" letter-spacing="2">REWARD + STATE</text>
+      </svg>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin-top:.5rem;font-style:italic;max-width:1300px;margin-left:auto;margin-right:auto">
+      The agent's <b>policy π</b> — its strategy — picks an <b>action</b>. The world updates and hands back a new <b>state</b> + a <b>reward</b>, which the agent uses to nudge its policy. Repeat forever. Mathematicians call this a <b>Markov Decision Process</b> — but you can just call it a <i>loop</i>.
+    </p>
+  </div>
+  <div class="slide-name">RL Loop</div>
+  <div class="slide-num">11 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 10 — REWARD SIGNAL                                -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Reward">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;left:5%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">THE REWARD SIGNAL</span>
+    <h2 class="h2 reveal">A number every step.<br><span class="hl">Add them up.</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      After every action, the world hands back one number — the score for that step. Sometimes it's a big jackpot at the end (you <i>won</i> the game). Sometimes it's a little something every step (a tasty scoop of ice cream). Either way, the agent's only job: <b>make the total as big as possible</b>.
+    </p>
+
+    <div class="reward-grid reveal">
+      <div class="reward-item win">
+        <span class="ico">🏆</span>
+        <span class="num">+1</span>
+        <span class="lbl">WIN A GAME · ONCE, AT THE END</span>
+      </div>
+      <div class="reward-item" style="background:var(--peach)">
+        <span class="ico">🍦</span>
+        <span class="num">+0.7</span>
+        <span class="lbl">TASTY SCOOP · EVERY STEP</span>
+      </div>
+      <div class="reward-item lose">
+        <span class="ico">💥</span>
+        <span class="num">−1</span>
+        <span class="lbl">CRASH / LOSE</span>
+      </div>
+    </div>
+
+    <div class="formula-box reveal" style="padding:1rem 2rem;margin-top:1rem">
+      <div class="formula" style="font-size:clamp(1.2rem,2.5vw,2rem)">
+        \[ G = r_1 + r_2 + r_3 + \cdots + r_T \]
+      </div>
+      <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.5rem;letter-spacing:.05em">
+        Return \(G\) = the <b>sum</b> of every step's reward. RL = pick actions that make \(G\) as big as possible.
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Reward</div>
+  <div class="slide-num">12 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 11 — EXPLORE VS EXPLOIT                          -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Explore vs Exploit">
+  <span class="shape s-peach circle bordered anim-wobble" style="width:90px;height:90px;top:8%;left:5%"></span>
+  <span class="shape s-mint blob bordered anim-wobble-r" style="width:110px;height:110px;bottom:8%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">A CLASSIC TENSION</span>
+    <h2 class="h2 reveal">Explore <span class="dim">or</span> exploit?</h2>
+    <p class="body reveal" style="max-width:1100px">
+      You walk into an ice cream shop with 31 flavors. Mint chip is your reliable favorite. Do you order it again — or finally try the one with the weird name?
+    </p>
+
+    <div class="ee-grid reveal">
+      <div class="ee-col explore">
+        <span class="ee-tag">🔍 EXPLORE</span>
+        <h3>Try something new.</h3>
+        <p>Maybe you'll discover something better. Maybe you'll waste a scoop on a flavor you hate.</p>
+        <div class="icon-row">🍓 🥑 🌶️</div>
+      </div>
+      <div class="ee-col exploit">
+        <span class="ee-tag">🎯 EXPLOIT</span>
+        <h3>Stick with what works.</h3>
+        <p>Guaranteed-good ice cream. But you'll <i>never</i> find anything better than mint chip.</p>
+        <div class="icon-row">🍦 🍦 🍦</div>
+      </div>
+    </div>
+    <p class="body dim reveal" style="text-align:center;margin-top:.8rem;font-style:italic;font-size:clamp(1rem,1.35vw,1.2rem)">
+      Every RL agent has to balance these. Too much exploring = waste. Too much exploiting = miss the best.
+    </p>
+  </div>
+  <div class="slide-name">Explore vs Exploit</div>
+  <div class="slide-num">13 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 12 — ALPHAGO INTRO                                -->
+<!-- ====================================================== -->
+<section class="slide" data-name="AlphaGo">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">CASE STUDY · ALPHAGO</span>
+    <h2 class="h2 reveal">The game everyone said<br>computers couldn't win.</h2>
+
+    <div class="go-layout reveal">
+      <img class="go-photo" src="move37.jpeg" alt="Go board photo from the AlphaGo match">
+
+      <div class="go-stats">
+        <div class="go-stat tinted-mint">
+          <div class="num">\(10^{170}\)</div>
+          <div class="lbl">POSSIBLE BOARD POSITIONS</div>
+        </div>
+        <div class="go-stat tinted-peach">
+          <div class="num">2,500+</div>
+          <div class="lbl">YEARS OF HUMAN STUDY</div>
+        </div>
+        <div class="go-stat tinted-lilac">
+          <div class="num">2016</div>
+          <div class="lbl">YEAR ALPHAGO BEAT WORLD CHAMP LEE SEDOL</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin:1rem auto 0;font-style:italic;font-size:clamp(1rem,1.35vw,1.2rem);max-width:none">
+      More positions than atoms in the universe. You can't memorize Go — you have to <b>understand</b> it.
+    </p>
+  </div>
+  <div class="slide-name">AlphaGo</div>
+  <div class="slide-num">14 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 13 — HOW ALPHAGO LEARNED                         -->
+<!-- ====================================================== -->
+<section class="slide" data-name="How AlphaGo Learned">
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;top:6%;right:5%"></span>
+  <span class="shape s-mint pill bordered anim-wobble" style="width:120px;height:55px;bottom:6%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">UNDER THE HOOD</span>
+    <h2 class="h2 reveal">How AlphaGo learned, in three stages.</h2>
+
+    <div class="alphago-steps reveal">
+      <div class="ag-step">
+        <span class="badge">STAGE 1</span>
+        <span class="ico">📚</span>
+        <h3>Imitate humans</h3>
+        <p><b>Supervised learning</b> on 30 million pro moves. "Given this board, what would a human play?" Now AlphaGo plays like a strong amateur.</p>
+      </div>
+      <div class="ag-step">
+        <span class="badge">STAGE 2</span>
+        <span class="ico">🤖</span>
+        <h3>Play itself</h3>
+        <p><b>Reinforcement learning</b> from self-play. Two copies of AlphaGo battle for millions of games. Reward = +1 win, −1 lose. It invents its <i>own</i> strategies.</p>
+      </div>
+      <div class="ag-step">
+        <span class="badge">STAGE 3</span>
+        <span class="ico">🌳</span>
+        <h3>Plan ahead</h3>
+        <p><b>Tree search</b> at game time. Imagines thousands of futures, picks the move that — across all those futures — gives the best expected return.</p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin:1.6rem auto 0;font-style:italic;font-size:clamp(1rem,1.35vw,1.2rem);max-width:none">
+      Stage 2 is the magic. Without an answer key, RL let the system surpass every human teacher it had.
+    </p>
+  </div>
+  <div class="slide-name">How AlphaGo Learned</div>
+  <div class="slide-num">15 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 14 — MOVE 37                                      -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Move 37">
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:60px;height:60px;top:8%;left:5%"></span>
+  <span class="shape s-lilac blob bordered anim-wobble-r" style="width:100px;height:100px;bottom:8%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">MARCH 10, 2016 · MATCH 2 · MOVE 37</span>
+    <h2 class="h2 reveal">The move<br>no human <span class="hl">would have made.</span></h2>
+
+    <div class="m37-layout reveal">
+      <div>
+        <p class="m37-quote">It's not a human move. I've never seen a human play this move. So beautiful.</p>
+        <p class="m37-attr">— Fan Hui, professional Go player, watching live</p>
+        <p class="body dim" style="margin-top:1rem;font-size:clamp(1.05rem,1.4vw,1.3rem);max-width:none;line-height:1.5">
+          Estimated probability of a human playing it: <b>1 in 10,000</b>.
+          AlphaGo discovered it through self-play — no teacher could have shown it this move.
+          Lee Sedol stared at the board for 12 minutes.
+        </p>
+      </div>
+
+      <img class="m37-photo" src="move37.jpeg" alt="Go board photo with Move 37">
+    </div>
+  </div>
+  <div class="slide-name">Move 37</div>
+  <div class="slide-num">16 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 17 — MOVE 37 REACTION                              -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Reaction">
+  <span class="shape s-rose circle bordered anim-wobble" style="width:80px;height:80px;top:8%;right:5%"></span>
+  <span class="shape s-sky pill bordered anim-wobble-r" style="width:120px;height:55px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">AND THEN... SILENCE</span>
+    <h2 class="h2 reveal">Twelve <span class="hl">minutes.</span></h2>
+
+    <div class="m37r-layout reveal">
+      <div>
+        <p class="m37r-quote">
+          I thought AlphaGo was based on probability calculation and it was merely a machine. But when I saw this move, I changed my mind. Surely AlphaGo is creative.
+        </p>
+        <p class="m37r-attr">— Lee Sedol, after the match</p>
+        <div class="m37r-stat">
+          <span class="num">12 min</span>
+          <span class="lbl">Lee Sedol's pause before responding</span>
+        </div>
+      </div>
+
+      <div>
+        <a class="video-frame"
+           href="https://www.youtube.com/watch?v=WXuK6gekU1Y&t=3106s"
+           target="_blank" rel="noopener"
+           title="Opens AlphaGo documentary on YouTube at the 51:46 mark">
+          <div class="play-btn">▶</div>
+          <div class="v-title">Move 37 + Lee Sedol's reaction</div>
+          <div class="v-meta">YOUTUBE @ 51:46 ↗</div>
+        </a>
+        <p class="body dim" style="text-align:center;margin-top:.7rem;font-size:clamp(.75rem,.95vw,.85rem);font-style:italic">
+          From the <i>AlphaGo</i> documentary — click to open at 51:46 in a new tab.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Reaction</div>
+  <div class="slide-num">17 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 18 — THINK: how could AlphaGo play a novel move?   -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Beyond Humans">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+  <span class="shape s-mint square bordered anim-spin-slow" style="width:55px;height:55px;top:20%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">PAUSE &amp; THINK</span>
+    <h2 class="h2 reveal">How can a machine play a move<br>no <span class="hl">human</span> ever played?</h2>
+    <p class="body reveal" style="max-width:1200px">
+      AlphaGo started by copying 30 million pro moves. So where did Move 37 come from? Talk to a neighbor — guess before we answer.
+    </p>
+
+    <div class="discuss-grid reveal" id="bh-grid">
+      <div class="discuss-card mint bh-card bh-hidden">
+        <span class="dq-icon">🧠</span>
+        <span class="dq-q">It learned from humans <b>first</b>.</span>
+        <span class="dq-hint">Stage 1 = copy 30M pro moves. So why didn't it stay an imitator?</span>
+      </div>
+      <div class="discuss-card peach bh-card bh-hidden">
+        <span class="dq-icon">🤖</span>
+        <span class="dq-q">Then it played <b>itself</b>.</span>
+        <span class="dq-hint">Stage 2 = two AlphaGos battle for millions of games. Who labels the "right" move when no human is watching?</span>
+      </div>
+      <div class="discuss-card lilac bh-card bh-hidden">
+        <span class="dq-icon">✨</span>
+        <span class="dq-q">No teacher needed.</span>
+        <span class="dq-hint">Reward = +1 win, −1 lose. The game itself decides. That's how RL can surpass every human teacher.</span>
+      </div>
+    </div>
+
+    <div class="bh-controls reveal">
+      <button class="game-btn" id="bh-reveal">💡 Show first hint</button>
+      <span class="bh-counter" id="bh-counter">0 / 3 revealed</span>
+    </div>
+  </div>
+  <div class="slide-name">Beyond Humans</div>
+  <div class="slide-num">18 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 18 — YOUR TURN                                    -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Your Turn">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:140px;height:140px;top:8%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:10%;left:6%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:14%;left:8%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:14%;right:14%"></span>
+
+  <div class="slide-inner center-all your-turn">
+    <span class="tag sun reveal" style="margin-left:auto;margin-right:auto">NEXT UP · YOU PLAY</span>
+    <h2 class="h2 reveal" style="font-size:clamp(2rem,5.5vw,4.5rem)">
+      Your turn to be the <span class="hl">agent.</span>
+    </h2>
+    <p class="body reveal" style="max-width:1000px;text-align:center;font-size:clamp(1rem,1.4vw,1.2rem)">
+      One game: three mystery boxes, each hiding a reward you can't see. Tap to peek inside. <b>You decide every move</b> — and you only get 20 chances.
+    </p>
+    <div class="arrow-down reveal">↓</div>
+  </div>
+  <div class="slide-name">Your Turn</div>
+  <div class="slide-num">19 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 16 — THE GAME (interactive bandit)                -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Game" id="game-slide">
+  <div class="slide-inner" style="gap:clamp(.8rem,1.8vh,1.4rem)">
+    <div class="game-header" style="margin:0 auto;justify-content:center;flex-wrap:wrap;text-align:center">
+      <h2>🎮 Three Mystery Boxes</h2>
+      <span class="help">Tap a box to pull. <b>20 pulls total.</b></span>
+    </div>
+
+    <div class="game-stats" style="margin:0 auto">
+      <div class="gs tinted-sun">
+        <div class="gs-num" id="g-pulls">0</div>
+        <div class="gs-lbl">Pulls used / 20</div>
+      </div>
+      <div class="gs tinted-mint">
+        <div class="gs-num" id="g-total">0.00</div>
+        <div class="gs-lbl">Total reward</div>
+      </div>
+      <div class="gs tinted-peach">
+        <div class="gs-num" id="g-best">—</div>
+        <div class="gs-lbl">Your best box so far</div>
+      </div>
+    </div>
+
+    <div class="boxes" id="g-boxes">
+      <button class="box-btn A" data-box="A">
+        <div class="b-name">Box A</div>
+        <div class="b-emoji">🎁</div>
+        <div class="b-stats">
+          <div class="row"><span>tries</span><b id="A-n">0</b></div>
+          <div class="row"><span>average</span><b id="A-mean">—</b></div>
+        </div>
+        <div class="b-last" id="A-last">tap to pull</div>
+        <div class="b-true" id="A-true"></div>
+      </button>
+      <button class="box-btn B" data-box="B">
+        <div class="b-name">Box B</div>
+        <div class="b-emoji">🎁</div>
+        <div class="b-stats">
+          <div class="row"><span>tries</span><b id="B-n">0</b></div>
+          <div class="row"><span>average</span><b id="B-mean">—</b></div>
+        </div>
+        <div class="b-last" id="B-last">tap to pull</div>
+        <div class="b-true" id="B-true"></div>
+      </button>
+      <button class="box-btn C" data-box="C">
+        <div class="b-name">Box C</div>
+        <div class="b-emoji">🎁</div>
+        <div class="b-stats">
+          <div class="row"><span>tries</span><b id="C-n">0</b></div>
+          <div class="row"><span>average</span><b id="C-mean">—</b></div>
+        </div>
+        <div class="b-last" id="C-last">tap to pull</div>
+        <div class="b-true" id="C-true"></div>
+      </button>
+    </div>
+
+    <div class="game-result" id="g-result"></div>
+
+    <div class="game-controls">
+      <button class="game-btn secondary" id="g-reveal">Reveal True Means</button>
+      <button class="game-btn" id="g-reset">Reset Game</button>
+    </div>
+  </div>
+  <div class="slide-name">The Game</div>
+  <div class="slide-num">20 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 20 — MEET ε-GREEDY (algorithm intro)               -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Epsilon-Greedy">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:55px;height:55px;top:20%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">A SIMPLE RL ALGORITHM</span>
+    <h2 class="h2 reveal">Meet <span class="hl">ε-greedy.</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      How would a <i>computer</i> play that game? Here's the simplest RL algorithm that works — it's just a coin flip and a running average. (ε is the Greek letter "epsilon" — think of it as <b>"how curious am I?"</b>)
+    </p>
+
+    <div class="eg-modes reveal">
+      <div class="eg-mode explore">
+        <span class="eg-mode-tag">🔍 EXPLORE</span>
+        <span class="eg-mode-def">Pick a <b>random</b> box.</span>
+        <span class="eg-mode-why">Why: maybe one we ignored is secretly the best — only way to find out is to try it.</span>
+      </div>
+      <div class="eg-mode exploit">
+        <span class="eg-mode-tag">🎯 EXPLOIT</span>
+        <span class="eg-mode-def">Pick the box with the <b>highest average so far</b>.</span>
+        <span class="eg-mode-why">Why: it's been the winner so far — stick with it and collect points.</span>
+      </div>
+    </div>
+
+    <div class="eg-grid reveal">
+      <div class="eg-pseudo">
+        <div class="eg-tag">EVERY TURN</div>
+        <div class="eg-line"><span class="eg-step">①</span><span>Roll a random number between 0 and 1.</span></div>
+        <div class="eg-line"><span class="eg-step eg-explore">②</span><span>If it's <b>less than \(\varepsilon\)</b> → <b style="color:#7a4dc2">explore</b>: pick a random box.</span></div>
+        <div class="eg-line"><span class="eg-step eg-exploit">③</span><span>Otherwise → <b style="color:#1a8a4a">exploit</b>: pick the box with the best average <i>so far</i>.</span></div>
+        <div class="eg-line"><span class="eg-step">④</span><span>Update that box's running average with the reward you saw.</span></div>
+      </div>
+      <div class="eg-spec">
+        <div class="eg-spec-row">
+          <span class="eg-spec-label">\(\varepsilon = 0\)</span>
+          <span class="eg-spec-desc">Pure exploit. Always picks the current "best." Risk: stuck on bad early luck.</span>
+        </div>
+        <div class="eg-spec-row">
+          <span class="eg-spec-label">\(\varepsilon = 1/6\)</span>
+          <span class="eg-spec-desc">🎲 Roll a dice. <b>1 → explore</b>, <b>2–6 → exploit</b>. We'll use this on the next slide.</span>
+        </div>
+        <div class="eg-spec-row">
+          <span class="eg-spec-label">\(\varepsilon = 1\)</span>
+          <span class="eg-spec-desc">Pure explore. Totally random. Learns the truth fast — but scores poorly.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">ε-greedy</div>
+  <div class="slide-num">21 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 21 — ε-GREEDY VS YOU (interactive comparison)      -->
+<!-- ====================================================== -->
+<section class="slide" data-name="EG vs You" id="eg-slide">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:90px;height:90px;top:5%;right:5%"></span>
+  <span class="shape s-mint pill bordered anim-wobble-r" style="width:120px;height:50px;bottom:8%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">SAME BOXES · NEW PLAYER</span>
+    <h2 class="h2 reveal">ε-greedy plays <span class="hl">your game.</span></h2>
+    <p class="body reveal" style="max-width:1200px;font-size:clamp(.9rem,1.15vw,1.05rem)">
+      Same three boxes. Same hidden means. Same 20 pulls. Each turn we <b>roll a dice</b> 🎲 — if it lands on <b>1</b>, ε-greedy explores (random box). On <b>2–6</b>, it exploits (best so far). That's ε = 1/6.
+    </p>
+
+    <div class="egp-legend reveal">
+      <span class="egp-leg-item explore">🔍 <b>explore</b> · pick random</span>
+      <span class="egp-leg-item exploit">🎯 <b>exploit</b> · pick the box with the best average so far</span>
+    </div>
+
+    <div class="egp-wrap reveal">
+      <div class="egp-controls">
+        <span class="eg-eps-pill" title="Fixed at 1/6 — like a die roll: 1 = explore.">ε = <b>1/6</b> ≈ 0.17</span>
+        <button class="game-btn" id="eg-run">🎲 Roll &amp; pull</button>
+        <button class="game-btn secondary" id="eg-reset">↺ New game</button>
+      </div>
+
+      <div class="egp-die" id="egp-die">
+        <div class="dice" id="egp-die-face">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="die-msg" id="egp-die-msg">click <b>Roll &amp; pull</b> to take one step</div>
+      </div>
+
+      <div class="egp-boxes">
+        <div class="egp-box A">
+          <span class="b-mode"></span>
+          <span class="b-name">A</span>
+          <span class="b-pulls">0 pulls</span>
+          <span class="b-avg">avg —</span>
+        </div>
+        <div class="egp-box B">
+          <span class="b-mode"></span>
+          <span class="b-name">B</span>
+          <span class="b-pulls">0 pulls</span>
+          <span class="b-avg">avg —</span>
+        </div>
+        <div class="egp-box C">
+          <span class="b-mode"></span>
+          <span class="b-name">C</span>
+          <span class="b-pulls">0 pulls</span>
+          <span class="b-avg">avg —</span>
+        </div>
+      </div>
+
+      <div id="eg-progress" class="egp-progress"></div>
+
+      <div class="egp-scoreboard">
+        <div class="egp-score you">
+          <div class="esl">YOU</div>
+          <div class="esn" id="eg-you-score">—</div>
+          <div class="esd" id="eg-you-detail">play game 1 first!</div>
+        </div>
+        <div class="egp-score ai">
+          <div class="esl">ε-GREEDY</div>
+          <div class="esn" id="eg-ai-score">—</div>
+          <div class="esd" id="eg-ai-detail">click run!</div>
+        </div>
+        <div class="egp-score">
+          <div class="esl">OPTIMAL</div>
+          <div class="esn">15.00</div>
+          <div class="esd">always pick B</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">ε-greedy vs You</div>
+  <div class="slide-num">22 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 22 — DISCUSSION: what do you think of ε-greedy?    -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Discuss EG">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+  <span class="shape s-mint square bordered anim-spin-slow" style="width:55px;height:55px;top:20%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">PAUSE &amp; DISCUSS</span>
+    <h2 class="h2 reveal">What do you think<br>of <span class="hl">ε-greedy?</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      You watched it play. You compared it to your own strategy. Now turn to a partner — or shout it out:
+    </p>
+
+    <div class="discuss-grid reveal">
+      <div class="discuss-card mint">
+        <span class="dq-icon">💪</span>
+        <span class="dq-q">What does it do <b>well</b>?</span>
+        <span class="dq-hint">Why does just "rolling a dice" beat picking a box at random?</span>
+      </div>
+      <div class="discuss-card peach">
+        <span class="dq-icon">⚠️</span>
+        <span class="dq-q">When would it <b>fail</b>?</span>
+        <span class="dq-hint">Imagine 100 boxes and only 20 pulls. Or rewards that change over time.</span>
+      </div>
+      <div class="discuss-card lilac">
+        <span class="dq-icon">✨</span>
+        <span class="dq-q">How would you make it <b>smarter</b>?</span>
+        <span class="dq-hint">Should ε start big and shrink? Should it remember more than the average?</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Discuss ε-greedy</div>
+  <div class="slide-num">23 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE — GRIDWORLD (HIDDEN: too hard for lecture 1)       -->
+<!-- Re-enable: uncomment this <section> block AND the        -->
+<!--   `new GridWorldGame()` line in the init script below.   -->
+<!-- ====================================================== -->
+<!--
+<section class="slide" data-name="GridWorld" id="gw-slide">
+  <div class="slide-inner gw-wrap">
+    <div class="gw-header">
+      <h2>🗺️ Game 2 · Hidden World</h2>
+      <span class="help">Hidden 5×5: find 💎, avoid 🔥. <b>Skates 🛼 boost · water 💧 slows.</b> Numbers = learned values.</span>
+    </div>
+
+    <div class="gw-stats">
+      <div class="gs tinted-sun">
+        <div class="gs-num" id="gw-ep">1</div>
+        <div class="gs-lbl">Episode</div>
+      </div>
+      <div class="gs tinted-mint">
+        <div class="gs-num" id="gw-ep-reward">0.00</div>
+        <div class="gs-lbl">This episode</div>
+      </div>
+      <div class="gs tinted-peach">
+        <div class="gs-num" id="gw-best">—</div>
+        <div class="gs-lbl">Best episode</div>
+      </div>
+    </div>
+
+    <div class="gw-main">
+      <div class="gw-grid" id="gw-grid">
+        <div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div>
+        <div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div>
+        <div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div>
+        <div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div>
+        <div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div><div class="gw-cell"></div>
+      </div>
+
+      <div class="gw-side">
+        <div class="gw-controls">
+          <button class="up" data-dir="up" aria-label="Up">↑</button>
+          <button class="left" data-dir="left" aria-label="Left">←</button>
+          <button class="right" data-dir="right" aria-label="Right">→</button>
+          <button class="down" data-dir="down" aria-label="Down">↓</button>
+        </div>
+
+        <div class="gw-legend" style="font-family:var(--font-mono);font-size:var(--tiny-size);color:var(--dim);text-align:center;line-height:1.5;background:var(--paper);border:2px solid var(--line);border-radius:8px;padding:.4rem .6rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="color:#1a8a4a;font-weight:700">+.42</span> good move &nbsp;·&nbsp;
+          <span style="color:#c2331a;font-weight:700">−.50</span> bad move
+        </div>
+
+        <div class="gw-chart">
+          <div class="ch-label">Reward per episode</div>
+          <div class="bars-wrap">
+            <div class="axis"></div>
+            <div class="bars" id="gw-chart-bars"></div>
+          </div>
+          <div class="ch-axis"><span>−1</span><span>+1</span></div>
+        </div>
+
+        <div class="gw-tip" id="gw-tip">📈 Your strategy is improving — recent episodes scoring higher than early ones.</div>
+
+        <div class="game-controls" style="margin-top:.2rem">
+          <button class="game-btn secondary" id="gw-reset">Reset All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">GridWorld</div>
+  <div class="slide-num">20 / 24</div>
+</section>
+-->
+
+<!-- ====================================================== -->
+<!-- SLIDE 23 — DEBRIEF (matching quiz)                       -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Debrief" id="debrief-slide">
+  <span class="shape s-sky pill bordered anim-wobble" style="width:120px;height:55px;top:8%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">QUIZ · YOU JUST DID RL</span>
+    <h2 class="h2 reveal">Match each game word<br>to its <span class="hl">RL name.</span></h2>
+    <p class="body reveal" style="max-width:1200px">
+      Tap a phrase on the left, then tap its match on the right. Get all 6 right and you've spoken the language of RL.
+    </p>
+
+    <div class="quiz-layout reveal">
+      <!-- The RL loop diagram (same as slide 11, smaller) -->
+      <div class="quiz-loop">
+        <svg viewBox="0 0 700 360">
+          <defs>
+            <marker id="arrowhead-quiz" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1d2b"/>
+            </marker>
+          </defs>
+          <g>
+            <rect x="20" y="100" width="200" height="160" rx="14"
+                  fill="#bff0d0" stroke="#1f1d2b" stroke-width="3"/>
+            <text x="120" y="148" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="34" fill="#1f1d2b">Agent</text>
+            <text x="120" y="174" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#5a5a5a" letter-spacing="2">YOU</text>
+            <text x="120" y="202" text-anchor="middle" font-size="22">🤖</text>
+            <rect x="50" y="218" width="140" height="28" rx="14" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+            <text x="120" y="237" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="13" fill="#1f1d2b" letter-spacing="2">POLICY π</text>
+          </g>
+          <g>
+            <rect x="480" y="100" width="200" height="160" rx="14"
+                  fill="#ffd6c2" stroke="#1f1d2b" stroke-width="3"/>
+            <text x="580" y="160" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="28" fill="#1f1d2b">Environment</text>
+            <text x="580" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#5a5a5a" letter-spacing="2">3 BOXES</text>
+            <text x="580" y="216" text-anchor="middle" font-size="22">🎁</text>
+          </g>
+          <path d="M 220 145 Q 350 60 480 145"
+                fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead-quiz)"/>
+          <rect x="305" y="60" width="90" height="32" rx="16" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="350" y="81" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="14" fill="#1f1d2b" letter-spacing="2">ACTION</text>
+          <path d="M 480 215 Q 350 300 220 215"
+                fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead-quiz)"/>
+          <rect x="270" y="290" width="160" height="32" rx="16" fill="#ffe27a" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="350" y="312" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="14" fill="#1f1d2b" letter-spacing="2">REWARD</text>
+        </svg>
+      </div>
+
+      <div class="quiz-match">
+        <div class="quiz-col">
+          <div class="quiz-col-label">FROM THE GAME</div>
+          <button class="quiz-item left" data-id="action">A box you can tap</button>
+          <button class="quiz-item left" data-id="reward">The number that pops out</button>
+          <button class="quiz-item left" data-id="return">Your running total</button>
+          <button class="quiz-item left" data-id="explore">"Try a new box"</button>
+          <button class="quiz-item left" data-id="exploit">"Tap the box with the best average"</button>
+          <button class="quiz-item left" data-id="policy">How you decide what to tap</button>
+        </div>
+        <div class="quiz-col">
+          <div class="quiz-col-label">RL NAME</div>
+          <button class="quiz-item right" data-id="reward">Reward</button>
+          <button class="quiz-item right" data-id="exploit">Exploitation</button>
+          <button class="quiz-item right" data-id="action">Action</button>
+          <button class="quiz-item right" data-id="policy">Policy π</button>
+          <button class="quiz-item right" data-id="explore">Exploration</button>
+          <button class="quiz-item right" data-id="return">Return G</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:.5rem">
+      <span class="quiz-status" id="quiz-status">0 / 6 matched</span>
+    </div>
+  </div>
+  <div class="slide-name">Debrief</div>
+  <div class="slide-num">24 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 22 — CHALLENGES (clickable RL ingredients)         -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Challenges" id="ch-slide">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:5%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:70px;height:70px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">PAUSE & THINK</span>
+    <h2 class="h2 reveal">Every part of the loop has <span class="hl">a hard problem.</span></h2>
+    <p class="body dim reveal" style="max-width:1200px;font-size:clamp(1rem,1.3vw,1.2rem)">
+      The same loop you saw earlier — agent, policy, action, state, reward, environment. Now <b>tap any piece</b> to see what the next 7 lectures will tackle. For each, ask yourself: <i>what would YOU try?</i>
+    </p>
+
+    <div class="ch-canvas reveal">
+      <div class="ch-agent-stack">
+        <button class="ch-part agent" data-part="agent" aria-label="Agent challenges">
+          <span class="ch-icon">🤖</span>
+          <span class="ch-label">AGENT</span>
+        </button>
+        <button class="ch-part policy" data-part="policy" aria-label="Policy challenges">
+          <span class="ch-icon">π</span>
+          <span class="ch-label">POLICY</span>
+        </button>
+      </div>
+
+      <div class="ch-arrows">
+        <button class="ch-arrow action" data-part="action" aria-label="Action challenges">
+          <span>ACTION</span><span class="dir">→</span>
+        </button>
+        <button class="ch-arrow state" data-part="state" aria-label="State challenges">
+          <span class="dir">←</span><span>STATE</span>
+        </button>
+        <button class="ch-arrow reward" data-part="reward" aria-label="Reward challenges">
+          <span class="dir">←</span><span>REWARD</span>
+        </button>
+      </div>
+
+      <button class="ch-part environment" data-part="environment" aria-label="Environment challenges">
+        <span class="ch-icon">🌍</span>
+        <span class="ch-label">ENVIRONMENT</span>
+      </button>
+    </div>
+
+    <div class="ch-detail empty reveal" id="ch-detail">
+      <div class="empty-hint">↑ Click any piece of the loop to see its open problems</div>
+    </div>
+  </div>
+  <div class="slide-name">Challenges</div>
+  <div class="slide-num">25 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 26 — RL IN LLMS (full-circle: AlphaGo ↔ ChatGPT)   -->
+<!-- ====================================================== -->
+<section class="slide" data-name="RL in LLMs">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:55px;height:55px;top:18%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">FULL CIRCLE · CHATGPT, CLAUDE, GEMINI</span>
+    <h2 class="h2 reveal">Same recipe.<br>Now for <span class="hl">language.</span></h2>
+    <p class="body reveal" style="max-width:1200px;font-size:clamp(1rem,1.35vw,1.25rem)">
+      Remember <i>predict the next word</i> from earlier? That's just step one. Modern LLMs follow the same two-stage recipe as AlphaGo — first imitate, then RL.
+    </p>
+
+    <div class="llm-compare reveal">
+      <div class="llm-col alphago">
+        <div class="llm-col-head">
+          <span class="llm-col-icon">⚫</span>
+          <span class="llm-col-title">AlphaGo</span>
+        </div>
+        <div class="llm-stage">
+          <span class="llm-stage-num">STAGE 1 · SUPERVISED</span>
+          <span class="llm-stage-h">Copy humans</span>
+          <span class="llm-stage-p">Train on <b>30 million pro moves</b>. "Given this board, what would a human play?" → strong amateur.</span>
+        </div>
+        <div class="llm-stage">
+          <span class="llm-stage-num">STAGE 2 · RL</span>
+          <span class="llm-stage-h">Self-play</span>
+          <span class="llm-stage-p">Two AlphaGos battle. Reward = <b>+1 win, −1 lose</b>. Discovers Move 37 — beyond every teacher.</span>
+        </div>
+      </div>
+
+      <div class="llm-col llm">
+        <div class="llm-col-head">
+          <span class="llm-col-icon">💬</span>
+          <span class="llm-col-title">ChatGPT &amp; friends</span>
+        </div>
+        <div class="llm-stage">
+          <span class="llm-stage-num">STAGE 1 · SUPERVISED</span>
+          <span class="llm-stage-h">Pretrain on the internet</span>
+          <span class="llm-stage-p">Predict the next word over <b>billions of webpages</b>. "What word comes next?" → fluent imitator.</span>
+        </div>
+        <div class="llm-stage">
+          <span class="llm-stage-num">STAGE 2 · RL</span>
+          <span class="llm-stage-h">Learn from feedback</span>
+          <span class="llm-stage-p">Humans (or another model) rate responses. Reward = <b>helpful &amp; honest</b>. Reasoning that no one wrote down emerges.</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin:1rem auto 0;font-style:italic;font-size:clamp(1rem,1.3vw,1.2rem);max-width:none">
+      Same idea, different game. RL is what turns a fluent imitator into something that can <b>surpass its teacher</b>.
+    </p>
+  </div>
+  <div class="slide-name">RL in LLMs</div>
+  <div class="slide-num">26 / 27</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- SLIDE 27 — TAKEAWAYS                                     -->
+<!-- ====================================================== -->
+<section class="slide" data-name="Takeaways">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:130px;height:130px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">WRAP-UP</span>
+    <h2 class="h2 reveal">Four ideas to take with you.</h2>
+
+    <div class="takeaways-grid reveal">
+      <div class="take-card">
+        <span class="num">01</span>
+        <h3>Supervised = answer key.</h3>
+        <p>Show many labeled examples. Minimize the squared error. Powers most AI you use today.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">02</span>
+        <h3>RL = trial &amp; reward.</h3>
+        <p>No labels. The agent acts, the environment rewards. Maximize total reward G over time.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">03</span>
+        <h3>Explore vs exploit.</h3>
+        <p>Every learning agent — including you in the box game — must balance trying new things and using what works.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">04</span>
+        <h3>RL can surpass humans.</h3>
+        <p>AlphaGo's Move 37 wasn't taught — it was discovered. Self-play RL invents strategies no teacher knows.</p>
+      </div>
+    </div>
+
+    <div class="next-up reveal">
+      <span style="font-size:clamp(1.6rem,2.5vw,2.2rem)">→</span>
+      <div>
+        <div class="lbl">NEXT · LECTURE 2</div>
+        <div class="ttl">What Is Reinforcement Learning? — Agent, environment, state, action, reward.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Takeaways</div>
+  <div class="slide-num">27 / 27</div>
+</section>
+
+
+<script>
+/* ============================================================
+   SLIDE PRESENTATION CONTROLLER
+   - Keyboard / scroll navigation
+   - Intersection Observer for animations
+   - Progress bar + nav dots
+   ============================================================ */
+class SlidePresentation{
+  constructor(){
+    this.slides=[...document.querySelectorAll('.slide')];
+    this.current=0;
+    this.buildNav();
+    this.observe();
+    this.bindKeys();
+    this.bindScroll();
+    // initial state
+    this.slides[0].classList.add('visible');
+    this.updateProgress(0);
+  }
+  buildNav(){
+    const nav=document.getElementById('nav');
+    this.slides.forEach((s,i)=>{
+      const btn=document.createElement('button');
+      btn.title=s.dataset.name||'Slide '+(i+1);
+      btn.addEventListener('click',()=>this.goTo(i));
+      if(i===0)btn.classList.add('active');
+      nav.appendChild(btn);
+    });
+    this.dots=[...nav.children];
+  }
+  observe(){
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          e.target.classList.add('visible');
+          const idx=this.slides.indexOf(e.target);
+          if(idx>=0){
+            this.current=idx;
+            this.updateProgress(idx);
+          }
+        }
+      });
+    },{threshold:0.5});
+    this.slides.forEach(s=>io.observe(s));
+  }
+  bindKeys(){
+    document.addEventListener('keydown',e=>{
+      // ignore if focus is on a button or input
+      const tag=document.activeElement && document.activeElement.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA')return;
+      if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){
+        e.preventDefault();
+        this.next();
+      }else if(e.key==='ArrowUp'||e.key==='ArrowLeft'||e.key==='PageUp'){
+        e.preventDefault();
+        this.prev();
+      }else if(e.key==='Home'){
+        e.preventDefault();this.goTo(0);
+      }else if(e.key==='End'){
+        e.preventDefault();this.goTo(this.slides.length-1);
+      }
+    });
+  }
+  bindScroll(){
+    // nothing fancy — scroll-snap CSS handles this
+  }
+  next(){if(this.current<this.slides.length-1)this.goTo(this.current+1)}
+  prev(){if(this.current>0)this.goTo(this.current-1)}
+  goTo(i){
+    this.current=i;
+    this.slides[i].scrollIntoView({behavior:'smooth',block:'start'});
+    this.updateProgress(i);
+  }
+  updateProgress(i){
+    const pct=((i+1)/this.slides.length)*100;
+    document.getElementById('progress').style.width=pct+'%';
+    this.dots.forEach((d,j)=>d.classList.toggle('active',j===i));
+  }
+}
+
+/* ============================================================
+   GO BOARD — sprinkle a few stones for slide 12
+   ============================================================ */
+function setupGoBoard(){
+  const board=document.getElementById('go-board');
+  if(!board)return;
+  // hand-picked positions to look like a real opening
+  const stones=[
+    ['black',16,16],['white',24,76],['black',76,84],['white',84,24],
+    ['black',46,28],['white',54,66],['black',38,52],['white',62,46],
+    ['black',26,42],['white',74,58],['black',16,68],['white',86,68],
+  ];
+  stones.forEach(([c,x,y])=>{
+    const s=document.createElement('div');
+    s.className='stone '+c;
+    s.style.left=x+'%';
+    s.style.top=y+'%';
+    board.appendChild(s);
+  });
+}
+
+/* ============================================================
+   MULTI-ARMED BANDIT — the interactive RL game
+   - 3 boxes with hidden Gaussian-ish reward distributions
+   - 20 pulls total
+   - Tracks per-box stats (n, sum, mean) and global total
+   - Reveals true means at end
+   ============================================================ */
+class BanditGame{
+  constructor(){
+    // True means (hidden from user)
+    // B is best, A worst, C in between — but with overlap so it isn't trivial
+    this.boxes={
+      A:{trueMean:0.30, sd:0.25, n:0, sum:0},
+      B:{trueMean:0.75, sd:0.25, n:0, sum:0},
+      C:{trueMean:0.55, sd:0.25, n:0, sum:0},
+    };
+    this.pulls=0;
+    this.maxPulls=20;
+    this.totalReward=0;
+    this.revealed=false;
+
+    this.bindEvents();
+    this.render();
+  }
+
+  bindEvents(){
+    document.querySelectorAll('.box-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const id=btn.dataset.box;
+        this.pull(id);
+      });
+    });
+    document.getElementById('g-reset').addEventListener('click',()=>this.reset());
+    document.getElementById('g-reveal').addEventListener('click',()=>this.reveal());
+  }
+
+  // Box-Muller approximated Gaussian, clamped to [0,1] for friendly numbers
+  sample(mean,sd){
+    let u=0,v=0;
+    while(u===0)u=Math.random();
+    while(v===0)v=Math.random();
+    const g=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    let r=mean+sd*g;
+    // clamp to [0,1]
+    return Math.max(0,Math.min(1,r));
+  }
+
+  pull(id){
+    if(this.pulls>=this.maxPulls)return;
+    const b=this.boxes[id];
+    const reward=this.sample(b.trueMean,b.sd);
+    b.n++;
+    b.sum+=reward;
+    this.pulls++;
+    this.totalReward+=reward;
+
+    // animate
+    const btn=document.querySelector(`.box-btn[data-box="${id}"]`);
+    btn.classList.add('shake');
+    setTimeout(()=>btn.classList.remove('shake'),400);
+    const last=document.getElementById(id+'-last');
+    last.textContent='+'+reward.toFixed(2);
+    last.classList.remove('flash');
+    void last.offsetWidth; // restart animation
+    last.classList.add('flash');
+
+    this.render();
+
+    if(this.pulls>=this.maxPulls){
+      this.endGame();
+    }
+  }
+
+  render(){
+    document.getElementById('g-pulls').textContent=this.pulls;
+    document.getElementById('g-total').textContent=this.totalReward.toFixed(2);
+
+    let bestId=null,bestMean=-1;
+    for(const id of ['A','B','C']){
+      const b=this.boxes[id];
+      const mean= b.n>0 ? b.sum/b.n : null;
+      document.getElementById(id+'-n').textContent=b.n;
+      document.getElementById(id+'-mean').textContent=mean===null?'—':mean.toFixed(2);
+      if(mean!==null && mean>bestMean){bestMean=mean;bestId=id;}
+    }
+    document.getElementById('g-best').textContent= bestId? `Box ${bestId}` : '—';
+
+    // disable when out of pulls
+    const out=this.pulls>=this.maxPulls;
+    document.querySelectorAll('.box-btn').forEach(btn=>{btn.disabled=out;});
+  }
+
+  endGame(){
+    const result=document.getElementById('g-result');
+    // Best possible: always picking B gives ~0.75 * 20 = 15
+    const optimal=this.boxes.B.trueMean*this.maxPulls;
+    const score=this.totalReward;
+    const pct=Math.round((score/optimal)*100);
+    let msg;
+    if(pct>=90){
+      msg=`🏆 <b>${score.toFixed(2)}</b> / ${optimal.toFixed(1)} optimal — that's ${pct}% of the best possible. You found the rhythm fast!`;
+    }else if(pct>=70){
+      msg=`👍 <b>${score.toFixed(2)}</b> / ${optimal.toFixed(1)} optimal — ${pct}%. Solid balance of exploring and exploiting.`;
+    }else if(pct>=50){
+      msg=`🤔 <b>${score.toFixed(2)}</b> / ${optimal.toFixed(1)} optimal — ${pct}%. Maybe explored too much, or stuck with a bad box too long?`;
+    }else{
+      msg=`💡 <b>${score.toFixed(2)}</b> / ${optimal.toFixed(1)} optimal — ${pct}%. Tough draw! Hit "Reveal True Means" to see what was hiding.`;
+    }
+    result.innerHTML=msg;
+    result.classList.add('show');
+  }
+
+  reveal(){
+    if(this.revealed){
+      // hide
+      document.querySelectorAll('.box-btn').forEach(b=>b.classList.remove('revealed'));
+      this.revealed=false;
+      document.getElementById('g-reveal').textContent='Reveal True Means';
+      return;
+    }
+    for(const id of ['A','B','C']){
+      const t=document.getElementById(id+'-true');
+      t.textContent='True mean: '+this.boxes[id].trueMean.toFixed(2);
+      document.querySelector(`.box-btn[data-box="${id}"]`).classList.add('revealed');
+    }
+    this.revealed=true;
+    document.getElementById('g-reveal').textContent='Hide True Means';
+  }
+
+  reset(){
+    for(const id of ['A','B','C']){
+      this.boxes[id].n=0;
+      this.boxes[id].sum=0;
+      document.getElementById(id+'-last').textContent='tap to pull';
+      document.getElementById(id+'-last').classList.remove('flash');
+    }
+    this.pulls=0;
+    this.totalReward=0;
+    this.revealed=false;
+    document.querySelectorAll('.box-btn').forEach(b=>{
+      b.disabled=false;
+      b.classList.remove('revealed');
+    });
+    document.getElementById('g-result').classList.remove('show');
+    document.getElementById('g-reveal').textContent='Reveal True Means';
+    this.render();
+  }
+}
+
+/* ============================================================
+   EPSILON-GREEDY DEMO — slide 21
+   - Plays the SAME 3-armed bandit as BanditGame.
+   - ε is FIXED at 1/6: each click rolls a die (1-6).
+       die = 1     → explore (random arm)
+       die = 2..6  → exploit (best avg so far)
+   - "🎲 Roll & pull" advances ONE step at a time so the teacher
+     can narrate what's happening. After 20 pulls the button
+     becomes "✓ Game over"; click again (or "↺ New game") to reset.
+   - Reads window.__banditGame to show student's score.
+   ============================================================ */
+class EpsilonGreedyDemo{
+  constructor(){
+    this.epsilon=1/6;     // fixed: matches a fair die
+    this.maxPulls=20;
+    this.boxes={
+      A:{trueMean:0.30,sd:0.25},
+      B:{trueMean:0.75,sd:0.25},
+      C:{trueMean:0.55,sd:0.25},
+    };
+    // 3×3 grid positions (0..8) lit for each die value
+    this.dotPatterns={
+      1:[4],
+      2:[0,8],
+      3:[0,4,8],
+      4:[0,2,6,8],
+      5:[0,2,4,6,8],
+      6:[0,2,3,5,6,8],
+    };
+
+    this.runBtn=document.getElementById('eg-run');
+    if(!this.runBtn)return; // slide not present
+    this.resetBtn=document.getElementById('eg-reset');
+    this.progress=document.getElementById('eg-progress');
+    this.youScore=document.getElementById('eg-you-score');
+    this.youDetail=document.getElementById('eg-you-detail');
+    this.aiScore=document.getElementById('eg-ai-score');
+    this.aiDetail=document.getElementById('eg-ai-detail');
+    this.dieFaceEl=document.getElementById('egp-die-face');
+    this.dieMsgEl=document.getElementById('egp-die-msg');
+    this.dieDots=this.dieFaceEl?[...this.dieFaceEl.querySelectorAll('span')]:[];
+
+    this.bindEvents();
+    this.resetGame();
+    this.renderStudentScore();
+
+    // poll student score so it updates if they go back and play
+    setInterval(()=>this.renderStudentScore(),1500);
+  }
+
+  bindEvents(){
+    this.runBtn.addEventListener('click',()=>this.handleStep());
+    this.resetBtn.addEventListener('click',()=>this.resetGame());
+  }
+
+  sample(mean,sd){
+    let u=0,v=0;
+    while(u===0)u=Math.random();
+    while(v===0)v=Math.random();
+    const g=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    return Math.max(0,Math.min(1,mean+sd*g));
+  }
+
+  resetState(){
+    this.state={A:{n:0,sum:0},B:{n:0,sum:0},C:{n:0,sum:0}};
+    this.pulls=0;
+    this.totalReward=0;
+    this.lastMode=null;
+    this.lastPick=null;
+    this.lastDie=null;
+  }
+
+  resetGame(){
+    this.resetState();
+    this.setDieFace(0);  // all dots off — neutral starting state
+    this.dieMsgEl.innerHTML='click <b>Roll &amp; pull</b> to take one step';
+    this.render();
+    this.updateRunBtn();
+  }
+
+  pickAction(){
+    const arms=['A','B','C'];
+    const die=Math.floor(Math.random()*6)+1; // 1..6
+    const allEmpty=arms.every(k=>this.state[k].n===0);
+    if(allEmpty || die===1){
+      return {pick:arms[Math.floor(Math.random()*3)], mode:'explore', die};
+    }
+    let best='A',bestM=-1;
+    for(const k of arms){
+      const m=this.state[k].sum/this.state[k].n;
+      if(m>bestM){bestM=m;best=k;}
+    }
+    return {pick:best, mode:'exploit', die};
+  }
+
+  step(){
+    if(this.pulls>=this.maxPulls)return false;
+    const {pick,mode,die}=this.pickAction();
+    const r=this.sample(this.boxes[pick].trueMean,this.boxes[pick].sd);
+    this.state[pick].n++;
+    this.state[pick].sum+=r;
+    this.totalReward+=r;
+    this.pulls++;
+    this.lastMode=mode;
+    this.lastPick=pick;
+    this.lastDie=die;
+    return true;
+  }
+
+  // Quick step (no UI) — kept for possible future averaging
+  stepSilent(){
+    if(this.pulls>=this.maxPulls)return false;
+    const {pick}=this.pickAction();
+    const r=this.sample(this.boxes[pick].trueMean,this.boxes[pick].sd);
+    this.state[pick].n++;
+    this.state[pick].sum+=r;
+    this.totalReward+=r;
+    this.pulls++;
+    return true;
+  }
+
+  handleStep(){
+    if(this.pulls>=this.maxPulls){
+      // game over — start a new one on next click
+      this.resetGame();
+      return;
+    }
+    this.step();
+    this.flashDie();           // async tumble + face cycle, fire-and-forget
+    this.render();
+    this.updateRunBtn();
+  }
+
+  updateRunBtn(){
+    if(this.pulls===0){
+      this.runBtn.textContent='🎲 Roll & pull';
+    }else if(this.pulls>=this.maxPulls){
+      this.runBtn.textContent='✓ Game over · click for new game';
+    }else{
+      this.runBtn.textContent='🎲 Roll & pull again';
+    }
+  }
+
+  setDieFace(value){
+    if(!this.dieDots.length)return;
+    const on = this.dotPatterns[value] || [];
+    this.dieDots.forEach((d,i)=>{
+      d.classList.toggle('on', on.includes(i));
+    });
+    // expose value so CSS can style face=1 specially (red center dot)
+    if(this.dotPatterns[value]){
+      this.dieFaceEl.dataset.value = value;
+    } else {
+      delete this.dieFaceEl.dataset.value;
+    }
+  }
+
+  async flashDie(){
+    if(!this.dieFaceEl)return;
+    // restart tumble animation
+    this.dieFaceEl.classList.remove('rolling');
+    void this.dieFaceEl.offsetWidth;
+    this.dieFaceEl.classList.add('rolling');
+    // cycle through random faces during the tumble (~320ms)
+    for(let i=0;i<4;i++){
+      this.setDieFace(Math.floor(Math.random()*6)+1);
+      await new Promise(r=>setTimeout(r,80));
+    }
+    // settle on the actual rolled value
+    this.setDieFace(this.lastDie);
+  }
+
+  renderStudentScore(){
+    const bg=window.__banditGame;
+    if(!bg){this.youScore.textContent='—';this.youDetail.textContent='play game 1 first!';return;}
+    if(bg.pulls===0){this.youScore.textContent='—';this.youDetail.textContent='play game 1 first!';return;}
+    this.youScore.textContent=bg.totalReward.toFixed(2);
+    if(bg.pulls>=bg.maxPulls){
+      this.youDetail.textContent='your one game';
+    }else{
+      this.youDetail.textContent=`${bg.pulls}/${bg.maxPulls} pulls so far`;
+    }
+  }
+
+  render(){
+    this.progress.textContent= this.pulls===0 ? '' : `Pull ${this.pulls} / ${this.maxPulls}`;
+
+    for(const k of ['A','B','C']){
+      const box=document.querySelector(`.egp-box.${k}`);
+      const s=this.state[k];
+      box.querySelector('.b-pulls').textContent=`${s.n} pull${s.n===1?'':'s'}`;
+      box.querySelector('.b-avg').textContent= s.n>0 ? `avg ${(s.sum/s.n).toFixed(2)}` : 'avg —';
+      const isActive=(this.lastPick===k && this.lastMode);
+      box.classList.toggle('active', !!isActive);
+      const modeEl=box.querySelector('.b-mode');
+      modeEl.classList.remove('explore','exploit');
+      if(isActive){
+        modeEl.textContent=this.lastMode;
+        modeEl.classList.add(this.lastMode);
+      }
+    }
+
+    if(this.lastDie){
+      // die face is set by flashDie() during the tumble
+      const isExplore=this.lastMode==='explore';
+      const cls=isExplore?'die-explore':'die-exploit';
+      const word=isExplore?'explore':'exploit';
+      this.dieMsgEl.innerHTML=`dice = <b>${this.lastDie}</b> <span class="die-arrow">→</span> <b class="${cls}">${word}</b>`;
+    }
+
+    if(this.pulls===0){
+      this.aiScore.textContent='—';
+      this.aiDetail.textContent='click Roll & pull';
+    }else{
+      this.aiScore.textContent=this.totalReward.toFixed(2);
+      if(this.pulls>=this.maxPulls){
+        this.aiDetail.textContent=`final · ${this.maxPulls} pulls · ε = 1/6`;
+      }else{
+        this.aiDetail.textContent=`${this.pulls}/${this.maxPulls} pulls · ε = 1/6`;
+      }
+    }
+  }
+}
+
+/* ============================================================
+   NEXT-WORD PREDICTOR — slide 9
+   - Pre-baked decision tree of 3 picks
+   - Each step shows 4 word options with probability bars
+   - Builds a sentence one token at a time
+   ============================================================ */
+class NextWordPredictor{
+  constructor(){
+    this.steps=[
+      {
+        prefix:'The cat sat on the ',
+        suffix:'',
+        options:[
+          {word:'mat',         prob:0.50, tone:'high'},
+          {word:'couch',       prob:0.22, tone:'mid'},
+          {word:'keyboard',    prob:0.18, tone:'mid'},
+          {word:'moon',        prob:0.01, tone:'low'},
+        ],
+      },
+      {
+        prefix:'The cat sat on the ',
+        suffix:'. It ',
+        options:[
+          {word:'purred',           prob:0.42, tone:'high'},
+          {word:'stretched',        prob:0.28, tone:'mid'},
+          {word:'demanded snacks',  prob:0.21, tone:'mid'},
+          {word:'exploded',         prob:0.01, tone:'low'},
+        ],
+      },
+      {
+        prefix:'The cat sat on the ',
+        midfix:'. It ',
+        suffix:', then ',
+        options:[
+          {word:'closed its eyes',          prob:0.32, tone:'high'},
+          {word:'watched the birds',        prob:0.30, tone:'mid'},
+          {word:'knocked things off the table', prob:0.25, tone:'mid'},
+          {word:'invented calculus',        prob:0.05, tone:'low'},
+        ],
+      },
+    ];
+    this.picked=[];
+    this.optionsEl=document.getElementById('nwp-options');
+    this.storyEl=document.getElementById('nwp-story');
+    this.finalEl=document.getElementById('nwp-final');
+    document.getElementById('nwp-reset').addEventListener('click',()=>this.reset());
+    this.render();
+  }
+  render(){
+    const i=this.picked.length;
+    // build story line
+    let html='';
+    if(i===0){
+      html='The cat sat on the <span class="blank">___</span>';
+    } else if(i===1){
+      html=`The cat sat on the <span class="gen-word">${this.picked[0]}</span>. It <span class="blank">___</span>`;
+    } else if(i===2){
+      html=`The cat sat on the <span class="gen-word">${this.picked[0]}</span>. It <span class="gen-word">${this.picked[1]}</span>, then <span class="blank">___</span>`;
+    } else {
+      html=`The cat sat on the <span class="gen-word">${this.picked[0]}</span>. It <span class="gen-word">${this.picked[1]}</span>, then <span class="gen-word">${this.picked[2]}</span>.`;
+    }
+    this.storyEl.innerHTML=html;
+
+    // options
+    if(i>=this.steps.length){
+      this.optionsEl.innerHTML='';
+      this.finalEl.innerHTML=`<b>That's it.</b> An LLM does this <b>billions</b> of times — pick the next word from a probability distribution, append, repeat. Just trained on the entire internet instead of cat sentences. <br><span style="color:var(--dim);font-style:italic">Notice: the highest-probability path isn't always the most fun. That's why models add a "temperature" knob.</span>`;
+      this.finalEl.classList.add('show');
+      return;
+    }
+    this.finalEl.classList.remove('show');
+    const opts=this.steps[i].options;
+    this.optionsEl.innerHTML=opts.map(o=>`
+      <button class="nwp-btn ${o.tone==='high'?'high':o.tone==='low'?'low':''}" data-word="${o.word.replace(/"/g,'&quot;')}">
+        <span class="word">${o.word}</span>
+        <div class="prob-row">
+          <span>${(o.prob*100).toFixed(0)}%</span>
+          <span class="prob-bar"><span class="prob-fill" style="width:0%"></span></span>
+        </div>
+      </button>
+    `).join('');
+    // animate bars after a tick
+    requestAnimationFrame(()=>{
+      this.optionsEl.querySelectorAll('.nwp-btn').forEach((b,idx)=>{
+        const fill=b.querySelector('.prob-fill');
+        fill.style.width=(opts[idx].prob*100)+'%';
+        b.addEventListener('click',()=>this.pick(opts[idx].word));
+      });
+    });
+  }
+  pick(word){
+    this.picked.push(word);
+    this.render();
+  }
+  reset(){
+    this.picked=[];
+    this.render();
+  }
+}
+
+/* ============================================================
+   GRIDWORLD — slide 20
+   - 5×5 grid: hidden goal + 3 fires. Robot starts known.
+   - Per-step: -0.04. Goal: +1, ends episode. Fire: -1, ends episode.
+   - Cells reveal permanently when stepped on.
+   - Q-LEARNING: each cell tracks Q-values for the 4 actions, updated as
+     Q(s,a) ← Q(s,a) + α [r + γ·max_a' Q(s',a') − Q(s,a)]
+     Values propagate from rewards backward through the visited path,
+     so students literally watch their strategy crystallize over episodes.
+   ============================================================ */
+class GridWorldGame{
+  constructor(){
+    this.size=5;
+    // legend: . = empty (-0.04), t = trap/fire (-1.0, ends), s = start, g = goal (+1.0, ends),
+    //         r = roller skate boost (-0.01), w = water pond slow (-0.30, heavy)
+    // PEDAGOGICAL TRICK: the OPTIMAL trajectory looks far.
+    //   The "obvious" 7-step top route dives through water at (2,4) (−.30) — looks
+    //   shortest, isn't best. Heavy water penalty (−.30) > what 2 skates can save.
+    //   Unique optimum is 9 steps, hits ALL 3 skates, hits zero water:
+    //     (0,0)→(0,1)→🛼(1,1)→(2,1)→🛼(2,2)→(3,2)→(4,2)→🛼(4,3)→(4,4)→💎(3,4)
+    //     = −.04·5 −.01·3 +1.00 = +0.77 (undiscounted)
+    //   Top dive: 7 steps, 2 skates, 1 water = +0.56
+    //   The teaching moment: "seemingly far is actually optimal."
+    this.layout=[
+      ['s','.','.','.','.'],
+      ['w','r','w','.','t'],
+      ['.','.','r','.','w'],
+      ['.','.','.','t','g'],
+      ['.','w','.','r','.'],
+    ];
+    this.start=[0,0];
+    this.alpha=0.5;   // Q-learning rate
+    this.gamma=0.9;   // discount factor
+    this.maxStepsPerEp=40;
+    this.cells=[...document.querySelectorAll('#gw-grid .gw-cell')];
+
+    this.fullReset();
+    this.bindEvents();
+    this.render();
+  }
+
+  cellKey(r,c){return r+','+c}
+
+  bindEvents(){
+    document.querySelectorAll('.gw-controls button').forEach(b=>{
+      b.addEventListener('click',()=>this.move(b.dataset.dir));
+    });
+    document.getElementById('gw-reset').addEventListener('click',()=>this.fullReset());
+    // keyboard — only when GridWorld slide is visible
+    document.addEventListener('keydown',(e)=>{
+      const slide=document.getElementById('gw-slide');
+      if(!slide||!slide.classList.contains('visible'))return;
+      const tag=document.activeElement && document.activeElement.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA')return;
+      const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
+                 w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+      const dir=map[e.key];
+      if(dir){
+        e.preventDefault();
+        e.stopPropagation();
+        this.move(dir);
+      }
+    },true);
+  }
+
+  fullReset(){
+    this.agent=[...this.start];
+    this.episodeReward=0;
+    this.totalReward=0;
+    this.steps=0;
+    this.episodeNum=1;
+    this.bestEpisode=null;
+    this.episodes=[];
+    this.episodeOver=false;
+    this.qValues={};       // "r,c" → {up,down,left,right, nUp,nDown,nLeft,nRight}
+    this.revealed=new Set();
+    this.revealed.add(this.cellKey(this.start[0],this.start[1])); // start always revealed
+    const tip=document.getElementById('gw-tip');
+    if(tip)tip.classList.remove('show');
+    if(this.cells)this.render();
+  }
+
+  startNewEpisode(){
+    this.agent=[...this.start];
+    this.episodeReward=0;
+    this.steps=0;
+    this.episodeOver=false;
+    this.episodeNum++;
+    this.render();
+  }
+
+  getQ(r,c){
+    const k=this.cellKey(r,c);
+    if(!this.qValues[k]){
+      this.qValues[k]={up:0,down:0,left:0,right:0,nUp:0,nDown:0,nLeft:0,nRight:0};
+    }
+    return this.qValues[k];
+  }
+
+  maxQ(r,c){
+    const q=this.qValues[this.cellKey(r,c)];
+    if(!q)return 0;
+    return Math.max(q.up,q.down,q.left,q.right);
+  }
+
+  move(dir){
+    if(this.episodeOver)return;
+    const [r,c]=this.agent;
+    let nr=r,nc=c;
+    if(dir==='up')nr=r-1;
+    else if(dir==='down')nr=r+1;
+    else if(dir==='left')nc=c-1;
+    else if(dir==='right')nc=c+1;
+
+    let reward=-0.04;
+    const oob=nr<0||nr>=this.size||nc<0||nc>=this.size;
+    if(oob){
+      // bumped a wall — stays in place, costs the step
+      nr=r;nc=c;
+    } else {
+      this.agent=[nr,nc];
+      this.revealed.add(this.cellKey(nr,nc));
+      const t=this.layout[nr][nc];
+      if(t==='t'){reward=-1.0;this.episodeOver=true;}
+      else if(t==='g'){reward=1.0;this.episodeOver=true;}
+      else if(t==='r'){reward=-0.01;}    // roller skate — boost (smaller penalty)
+      else if(t==='w'){reward=-0.30;}    // water pond — heavy slow (so the "dive through water" shortcut is NOT optimal)
+      // empty cells keep default reward = -0.04
+    }
+
+    // Q-learning update: Q(s,a) ← Q + α[r + γ·max_a' Q(s',a') − Q]
+    const q=this.getQ(r,c);
+    const cap=dir.charAt(0).toUpperCase()+dir.slice(1);
+    q['n'+cap]++;
+    // Wall-bumps (oob) and terminals: target = reward only.
+    // Without this, a wall-bump would bootstrap maxQ from the SAME cell,
+    // creating a self-loop that drags Q toward -0.04/(1-γ) ≈ -0.4 — which
+    // hugely overstates how bad the wall is.
+    const target = (this.episodeOver || oob)
+      ? reward
+      : reward + this.gamma * this.maxQ(nr,nc);
+    q[dir] = q[dir] + this.alpha * (target - q[dir]);
+
+    this.episodeReward+=reward;
+    this.totalReward+=reward;
+    this.steps++;
+    if(this.steps>=this.maxStepsPerEp)this.episodeOver=true;
+
+    this.render();
+
+    if(this.episodeOver){
+      this.episodes.push(this.episodeReward);
+      if(this.bestEpisode===null||this.episodeReward>this.bestEpisode){
+        this.bestEpisode=this.episodeReward;
+      }
+      setTimeout(()=>this.startNewEpisode(),1100);
+    }
+  }
+
+  formatQ(v,n){
+    if(n===0)return '';
+    if(Math.abs(v)<0.005)return '0';
+    const abs=Math.abs(v);
+    let str;
+    if(abs>=1)str=abs.toFixed(1);          // "1.0"
+    else str=abs.toFixed(2).slice(1);      // ".42"
+    return (v>=0?'+':'−')+str;
+  }
+  qClass(v,n){
+    if(n===0)return '';
+    if(v>0.02)return 'q-pos';
+    if(v<-0.02)return 'q-neg';
+    return 'q-zero';
+  }
+
+  render(){
+    this.cells.forEach((cell,i)=>{
+      const r=Math.floor(i/this.size),col=i%this.size;
+      const k=this.cellKey(r,col);
+      const t=this.layout[r][col];
+
+      cell.className='gw-cell';
+      cell.innerHTML='';
+
+      // start always shown
+      if(t==='s')cell.classList.add('start');
+
+      // reveal contents only if visited at least once
+      if(this.revealed.has(k)){
+        if(t==='g'){
+          cell.classList.add('goal');
+          const e=document.createElement('span');
+          e.className='cell-emoji';e.textContent='💎';
+          cell.appendChild(e);
+        } else if(t==='t'){
+          cell.classList.add('trap');
+          const e=document.createElement('span');
+          e.className='cell-emoji';e.textContent='🔥';
+          cell.appendChild(e);
+        } else if(t==='r'){
+          cell.classList.add('skate');
+          const e=document.createElement('span');
+          e.className='cell-emoji';e.textContent='🛼';
+          cell.appendChild(e);
+        } else if(t==='w'){
+          cell.classList.add('water');
+          const e=document.createElement('span');
+          e.className='cell-emoji';e.textContent='💧';
+          cell.appendChild(e);
+        } else if(t!=='s'){
+          cell.classList.add('visited');
+        }
+      }
+
+      // agent overlay
+      if(this.agent[0]===r && this.agent[1]===col){
+        cell.classList.add('agent');
+      }
+
+      // Q-value labels — show one number per action that's been tried
+      const q=this.qValues[k];
+      if(q){
+        const dirs=[
+          {key:'up',  cls:'q-up',    nKey:'nUp'},
+          {key:'down',cls:'q-down',  nKey:'nDown'},
+          {key:'left',cls:'q-left',  nKey:'nLeft'},
+          {key:'right',cls:'q-right',nKey:'nRight'},
+        ];
+        dirs.forEach(d=>{
+          const n=q[d.nKey];
+          if(n>0){
+            const span=document.createElement('span');
+            span.className='qval '+d.cls+' '+this.qClass(q[d.key],n);
+            span.textContent=this.formatQ(q[d.key],n);
+            cell.appendChild(span);
+          }
+        });
+      }
+    });
+
+    // stats
+    document.getElementById('gw-ep').textContent=this.episodeNum;
+    document.getElementById('gw-ep-reward').textContent=this.episodeReward.toFixed(2);
+    document.getElementById('gw-best').textContent=
+      this.bestEpisode===null?'—':this.bestEpisode.toFixed(2);
+
+    // chart bars (centered axis)
+    const bars=document.getElementById('gw-chart-bars');
+    bars.innerHTML='';
+    if(this.episodes.length>0){
+      const slots=Math.max(this.episodes.length,10);
+      const slotPct=100/slots;
+      const gapPct=Math.min(1.5,slotPct*0.2);
+      const HALF=44;
+      this.episodes.forEach((ep,i)=>{
+        const bar=document.createElement('div');
+        bar.className='bar';
+        const clamped=Math.max(-1,Math.min(1,ep));
+        if(clamped<0)bar.classList.add('neg');
+        bar.style.left=(i*slotPct)+'%';
+        bar.style.width=Math.max(slotPct-gapPct,1)+'%';
+        const h=Math.abs(clamped)*HALF;
+        if(clamped>=0){bar.style.bottom='50%';bar.style.height=h+'%';}
+        else          {bar.style.top='50%';   bar.style.height=h+'%';}
+        bar.title=`Ep ${i+1}: ${ep.toFixed(2)}`;
+        bars.appendChild(bar);
+      });
+    }
+
+    // learning tip
+    if(this.episodes.length>=5){
+      const recent=this.episodes.slice(-3).reduce((a,b)=>a+b,0)/3;
+      const early=this.episodes.slice(0,3).reduce((a,b)=>a+b,0)/3;
+      if(recent>early+0.3){
+        document.getElementById('gw-tip').classList.add('show');
+      }
+    }
+  }
+}
+
+/* ============================================================
+   BEYOND-HUMANS REVEAL — slide 18
+   Click-to-reveal-next so the teacher can ask the question,
+   let students guess, then unveil hints one at a time.
+   ============================================================ */
+class BeyondHumansReveal{
+  constructor(){
+    this.grid=document.getElementById('bh-grid');
+    this.btn=document.getElementById('bh-reveal');
+    if(!this.btn)return;
+    this.counter=document.getElementById('bh-counter');
+    this.cards=[...this.grid.querySelectorAll('.bh-card')];
+    this.shown=0;
+    this.btn.addEventListener('click',()=>this.next());
+    this.update();
+  }
+  next(){
+    if(this.shown<this.cards.length){
+      this.cards[this.shown].classList.remove('bh-hidden');
+      this.shown++;
+    }else{
+      // reset
+      this.cards.forEach(c=>c.classList.add('bh-hidden'));
+      this.shown=0;
+    }
+    this.update();
+  }
+  update(){
+    const n=this.shown,total=this.cards.length;
+    if(n===0){
+      this.btn.textContent='💡 Show first hint';
+    }else if(n<total){
+      this.btn.textContent=`💡 Show hint ${n+1} / ${total}`;
+    }else{
+      this.btn.textContent='↺ Hide all';
+    }
+    this.counter.textContent=`${n} / ${total} revealed`;
+  }
+}
+
+/* ============================================================
+   MATCHING QUIZ — slide 23 (Debrief)
+   - Click a phrase on the left, then its match on the right.
+   - Right answer → both lock with a check; wrong → red shake.
+   - Tracks progress and celebrates when all are matched.
+   ============================================================ */
+class MatchingQuiz{
+  constructor(){
+    this.slide=document.getElementById('debrief-slide');
+    if(!this.slide)return;
+    this.leftBtns=[...this.slide.querySelectorAll('.quiz-item.left')];
+    this.rightBtns=[...this.slide.querySelectorAll('.quiz-item.right')];
+    this.statusEl=document.getElementById('quiz-status');
+    this.selectedLeft=null;
+    this.selectedRight=null;
+    this.solved=new Set();
+    this.total=this.leftBtns.length;
+    this.bindEvents();
+    this.renderStatus();
+  }
+
+  bindEvents(){
+    this.leftBtns.forEach(btn=>btn.addEventListener('click',()=>this.click('left',btn)));
+    this.rightBtns.forEach(btn=>btn.addEventListener('click',()=>this.click('right',btn)));
+  }
+
+  click(side,btn){
+    if(btn.classList.contains('matched'))return;
+    if(btn.classList.contains('wrong'))return; // mid-shake
+    if(side==='left'){
+      this.leftBtns.forEach(b=>{ if(!b.classList.contains('matched'))b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      this.selectedLeft=btn;
+    }else{
+      this.rightBtns.forEach(b=>{ if(!b.classList.contains('matched'))b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      this.selectedRight=btn;
+    }
+    if(this.selectedLeft && this.selectedRight){
+      this.checkMatch();
+    }
+  }
+
+  checkMatch(){
+    const L=this.selectedLeft, R=this.selectedRight;
+    if(L.dataset.id===R.dataset.id){
+      L.classList.add('matched');
+      R.classList.add('matched');
+      L.classList.remove('selected');
+      R.classList.remove('selected');
+      this.solved.add(L.dataset.id);
+      this.selectedLeft=null;
+      this.selectedRight=null;
+      this.renderStatus();
+    }else{
+      L.classList.add('wrong');
+      R.classList.add('wrong');
+      const fL=L, fR=R;
+      setTimeout(()=>{
+        fL.classList.remove('wrong','selected');
+        fR.classList.remove('wrong','selected');
+      },550);
+      this.selectedLeft=null;
+      this.selectedRight=null;
+    }
+  }
+
+  renderStatus(){
+    if(this.solved.size===this.total){
+      this.statusEl.innerHTML=`🎉 <b>All ${this.total} matched.</b> You speak RL now.`;
+      this.statusEl.classList.add('done');
+    }else{
+      this.statusEl.textContent=`${this.solved.size} / ${this.total} matched`;
+      this.statusEl.classList.remove('done');
+    }
+  }
+}
+
+/* ============================================================
+   CHALLENGE EXPLORER — slide 22
+   - Clickable RL-loop ingredients (Agent / Environment / Action / State / Reward)
+   - Each click reveals 3 open problems for that ingredient
+   - Each upcoming lecture (L2-L8) tackles one or more of these
+   ============================================================ */
+class ChallengeExplorer{
+  constructor(){
+    this.detail=document.getElementById('ch-detail');
+    if(!this.detail)return;
+    this.parts=[...document.querySelectorAll('.ch-part, .ch-arrow')];
+    this.parts.forEach(p=>{
+      p.addEventListener('click',()=>this.show(p.dataset.part));
+    });
+    this.data={
+      agent:{
+        tag:'🤖 AGENT — the learner',
+        tagline:'"How do I learn from limited experience?"',
+        items:[
+          {h:'Sample efficiency',p:'Real experience is expensive. A robot can\'t crash a million times to learn — it has to learn fast from few episodes.'},
+          {h:'Generalization',p:'Tabular Q only knows visited cells. How should the agent act in states it has never seen?'},
+          {h:'Beyond tabular',p:'Huge state spaces don\'t fit in a Q-table. <b>Deep RL</b> uses neural networks — but they\'re hard to train stably.'},
+        ]
+      },
+      environment:{
+        tag:'🌍 ENVIRONMENT — the world',
+        tagline:'"Where do I practice — and how realistic is that?"',
+        items:[
+          {h:'Need a simulator',p:'Trial-and-error in reality is slow and dangerous. Most RL trains in simulation first, then transfers.'},
+          {h:'Sim-to-real gap',p:'A simulator that\'s slightly off teaches the wrong policy. The agent then fails in reality. Closing this gap is an open problem.'},
+          {h:'Non-stationary world',p:'Other agents are also learning. Markets shift. Yesterday\'s strategy may not work today.'},
+        ]
+      },
+      state:{
+        tag:'👀 STATE — what you observe',
+        tagline:'"There are way too many — and I can\'t see all of it."',
+        items:[
+          {h:'Huge state space',p:'AlphaGo had <b>\\(10^{170}\\) positions</b>. Robotics has continuous, infinite states. Tabular methods can\'t scale beyond toy worlds.'},
+          {h:'Partial observability',p:'You don\'t see the full state. A poker player can\'t see opponents\' cards. A self-driving car has blind spots.'},
+          {h:'Raw, high-dim inputs',p:'Real states arrive as pixels, audio, sensor streams. The agent has to discover which features even matter.'},
+        ]
+      },
+      policy:{
+        tag:'π POLICY — the agent\'s strategy',
+        tagline:'"What should I do in every possible state?"',
+        items:[
+          {h:'How to represent π',p:'A table maps each state to an action — fine for toy worlds, impossible for real ones. Neural nets scale, but they\'re hard to train.'},
+          {h:'Improving π safely',p:'Update π too aggressively and you forget what worked. Update too cautiously and you never improve. The whole field studies this trade-off.'},
+          {h:'Exploration in π',p:'A purely greedy policy stops learning. Random exploration wastes data. Smart exploration (curiosity, ε-decay, UCB) is still an open problem.'},
+        ]
+      },
+      action:{
+        tag:'🎯 ACTION — what you choose',
+        tagline:'"There are way too many ways I could move."',
+        items:[
+          {h:'Huge action space',p:'AlphaGo had <b>~250 legal moves</b> every turn. A robot arm has continuous angles across 7+ joints. Search blows up fast.'},
+          {h:'Continuous actions',p:'A steering wheel angle is a real number, not 4 buttons. Tabular Q-learning can\'t even represent this.'},
+          {h:'Real-time constraints',p:'A self-driving car must act in milliseconds. Searching every possible future is impossible.'},
+        ]
+      },
+      reward:{
+        tag:'🏆 REWARD — the signal',
+        tagline:'"Tell me how I\'m doing — but say it correctly."',
+        items:[
+          {h:'Credit assignment',p:'You won in 30 moves. <b>Which one actually mattered?</b> Move 7? Move 23? The +1 came at the end — credit has to flow backward.'},
+          {h:'Sparse rewards',p:'Sometimes you only get a number at the very end. How can you improve mid-episode if every step\'s reward is zero?'},
+          {h:'Reward hacking',p:'Agents maximize the LITERAL reward. Tell a cleaning bot "minimize visible mess" — it just hides the mess in a closet.'},
+        ]
+      },
+    };
+  }
+  show(part){
+    if(!this.data[part])return;
+    this.parts.forEach(p=>p.classList.toggle('active',p.dataset.part===part));
+    const d=this.data[part];
+    this.detail.classList.remove('empty');
+    this.detail.classList.remove('fade-in');
+    void this.detail.offsetWidth; // restart animation
+    this.detail.innerHTML=`
+      <div class="ch-d-head">
+        <span class="ch-d-tag">${d.tag}</span>
+        <span class="ch-d-tagline">${d.tagline}</span>
+      </div>
+      <div class="ch-d-list">
+        ${d.items.map(it=>`
+          <div class="ch-d-item">
+            <h4>${it.h}</h4>
+            <p>${it.p}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    this.detail.classList.add('fade-in');
+    // Re-typeset MathJax for dynamically inserted LaTeX (e.g. \(10^{170}\))
+    if(window.MathJax && window.MathJax.typesetPromise){
+      window.MathJax.typesetPromise([this.detail]);
+    }
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded',()=>{
+  new SlidePresentation();
+  setupGoBoard();
+  window.__banditGame = new BanditGame();
+  new NextWordPredictor();
+  // new GridWorldGame();  // hidden in lecture 1 — too hard to explain in class 1; keep for later
+  new EpsilonGreedyDemo();
+  new BeyondHumansReveal();
+  new MatchingQuiz();
+  new ChallengeExplorer();
+});
+</script>
+</body>
+</html>

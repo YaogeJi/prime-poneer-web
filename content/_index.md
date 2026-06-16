@@ -23,8 +23,8 @@ sections:
       name:
         size: md
       avatar:
-        size: medium
-        shape: circle
+        size: xl
+        shape: rectangle
   - block: collection
     id: papers
     content:

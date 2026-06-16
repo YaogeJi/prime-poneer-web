@@ -34,13 +34,17 @@ html {
 }
 
 /* Custom avatar size */
-.avatar-wrapper {
+.avatar-wrapper:not(.avatar-rectangle) {
   width: 240px !important;
   height: 240px !important;
 }
-.avatar-wrapper .avatar {
+.avatar-wrapper:not(.avatar-rectangle) .avatar {
   width: 240px !important;
   height: 240px !important;
+}
+.avatar-wrapper.avatar-rectangle {
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* Larger font for citation view */

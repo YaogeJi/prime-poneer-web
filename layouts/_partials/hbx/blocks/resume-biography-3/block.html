@@ -55,13 +55,13 @@
 {{ $name_class := index $name_class_map $name_size | default (index $name_class_map "lg") }}
 
 {{/* Size mappings optimized for 2025 standards: display_size -> [display_px, generation_px] */}}
-{{ $size_map := dict "small" (slice "150" "300") "medium" (slice "200" "400") "large" (slice "320" "640") "xl" (slice "400" "800") "xxl" (slice "500" "1000") }}
+{{ $size_map := dict "small" (slice "150" "300") "medium" (slice "200" "400") "large" (slice "320" "640") "xl" (slice "420" "840") "xxl" (slice "500" "1000") }}
 {{ $size_config := index $size_map $avatar_size | default (index $size_map "large") }}
 {{ $display_size := index $size_config 0 }}
 {{ $generation_size := index $size_config 1 }}
 
 {{/* Shape class mappings */}}
-{{ $shape_classes := dict "circle" "rounded-full" "square" "rounded-none" "rounded" "rounded-lg" }}
+{{ $shape_classes := dict "circle" "rounded-full" "square" "rounded-none" "rounded" "rounded-lg" "rectangle" "rounded-2xl" }}
 {{ $shape_class := index $shape_classes $avatar_shape | default "rounded-full" }}
 
 {{ $banner_filename := "" }}
@@ -171,6 +171,18 @@
         {{ end }}
 
         {{ if $avatar }}
+        {{ if eq $avatar_shape "rectangle" }}
+        {{ $avatar_image := $avatar.Resize (printf "%sx webp" $generation_size) }}
+        <div class="avatar-wrapper avatar-rectangle {{ if $img }}-mt-24{{else}}mb-4{{end}}" style="width: {{$display_size}}px; height: auto;">
+          <img class="avatar {{$shape_class}} border-4 border-white shadow-2xl"
+               src="{{ $avatar_image.RelPermalink }}"
+               alt="{{$profile.title}}"
+               width="{{ $avatar_image.Width }}"
+               height="{{ $avatar_image.Height }}"
+               style="width: 100%; height: auto; display: block;">
+          {{ with $status_icon }}<span class="avatar-emoji">{{ . | emojify }}</span>{{ end }}
+        </div>
+        {{ else }}
         <div class="avatar-wrapper {{ if $img }}-mt-24{{else}}mb-4{{end}}" style="width: {{$display_size}}px; height: {{$display_size}}px;">
           {{ $avatar_image := $avatar.Fill (printf "%sx%s Center" $generation_size $generation_size) }}
           <img class="avatar {{$shape_class}} border-4 border-white shadow-2xl"
@@ -181,6 +193,7 @@
                style="width: {{$display_size}}px; height: {{$display_size}}px; object-fit: cover;">
           {{ with $status_icon }}<span class="avatar-emoji">{{ . | emojify }}</span>{{ end }}
         </div>
+        {{ end }}
         {{ end }}
 
         {{/* Name and Role - Centered */}}

@@ -11,7 +11,7 @@ main:
   - name: News
     url: /#news
     weight: 13
-  - name: K-12 RL Teaching
+  - name: Pre College RL Course
     url: /rl-course/
     weight: 14
   - name: CV

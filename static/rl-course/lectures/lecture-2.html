@@ -1,0 +1,2975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 2 — What Is Reinforcement Learning?</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+/* ============================================================
+   LECTURE 2 — What Is Reinforcement Learning?
+   Slide-specific styles only; base styles live in shared.css.
+   ============================================================ */
+
+/* MathJax sizing + colors */
+mjx-container[jax="SVG"]{color:var(--ink)}
+.formula mjx-container{font-size:1em!important}
+.formula-box mjx-container{font-size:1em!important}
+
+/* Bigger card-title labels across L2 (SAMPLE SPACE, EVENT, etc.) */
+:root{ --tiny-size: clamp(.82rem, 1.05vw, .95rem); }
+
+/* Larger topic-pill tags for L2 (e.g. "PROBABILITY PRIMER · 2 OF 4") */
+.slide .tag{
+  font-size:clamp(.92rem,1.25vw,1.1rem);
+  padding:.55rem 1.25rem;
+  letter-spacing:.06em;
+  font-weight:600;
+}
+.slide .tag::before{
+  width:10px;height:10px;
+}
+
+/* Slide 2 — Recap */
+.recap-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);margin-top:.8rem;
+}
+.recap-col{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  padding:1.2rem;
+  box-shadow:5px 5px 0 var(--line);
+}
+.recap-col.l1{background:var(--peach)}
+.recap-col.l2{background:var(--mint)}
+.recap-col h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.1rem,1.7vw,1.4rem);
+  margin-bottom:.5rem;line-height:1.1;
+}
+.recap-col .label{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:.3rem;
+}
+.recap-col ul{list-style:none;padding:0}
+.recap-col li{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  padding:.3rem 0 .3rem 1.4rem;
+  position:relative;line-height:1.4;
+}
+.recap-col li::before{
+  content:'';position:absolute;left:0;top:.65em;
+  width:8px;height:8px;background:var(--ink);border-radius:50%;
+}
+@media (max-width:780px){.recap-grid{grid-template-columns:1fr}}
+
+/* Slide 2 — L1 review (takeaway cards) */
+.takeaways-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  margin-top:.9rem;
+}
+.take-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem 1.1rem;
+  display:flex;flex-direction:column;
+}
+.take-card .num{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  margin-bottom:.3rem;
+}
+.take-card h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.5vw,1.25rem);
+  margin-bottom:.3rem;
+  line-height:1.15;
+}
+.take-card p{
+  font-size:clamp(.9rem,1.15vw,1.05rem);
+  color:var(--ink);line-height:1.45;
+}
+.loop-flow{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:.4rem;margin-top:.7rem;
+}
+.lf-chip{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.95vw,.85rem);
+  font-weight:700;
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:8px;
+  padding:.18rem .5rem;
+}
+.lf-arr{color:var(--dim);font-weight:700}
+.take-card:nth-child(1){background:var(--mint)}
+.take-card:nth-child(2){background:var(--peach)}
+.take-card:nth-child(3){background:var(--lilac)}
+.take-card:nth-child(4){background:var(--sun)}
+@media (max-width:780px){.takeaways-grid{grid-template-columns:1fr}}
+
+/* Slide 3 — Probability foundations (Ω, event, P) */
+.foundations-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.8vw,1.2rem);
+  margin-top:.8rem;
+}
+.found-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.4rem;
+}
+.found-card:nth-child(1){background:var(--mint)}
+.found-card:nth-child(2){background:var(--peach)}
+.found-card:nth-child(3){background:var(--lilac)}
+.found-card .f-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);
+}
+.found-card .f-sym{
+  font-size:clamp(1.3rem,2vw,1.7rem);
+  text-align:center;
+  margin:.15rem 0 .2rem;
+  font-weight:600;
+}
+.found-card .f-def{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+}
+.found-card .f-ex{
+  font-family:var(--font-mono);
+  font-size:clamp(.78rem,1vw,.9rem);
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.45rem .6rem;
+  margin-top:auto;
+  line-height:1.6;
+}
+@media (max-width:780px){.foundations-grid{grid-template-columns:1fr}}
+
+/* Slide 9 — Probability recap (illustrated, one die) */
+.recap-flow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.6vw,1.2rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.recap-stage{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.recap-stage:nth-child(1){background:var(--mint)}
+.recap-stage:nth-child(2){background:var(--peach)}
+.recap-stage:nth-child(3){background:var(--lilac)}
+.recap-stage .rs-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.recap-stage > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.recap-stage .rs-viz{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.65rem .5rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.4rem;
+  min-height:90px;
+}
+.recap-stage .rs-caption{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.85vw,.78rem);
+  color:var(--dim);
+  letter-spacing:.05em;
+  text-align:center;
+}
+.recap-stage .rs-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.3vw,1.18rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .7rem;
+  margin-top:auto;
+}
+.die-row{display:flex;gap:3px;justify-content:center}
+.die-face{
+  width:clamp(22px,2.6vw,30px);
+  aspect-ratio:1;
+  background:white;
+  border:2px solid var(--line);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(.85rem,1.1vw,1.05rem);
+  box-shadow:1.5px 1.5px 0 var(--line);
+  color:var(--ink);
+}
+.die-face.hl{background:var(--sun)}
+.bar-chart{
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:60px;
+  justify-content:center;
+}
+.bar-cell{
+  width:clamp(20px,2.5vw,26px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.bar-cell .bar-bar{
+  width:100%;
+  background:var(--ink);
+  border:1.5px solid var(--line);
+  border-radius:3px 3px 0 0;
+}
+.bar-cell.dim .bar-bar{
+  background:rgba(31,29,43,.18);
+  border-color:rgba(31,29,43,.3);
+}
+.bar-cell.hl .bar-bar{background:var(--good)}
+.bar-cell .bar-lbl{
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:clamp(.7rem,.85vw,.78rem);
+  margin-top:3px;
+  color:var(--dim);
+}
+.bar-cell.hl .bar-lbl{color:var(--ink)}
+@media (max-width:900px){.recap-flow{grid-template-columns:1fr}}
+
+/* Slide 19 — Warrior teaser tree (binary, 4 steps) */
+.warrior-tree{
+  margin-top:.5rem;
+  display:flex;justify-content:center;
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.6rem,1.4vw,1rem);
+  margin-top:.7rem;
+}
+.warrior-discuss .wd-q{
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss .wd-q:nth-child(1){background:var(--peach)}
+.warrior-discuss .wd-q:nth-child(2){background:var(--mint)}
+.warrior-discuss .wd-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.warrior-discuss .wd-q p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.4;
+  margin:0;
+}
+@media (max-width:780px){.warrior-discuss{grid-template-columns:1fr}}
+
+/* Slide 19 — Doors Game (peek-and-pick game before the tree) */
+.doors-game{
+  display:flex;flex-direction:column;
+  gap:clamp(.55rem,1.2vw,.85rem);
+  margin-top:.5rem;
+  flex:1;min-height:0;
+}
+.dg-status{display:flex;gap:.5rem;flex-wrap:wrap}
+.dg-status > div{
+  flex:1;min-width:120px;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .8rem;
+  display:flex;flex-direction:column;gap:.05rem;
+}
+.dg-status .lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-status .val{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.35vw,1.18rem);
+  color:var(--ink);line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dg-status .dg-total{background:var(--sun)}
+.dg-status .val.pos{color:var(--good)}
+.dg-status .val.neg{color:var(--bad)}
+
+.dg-doors{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  flex:1;min-height:0;
+}
+.dg-door{
+  position:relative;
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:14px 14px 6px 6px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:0;cursor:pointer;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font-display);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+}
+.dg-door:hover:not(:disabled){
+  transform:translate(-3px,-3px);
+  box-shadow:8px 8px 0 var(--line);
+}
+.dg-door:disabled{cursor:not-allowed;opacity:.55}
+.dg-door[data-side="L"]{background:var(--mint)}
+.dg-door[data-side="R"]{background:var(--peach)}
+.dg-door-frame{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1.1rem 1rem .9rem;
+  position:relative;
+  background:linear-gradient(180deg,rgba(0,0,0,0.06) 0%,transparent 35%);
+}
+.dg-peephole{
+  width:clamp(105px,15vw,160px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--bg);
+  border:5px solid var(--line);
+  box-shadow:inset 4px 4px 0 rgba(0,0,0,0.10), 3px 3px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.15rem;
+}
+.dg-peep-lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-peep-val{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(1.7rem,3.4vw,2.6rem);
+  line-height:1;color:var(--ink);
+}
+.dg-peep-val.pos{color:var(--good)}
+.dg-peep-val.neg{color:var(--bad)}
+.dg-door-handle{
+  position:absolute;top:50%;
+  width:10px;height:26px;
+  background:var(--line);
+  border-radius:5px;
+  transform:translateY(-50%);
+}
+.dg-door[data-side="L"] .dg-door-handle{right:14px}
+.dg-door[data-side="R"] .dg-door-handle{left:14px}
+.dg-door-side{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;text-align:center;
+  padding:.5rem 0;
+  background:rgba(0,0,0,0.06);
+  border-top:2px dashed rgba(0,0,0,0.22);
+  color:var(--ink);
+}
+.dg-doors.entering{animation:dg-enter .28s var(--ease)}
+@keyframes dg-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.dg-final{
+  flex:1;
+  background:var(--sun);
+  border:3px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1rem;gap:.4rem;
+  animation:dg-final-pop .35s var(--ease);
+}
+@keyframes dg-final-pop{
+  0%{transform:scale(.85);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.dg-final-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;color:var(--ink);
+  text-transform:uppercase;
+}
+.dg-final-num{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(2.6rem,5.5vw,4.4rem);
+  line-height:1;color:var(--ink);
+}
+.dg-final-num.pos{color:var(--good)}
+.dg-final-num.neg{color:var(--bad)}
+.dg-final-msg{
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.1vw,1rem);
+  text-align:center;color:var(--ink);
+  max-width:600px;line-height:1.45;
+}
+.dg-controls{display:flex;justify-content:center;gap:.6rem}
+.dg-btn{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  padding:.5rem 1.15rem;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.dg-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.dg-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+@media (max-width:780px){
+  .dg-doors{grid-template-columns:1fr}
+  .dg-status{flex-direction:column}
+}
+
+/* Slide 20 — V and Q (answer to greedy) */
+.vq-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.8rem,1.8vw,1.3rem);
+  margin-top:.7rem;
+  align-items:stretch;
+}
+.vq-card{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.1rem 1.05rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.vq-card.v{background:var(--mint)}
+.vq-card.q{background:var(--peach)}
+.vq-card .vq-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.vq-card .vq-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1.15rem,1.7vw,1.5rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .8rem;
+}
+.vq-card > p{
+  font-size:clamp(.88rem,1.1vw,1.02rem);
+  line-height:1.45;
+  margin:0;
+}
+.vq-card .vq-numbers{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.55rem .75rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  line-height:1.7;
+  margin-top:auto;
+}
+.vq-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.85rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.9rem,1.15vw,1.05rem);
+  line-height:1.5;
+  max-width:1100px;
+  margin-left:auto;margin-right:auto;
+}
+.vq-callout .vq-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+@media (max-width:780px){.vq-grid{grid-template-columns:1fr}}
+
+/* Slide 21 — V & Q computed on the warrior */
+.compute-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.8rem,1.8vw,1.3rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.compute-card{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.1rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.compute-card.v{background:var(--mint)}
+.compute-card.q{background:var(--peach)}
+.compute-card .c-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.compute-card .c-title{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  line-height:1.2;
+}
+.compute-card .c-steps{
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.05vw,.98rem);
+  line-height:1.85;
+}
+.compute-card .c-steps .arrow{color:var(--dim);margin:0 .15em}
+.compute-card .c-steps .final{
+  font-weight:700;
+  background:var(--sun);
+  border:1.5px solid var(--line);
+  border-radius:6px;
+  padding:.05rem .35rem;
+  margin-left:.2em;
+}
+.compute-card > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+  color:var(--ink);
+}
+.compute-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.85rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+  max-width:1100px;
+  margin-left:auto;margin-right:auto;
+}
+.compute-callout .cc-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+@media (max-width:780px){.compute-grid{grid-template-columns:1fr}}
+
+/* Slides 21–22 — V on the tree (deterministic + random policy) */
+.vt-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:clamp(.5rem,1vw,.8rem);
+  margin-top:.55rem;
+}
+.vt-tree{
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+.vt-tree svg{width:100%;height:auto;max-height:46vh}
+.vt-math{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.85rem 1rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.45rem;
+}
+.vt-math.det{background:var(--mint)}
+.vt-math.stoch{background:var(--peach)}
+.vt-math .vt-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.vt-math .vt-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.45rem .7rem;
+}
+.vt-math > p{
+  font-size:clamp(.85rem,1.05vw,.98rem);
+  line-height:1.4;
+  margin:0;
+}
+.vt-chain{
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.5rem .8rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.8rem,1vw,.92rem);
+  line-height:1.85;
+}
+.vt-chain .final{
+  background:var(--sun);
+  border:1.5px solid var(--line);
+  border-radius:6px;
+  padding:.05rem .35rem;
+  font-weight:700;
+  margin-left:.2em;
+}
+.vt-q{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.5rem 1rem;
+  margin-top:.55rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.05vw,1rem);
+  text-align:center;
+  box-shadow:3px 3px 0 var(--line);
+}
+.vt-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.6rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+}
+.vt-callout .vt-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 3 — 5 ingredients */
+.ingredients-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.6rem,1.4vw,1rem);margin-top:1rem;
+}
+.ing-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem;
+  display:flex;flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+}
+.ing-card .ico{font-size:clamp(1.6rem,2.6vw,2.2rem);line-height:1;margin-bottom:.4rem}
+.ing-card .sym{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.78rem,1.05vw,.95rem);
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  padding:.15rem .55rem;border-radius:99px;
+  box-shadow:1.5px 1.5px 0 var(--line);
+  margin-bottom:.5rem;
+}
+.ing-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.92rem,1.25vw,1.1rem);
+  margin-bottom:.25rem;
+}
+.ing-card p{
+  font-size:clamp(.72rem,.95vw,.85rem);
+  color:var(--dim);line-height:1.4;
+}
+.ing-card:nth-child(1){background:var(--mint)}
+.ing-card:nth-child(2){background:var(--peach)}
+.ing-card:nth-child(3){background:var(--lilac)}
+.ing-card:nth-child(4){background:var(--sky)}
+.ing-card:nth-child(5){background:var(--sun)}
+@media (max-width:900px){.ingredients-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 4 — Agent-env interface */
+.aei-wrap{
+  display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:0;margin-top:.5rem;
+}
+.aei-svg{width:min(80vw,720px);height:auto;max-height:55vh}
+@keyframes pulse-node{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.04)}
+}
+.aei-svg .agent-node,.aei-svg .env-node{
+  transform-origin:center;
+  animation:pulse-node 3s ease-in-out infinite;
+}
+.aei-svg .env-node{animation-delay:1.5s}
+@keyframes dash-flow{to{stroke-dashoffset:-30}}
+.aei-svg path.flow{
+  stroke-dasharray:6 4;
+  animation:dash-flow 1.4s linear infinite;
+}
+
+/* Slide 5/6/7 — variable detail card */
+.var-detail{
+  display:grid;
+  grid-template-columns:1fr 1.3fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.5rem;
+  align-items:center;
+}
+.var-formula{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.3rem;
+  text-align:center;
+}
+.var-formula .big{
+  font-size:clamp(1.5rem,3vw,2.4rem);
+  margin-bottom:.4rem;
+}
+.var-formula .label{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);
+}
+.var-examples{
+  display:flex;flex-direction:column;gap:.55rem;
+}
+.var-ex{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .85rem;
+  display:flex;align-items:center;gap:.7rem;
+  box-shadow:2px 2px 0 var(--line);
+  font-size:clamp(.82rem,1.05vw,.95rem);
+}
+.var-ex .vico{font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.var-ex b{font-family:var(--font-mono)}
+@media (max-width:780px){.var-detail{grid-template-columns:1fr}}
+
+/* Slide 8 — daily life grid */
+.daily-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:clamp(.6rem,1.4vw,1rem);margin-top:.8rem;
+}
+.daily-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem;
+  display:flex;flex-direction:column;
+  min-width:0;
+}
+.daily-card .ico{font-size:clamp(1.8rem,3vw,2.4rem);margin-bottom:.4rem}
+.daily-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.25vw,1.1rem);
+  margin-bottom:.4rem;line-height:1.15;
+}
+.daily-card .triple{
+  display:flex;flex-direction:column;gap:.2rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.9vw,.82rem);
+}
+.daily-card .triple .row{display:flex;gap:.4rem}
+.daily-card .triple .row b{
+  color:var(--dim);width:50px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;
+}
+.daily-card .triple .row span{color:var(--ink)}
+.daily-card:nth-child(1){background:var(--mint)}
+.daily-card:nth-child(2){background:var(--peach)}
+.daily-card:nth-child(3){background:var(--lilac)}
+.daily-card:nth-child(4){background:var(--sun)}
+@media (max-width:900px){.daily-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 7 — Probability quiz (tap-to-reveal) */
+.pq-grid{
+  display:flex;
+  flex-direction:column;
+  gap:clamp(.45rem,1vw,.7rem);
+  margin-top:.5rem;
+}
+.pq-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.6rem .9rem;
+  cursor:pointer;
+  position:relative;
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.pq-card.tinted-mint{background:var(--mint)}
+.pq-card.tinted-peach{background:var(--peach)}
+.pq-card.tinted-lilac{background:var(--lilac)}
+.pq-card:hover:not(.revealed){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.pq-card.revealed{cursor:default}
+.pq-card .pq-label{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.pq-card .pq-front p{
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  line-height:1.45;
+  margin:0;
+}
+.pq-card .pq-back{display:none;margin-top:.35rem}
+.pq-card.revealed .pq-front{display:none}
+.pq-card.revealed .pq-back{display:block}
+.pq-card .pq-back p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.pq-card .pq-answer{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  background:var(--good);color:white;
+  padding:.18rem .6rem;border-radius:99px;
+  display:inline-block;
+  margin-bottom:.4rem;
+  border:1.5px solid var(--line);
+  box-shadow:2px 2px 0 var(--line);
+}
+.pq-card .pq-tap{
+  position:absolute;
+  top:.6rem;right:.9rem;
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  letter-spacing:.15em;
+}
+.pq-card.revealed .pq-tap{display:none}
+.pq-belief{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:10px;
+  padding:.45rem .75rem;
+  margin-top:.45rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.6rem;
+  box-shadow:3px 3px 0 var(--line);
+  font-size:clamp(.83rem,1.05vw,.98rem);
+  line-height:1.45;
+}
+.pq-belief .pq-belief-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 9 — Q3 step-by-step reveal */
+.pq-stepper .pq-question p{
+  font-size:clamp(.95rem,1.2vw,1.1rem);line-height:1.45;margin:0;
+}
+.pq-step{
+  display:none;margin-top:.5rem;
+  border-left:3px solid var(--line);padding-left:.7rem;
+}
+.pq-step.show{display:block;animation:pqStepIn .28s var(--ease)}
+@keyframes pqStepIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.pq-step-k{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.1em;
+  color:var(--ink);text-transform:uppercase;display:block;margin-bottom:.15rem;
+}
+.pq-step p{font-size:clamp(.8rem,.98vw,.92rem);line-height:1.6;margin:0}
+
+/* Slide 6 — coin frequency → probability demo */
+.cf-layout{
+  display:grid;
+  grid-template-columns:1fr 1.05fr;
+  gap:clamp(.8rem,2vw,1.4rem);
+  margin-top:.7rem;
+  align-items:stretch;
+}
+.cf-concept{display:flex;flex-direction:column;gap:.7rem}
+.cf-row{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem .95rem;
+  display:flex;flex-direction:column;justify-content:center;flex:1;
+}
+.cf-row:nth-child(1){background:var(--mint)}
+.cf-row:nth-child(2){background:var(--sun)}
+.cf-row .cf-k{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.1rem;
+}
+.cf-row p{font-size:clamp(.8rem,1.05vw,.95rem);line-height:1.4;margin-top:.3rem;color:var(--ink)}
+.cf-demo{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.8rem;
+  display:flex;flex-direction:column;gap:.55rem;
+}
+#cf-canvas{
+  width:100%;height:auto;display:block;
+  background:var(--bg);
+  border:2px solid var(--line);border-radius:10px;
+}
+.cf-stats{display:flex;gap:.55rem}
+.cf-stat{
+  flex:1;text-align:center;
+  background:var(--bg);
+  border:2px solid var(--line);border-radius:10px;
+  padding:.35rem .25rem;
+}
+.cf-stat-num{display:block;font-family:var(--font-mono);font-weight:700;font-size:clamp(1.05rem,1.8vw,1.45rem);line-height:1.1}
+.cf-stat-lab{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.cf-btns{display:flex;gap:.45rem;flex-wrap:wrap}
+.cf-btn{
+  flex:1;min-width:80px;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.78rem,1.05vw,.92rem);
+  background:var(--sky);
+  border:2.5px solid var(--line);border-radius:10px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .5rem;cursor:pointer;color:var(--ink);
+  transition:transform .12s var(--ease),box-shadow .12s var(--ease);
+}
+.cf-btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--line)}
+.cf-btn:active{transform:translate(0,0);box-shadow:1px 1px 0 var(--line)}
+.cf-btn.cf-reset{background:var(--peach);flex:0 0 auto}
+@media (max-width:820px){.cf-layout{grid-template-columns:1fr}}
+
+/* Slide 9 — quiz interactive */
+.quiz-wrap{
+  display:flex;flex-direction:column;
+  gap:.8rem;margin-top:.5rem;
+}
+.quiz-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:clamp(.7rem,1.6vw,1.1rem);
+}
+.quiz-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem 1.1rem;
+  cursor:pointer;
+  position:relative;
+  display:flex;flex-direction:column;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+  min-height:clamp(120px,16vh,160px);
+}
+.quiz-card:hover:not(.revealed){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.quiz-card.revealed{
+  cursor:default;
+}
+.quiz-card .q-label{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.18em;
+  color:var(--dim);margin-bottom:.4rem;
+}
+.quiz-card .q-front{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+  line-height:1.3;flex:1;
+}
+.quiz-card .q-back{
+  display:none;flex:1;flex-direction:column;gap:.35rem;
+}
+.quiz-card.revealed .q-front{display:none}
+.quiz-card.revealed .q-back{display:flex}
+.quiz-card .q-verdict{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  padding:.25rem .65rem;border-radius:99px;
+  align-self:flex-start;
+  text-transform:uppercase;
+}
+.quiz-card .q-verdict.no{background:var(--bad);color:white}
+.quiz-card .q-verdict.yes{background:var(--good);color:white}
+.quiz-card .q-explain{
+  font-size:clamp(.78rem,1vw,.92rem);
+  color:var(--ink);line-height:1.45;
+}
+.quiz-card.revealed.yes{background:rgba(34,170,85,0.15)}
+.quiz-card.revealed.no{background:rgba(226,62,62,0.1)}
+.quiz-card .tap{
+  position:absolute;bottom:.55rem;right:.85rem;
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.15em;
+}
+.quiz-card.revealed .tap{display:none}
+@media (max-width:780px){.quiz-grid{grid-template-columns:1fr}}
+
+.quiz-summary{
+  display:none;
+  align-items:center;gap:.8rem;
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.6rem 1rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.85rem,1.1vw,1rem);
+}
+.quiz-summary.show{display:flex}
+
+/* Slide 10 — Markov */
+.markov-vis{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem 1.5rem;
+  margin-top:.8rem;
+  display:flex;flex-direction:column;align-items:center;gap:.8rem;
+}
+.markov-line{
+  display:flex;align-items:center;gap:.5rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.15vw,1rem);
+  flex-wrap:wrap;justify-content:center;
+}
+.markov-step{
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.4rem .7rem;min-width:48px;
+  box-shadow:2px 2px 0 var(--line);
+}
+.markov-step .t{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.15em;
+}
+.markov-step .v{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+}
+.markov-step.now{background:var(--mint);border-width:3px}
+.markov-step.future{background:var(--sun);border-style:dashed}
+.markov-step.past{background:var(--paper);opacity:0.4}
+.markov-arrow{font-size:1.2em;color:var(--dim)}
+.markov-caption{
+  font-style:italic;color:var(--dim);
+  text-align:center;font-size:clamp(.85rem,1.1vw,1rem);
+  max-width:760px;
+}
+
+/* Side note — sticky-note callout for "for later" hooks */
+.side-note{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.85rem 1.1rem .8rem;
+  box-shadow:3px 3px 0 var(--line);
+  max-width:760px;
+  margin:.9rem auto 0;
+  position:relative;
+  transform:rotate(-0.4deg);
+}
+.side-note::before{
+  /* paper-tape on top */
+  content:'';
+  position:absolute;
+  top:-9px;left:32px;
+  width:54px;height:14px;
+  background:rgba(254,248,240,0.7);
+  border:1.5px solid rgba(31,29,43,0.45);
+  border-radius:2px;
+  transform:rotate(-3deg);
+  box-shadow:1px 1px 0 rgba(31,29,43,0.15);
+}
+.side-note .sn-label{
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--ink);
+  display:block;
+  margin-bottom:.35rem;
+}
+.side-note p{
+  font-size:clamp(.8rem,1.05vw,.93rem);
+  line-height:1.5;
+  margin:0;
+}
+.side-note p + p{margin-top:.35rem}
+.side-note .skip{
+  font-style:italic;color:var(--dim);font-size:.93em;
+}
+
+/* Slide 11 — types of RL problems (axis taxonomy) */
+.rl-axes{
+  display:flex;flex-direction:column;
+  gap:clamp(.45rem,.9vw,.7rem);margin-top:.6rem;
+}
+.rl-axis{
+  display:grid;grid-template-columns:130px 1fr 36px 1fr;
+  gap:clamp(.5rem,1vw,.8rem);align-items:stretch;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.55rem .8rem;
+}
+.rl-axis .axis-label{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  letter-spacing:.16em;text-transform:uppercase;
+  align-self:center;font-weight:700;color:var(--ink);
+}
+.rl-axis .axis-end{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.4rem .65rem;
+  display:flex;flex-direction:column;justify-content:center;gap:.1rem;
+}
+.rl-axis .axis-end.left{background:var(--mint)}
+.rl-axis .axis-end.right{background:var(--peach)}
+.rl-axis .end-name{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.9rem,1.2vw,1.05rem);
+}
+.rl-axis .end-name .end-pomdp{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.1em;color:var(--dim);font-weight:600;
+}
+.rl-axis .end-detail{
+  font-size:clamp(.78rem,1vw,.92rem);
+  line-height:1.35;color:var(--ink);
+}
+.rl-axis .end-detail em{color:var(--dim);font-style:italic}
+.rl-axis .axis-vs{
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.12em;color:var(--dim);font-weight:700;
+}
+@media (max-width:780px){
+  .rl-axis{grid-template-columns:1fr;}
+  .rl-axis .axis-vs{display:none;}
+}
+
+/* Slide 12 — MDP tuple */
+.mdp-tuple{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1.2rem,2.5vw,2rem);
+  margin:.5rem auto;max-width:1000px;
+}
+.mdp-tuple .big-tuple{
+  font-size:clamp(1.5rem,2.8vw,2.4rem);
+  text-align:center;margin-bottom:1rem;
+}
+.mdp-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.5rem,1.2vw,.9rem);
+}
+.mdp-item{
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.6rem;
+  text-align:center;
+  box-shadow:2px 2px 0 var(--line);
+}
+.mdp-item .sym{
+  font-size:clamp(1rem,1.5vw,1.3rem);
+  margin-bottom:.2rem;
+}
+.mdp-item h5{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.78rem,1vw,.9rem);
+  margin-bottom:.2rem;
+}
+.mdp-item p{
+  font-size:clamp(.68rem,.85vw,.78rem);
+  color:var(--dim);line-height:1.3;
+}
+.mdp-item:nth-child(1){background:var(--mint)}
+.mdp-item:nth-child(2){background:var(--peach)}
+.mdp-item:nth-child(3){background:var(--lilac)}
+.mdp-item:nth-child(4){background:var(--sky)}
+.mdp-item:nth-child(5){background:var(--sun)}
+@media (max-width:780px){.mdp-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 15 — Policy */
+.policy-block{
+  display:grid;grid-template-columns:1fr 1.1fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.6rem;align-items:center;
+}
+.policy-formula{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.3rem;text-align:center;
+}
+.policy-illus{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:.5rem;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem;
+}
+.policy-illus .pi-cell{
+  aspect-ratio:1;
+  background:var(--bg);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(1.4rem,2.5vw,2rem);
+  font-weight:700;
+}
+.policy-illus .pi-cell.start{background:var(--peach)}
+.policy-illus .pi-cell.goal{background:var(--mint)}
+@media (max-width:780px){.policy-block{grid-template-columns:1fr}}
+
+/* Slide 16 — det vs stoch */
+.dvs-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);margin-top:.5rem;
+}
+.dvs-col{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem;
+}
+.dvs-col.det{background:var(--mint)}
+.dvs-col.stoch{background:var(--lilac)}
+.dvs-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.7vw,1.4rem);margin-bottom:.5rem}
+.dvs-col .formula-mini{
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.5rem 1rem;text-align:center;
+  margin:.5rem 0;box-shadow:2px 2px 0 var(--line);
+}
+.dvs-col p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+@media (max-width:780px){.dvs-grid{grid-template-columns:1fr}}
+
+/* Slide 17 — Policy designer */
+.pd-wrap{
+  display:flex;flex-direction:column;
+  gap:clamp(.5rem,1.2vh,.9rem);
+  margin-top:.4rem;flex:1;min-height:0;
+}
+.pd-header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:.5rem;
+}
+.pd-header h2{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.2rem,2.2vw,1.7rem);line-height:1;margin:0;
+}
+.pd-header .help{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  color:var(--dim);
+}
+.pd-main{
+  display:grid;grid-template-columns:auto 1fr;
+  gap:clamp(.8rem,2vw,1.5rem);align-items:center;
+  flex:1;min-height:0;
+}
+.pd-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:4px;
+  background:var(--line);
+  border:3px solid var(--line);
+  border-radius:12px;padding:4px;
+  width:clamp(240px,36vh,360px);
+  height:clamp(240px,36vh,360px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pd-cell{
+  background:var(--paper);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;cursor:pointer;
+  font-size:clamp(1.4rem,2.8vw,2rem);
+  transition:background .2s var(--ease);
+}
+.pd-cell:not(.locked):hover{background:var(--bg);outline:2px solid var(--line)}
+.pd-cell.start{background:var(--peach)}
+.pd-cell.goal{background:var(--mint)}
+.pd-cell.wall{background:var(--ink);cursor:not-allowed}
+.pd-cell.trap{background:var(--rose);cursor:not-allowed}
+.pd-cell.locked{cursor:not-allowed}
+.pd-cell .pd-emoji{font-size:1em;line-height:1}
+.pd-cell .pd-arrow{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.4rem,2.6vw,1.9rem);
+  line-height:1;
+  color:var(--ink);
+}
+.pd-cell .pd-arrow.q{color:var(--dim);font-style:italic}
+.pd-cell.agent::after{
+  content:'\01F916';
+  position:absolute;
+  font-size:clamp(1.2rem,2.2vw,1.6rem);
+  z-index:3;line-height:1;
+  animation:agent-pop .3s var(--ease);
+}
+@keyframes agent-pop{
+  0%{transform:scale(.7)}
+  50%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+.pd-cell.trail{background:rgba(216,200,255,0.6)}
+
+.pd-side{
+  display:flex;flex-direction:column;gap:.6rem;
+  height:100%;justify-content:flex-start;
+}
+.pd-status{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.7rem .9rem;
+  font-family:var(--font-mono);font-size:var(--small-size);
+  line-height:1.5;
+}
+.pd-status .lbl{
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:.3rem;
+}
+.pd-status .val{font-weight:700;color:var(--ink);font-size:clamp(.95rem,1.2vw,1.1rem)}
+.pd-status .val.win{color:var(--good)}
+.pd-status .val.die{color:var(--bad)}
+.pd-controls{
+  display:flex;gap:.5rem;flex-wrap:wrap;
+}
+.pd-btn{
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);border-radius:99px;
+  padding:.55rem 1.1rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.1em;
+  cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.pd-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pd-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pd-btn.secondary{background:var(--paper);color:var(--ink)}
+.pd-legend{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:8px;padding:.5rem .7rem;
+  box-shadow:2px 2px 0 var(--line);
+  line-height:1.6;
+}
+.pd-legend .row{display:block}
+.pd-legend b{font-weight:700}
+@media (max-width:780px){
+  .pd-main{grid-template-columns:1fr;justify-items:center}
+}
+
+/* Slide 18 — confusions */
+.confusions-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.8vw,1.2rem);margin-top:.8rem;
+}
+.confuse-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem;
+  display:flex;flex-direction:column;
+}
+.confuse-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+  margin-bottom:.4rem;
+}
+.confuse-card .vs{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.15em;
+  color:var(--bad);margin-bottom:.4rem;text-transform:uppercase;
+}
+.confuse-card p{
+  font-size:clamp(.78rem,1vw,.92rem);
+  line-height:1.45;color:var(--ink);margin-bottom:.5rem;
+}
+.confuse-card .next{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.1em;
+  border-top:1.5px dashed var(--line);
+  padding-top:.4rem;margin-top:auto;
+}
+.confuse-card:nth-child(1){background:var(--mint)}
+.confuse-card:nth-child(2){background:var(--peach)}
+.confuse-card:nth-child(3){background:var(--lilac)}
+@media (max-width:780px){.confusions-grid{grid-template-columns:1fr}}
+
+/* Slide 19 — recap symbols */
+.recap-symbols{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.5rem,1.2vw,.9rem);margin-top:.8rem;
+}
+.rs-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.85rem;
+  text-align:center;
+}
+.rs-card .ico{font-size:clamp(1.4rem,2.4vw,2rem);margin-bottom:.3rem}
+.rs-card .sym{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(1.1rem,1.6vw,1.4rem);
+  margin-bottom:.2rem;
+}
+.rs-card h5{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.78rem,1vw,.9rem);margin-bottom:.2rem;
+}
+.rs-card .explain{
+  font-size:clamp(.68rem,.85vw,.78rem);
+  color:var(--dim);line-height:1.3;
+}
+.rs-card:nth-child(1){background:var(--mint)}
+.rs-card:nth-child(2){background:var(--peach)}
+.rs-card:nth-child(3){background:var(--lilac)}
+.rs-card:nth-child(4){background:var(--sky)}
+.rs-card:nth-child(5){background:var(--sun)}
+@media (max-width:900px){.recap-symbols{grid-template-columns:repeat(2,1fr)}}
+
+.recap-tuple{
+  margin-top:1rem;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  padding:1rem;
+  text-align:center;
+  box-shadow:4px 4px 0 var(--line);
+}
+.recap-tuple .lbl{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.2em;color:var(--sun);margin-bottom:.4rem;
+}
+.recap-tuple mjx-container{color:var(--bg)!important}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → / SPACE to navigate</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 1 — TITLE                                -->
+<!-- ============================================ -->
+<section class="slide" data-name="Title">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag reveal" style="background:var(--mint)">LECTURE 02 · PROBABILITY FOR RL</span>
+    <h1 class="title reveal">The math we'll need:<br><span class="hl">probability.</span></h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.6vw,1.3rem);max-width:1300px;margin-bottom:1.5rem;">
+      Last time we drew the agent–environment loop. Today we build the toolkit we'll use to formalize it next time —
+      <b>outcomes, random variables, expectation, conditional probability</b>, ending with a tiny game that bridges from L1's bandit to next week's MDP.
+    </p>
+    <div class="s1-cards reveal">
+      <span class="card tinted-sun"><span>🎲</span> Outcomes &amp; events</span>
+      <span class="card tinted-mint"><span>🎯</span> Random variables</span>
+      <span class="card tinted-peach"><span>📈</span> Expectation</span>
+      <span class="card tinted-lilac"><span>🔀</span> Conditional &amp; Bayes</span>
+    </div>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">01 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 2 — REVIEW OF LECTURE 1                  -->
+<!-- ============================================ -->
+<section class="slide" data-name="L1 Review">
+  <span class="shape s-peach circle bordered anim-wobble" style="width:90px;height:90px;top:6%;right:5%"></span>
+  <span class="shape s-sun blob bordered anim-wobble-r" style="width:120px;height:120px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">LAST TIME · LECTURE 01 RECAP</span>
+    <h2 class="h2 reveal">Where we <span class="hl">left off.</span></h2>
+    <p class="body dim reveal" style="max-width:840px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Four ideas from last week — the picture, before we add the math today.
+    </p>
+
+    <div class="takeaways-grid reveal">
+      <div class="take-card">
+        <span class="num">01</span>
+        <h3>Supervised = answer key.</h3>
+        <p>Many labeled examples, minimize the error. Powers most AI you use today — spam filters, photo tagging, translation.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">02</span>
+        <h3>RL = trial &amp; reward.</h3>
+        <p>No labels. The <b>policy</b> reads the current <b>state</b> to choose an action; that action plus the state drives where you land next, and the <b>environment</b> feeds back a <b>reward</b>.</p>
+        <div class="loop-flow">
+          <span class="lf-chip">state → policy → action</span>
+          <span class="lf-arr">·</span>
+          <span class="lf-chip">state + action → next state</span>
+          <span class="lf-arr">·</span>
+          <span class="lf-chip">env → reward</span>
+        </div>
+      </div>
+      <div class="take-card">
+        <span class="num">03</span>
+        <h3>Explore vs exploit.</h3>
+        <p>Every learner — even you in the 3-box game — must balance trying new things against using what already works.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">04</span>
+        <h3>RL can surpass humans.</h3>
+        <p>AlphaGo's <b>Move 37</b> wasn't taught — it was discovered through self-play. RL invents strategies no teacher knows.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">L1 Review</div>
+  <div class="slide-num">02 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 3 — PROBABILITY · OUTCOMES & EVENTS      -->
+<!-- ============================================ -->
+<section class="slide" data-name="Outcomes &amp; Events">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">PROBABILITY PRIMER · 1 OF 4</span>
+    <h2 class="h2 reveal">Three pieces, before <span class="hl">anything random</span> happens.</h2>
+    <p class="body dim reveal" style="max-width:940px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Before we can talk about random variables, we need to fix the playground. Every probability problem rests on three things: <b>outcomes, events, and a probability rule</b>.
+    </p>
+
+    <div class="foundations-grid reveal">
+      <div class="found-card">
+        <span class="f-tag">SAMPLE SPACE</span>
+        <div class="f-sym">\(\Omega\)</div>
+        <p class="f-def">The set of <b>all possible outcomes</b> of one trial. A single outcome is called \(\omega\). Outcomes need <b>not be numbers</b> — they can be abstract labels like <b>heads</b> or <b>tails</b>. <i>(Some books write \(S\) instead of \(\Omega\) — same idea.)</i></p>
+        <div class="f-ex">
+          🪙 Coin: \(\Omega=\{H,T\}\)<br>
+          🎲 Die: \(\Omega=\{1,2,3,4,5,6\}\)
+        </div>
+      </div>
+      <div class="found-card">
+        <span class="f-tag">EVENT</span>
+        <div class="f-sym">\(A\)</div>
+        <p class="f-def">A <b>collection of outcomes</b> from \(\Omega\) — anything you might ask about. <i>(Braces matter: \(\{H\}\) is the event "got heads.")</i></p>
+        <div class="f-ex">
+          🪙 "Heads" = \(\{H\}\)<br>
+          🎲 "Even" = \(\{2,4,6\}\)
+        </div>
+      </div>
+      <div class="found-card">
+        <span class="f-tag">PROBABILITY</span>
+        <div class="f-sym">\(P(A) \in [0,1]\)</div>
+        <p class="f-def">A <b>function of events</b>. Rules: \(P(\Omega)=1\); and \(P(A\cup B)=P(A)+P(B)\) when \(A,B\) are <b>disjoint</b>. A handy consequence — the <b>complement</b>: \(P(A^c)=1-P(A)\).</p>
+        <div class="f-ex">
+          🪙 Fair: \(P(\{H\})=\tfrac{1}{2}\)<br>
+          🎲 Fair: \(P(\{2,4,6\})=\tfrac{3}{6}\)
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      † Math name: such a function of the events is called a <b>(probability) measure</b>.
+    </p>
+  </div>
+  <div class="slide-name">Outcomes &amp; Events</div>
+  <div class="slide-num">03 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 4 — PROBABILITY · RANDOM VARIABLE        -->
+<!-- ============================================ -->
+<section class="slide" data-name="Random Variable">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">PROBABILITY PRIMER · 2 OF 4</span>
+    <h2 class="h2 reveal">From outcomes to numbers: the <span class="hl">random variable.</span></h2>
+    <p class="body dim reveal" style="max-width:960px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Try this question: <b>"In 100 coin flips, how many heads will I see?"</b> Outcomes like <b>H</b> and <b>T</b> aren't numbers — you can't add them, average them, or plot them. Most real sample spaces are like this — weather conditions, cards drawn, songs played. So we build a tiny bridge: <b>assign a number to every outcome</b>, and the messy world becomes <i>calculable</i>.
+    </p>
+
+    <div class="formula-box reveal" style="padding:1rem 1.5rem;margin:.5rem auto;max-width:900px">
+      <div class="formula" style="font-size:clamp(1.4rem,2.4vw,1.95rem)">\[ X : \Omega \to \mathbb{R} \]</div>
+      <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.4rem;letter-spacing:.05em">
+        A random variable \(X\) is a function. For each outcome \(\omega \in \Omega\), it hands back a number \(X(\omega)\).
+      </div>
+    </div>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch;margin-top:.4rem">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:1rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">DEFINE X · "NUMBER OF HEADS"</span>
+        <div style="font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;font-size:clamp(1.1rem,1.55vw,1.4rem);text-align:center;line-height:1.7;margin:.2rem 0">
+          \(X(H) = 1, \quad X(T) = 0\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45">
+          One number per outcome — that's the whole job of \(X\). Here it encodes a yes/no question: "did we see a head?"
+        </p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.45rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)">WRITE THE EVENT AS MATH</span>
+        <p style="font-size:clamp(.78rem,1vw,.92rem);line-height:1.4;color:var(--dim);margin:0">
+          Over 5 flips let \(X_i = 1\) if flip \(i\) is heads, else \(0\). Turn each English event into a condition on the \(X_i\).
+        </p>
+        <div class="pq-grid" style="margin-top:0;gap:.4rem">
+          <div class="pq-card tinted-peach revealed" style="padding:.5rem .8rem">
+            <span class="pq-label">Q1 · WORKED EXAMPLE</span>
+            <div class="pq-back">
+              <p style="margin-bottom:.35rem"><b>Event:</b> exactly <b>2 heads</b> in 5 flips.</p>
+              <span class="pq-answer">\(\sum_{i=1}^{5} X_i = 2\)</span>
+              <p>The head count is \(X_1+\cdots+X_5\); "exactly 2 heads" pins that sum to 2.</p>
+            </div>
+          </div>
+          <div class="pq-card tinted-mint" style="padding:.5rem .8rem">
+            <span class="pq-label">Q2 · YOUR TURN</span>
+            <div class="pq-front"><p><b>Event:</b> <b>at least one</b> head in 5 flips. Write it.</p></div>
+            <div class="pq-back">
+              <span class="pq-answer">\(\sum_{i=1}^{5} X_i \ge 1\)</span>
+              <p>"At least one" means the head count is 1 or more.</p>
+            </div>
+            <span class="pq-tap">tap to reveal</span>
+          </div>
+          <div class="pq-card tinted-lilac" style="padding:.5rem .8rem">
+            <span class="pq-label">Q3 · YOUR TURN</span>
+            <div class="pq-front"><p><b>Event:</b> <b>more heads than tails</b> in 5 flips. Write it.</p></div>
+            <div class="pq-back">
+              <span class="pq-answer">\(\sum_{i=1}^{5} X_i \ge 3\)</span>
+              <p>With 5 flips, "more heads than tails" needs at least 3 heads.</p>
+            </div>
+            <span class="pq-tap">tap to reveal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.9rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:940px;margin-left:auto;margin-right:auto">
+      Once events are conditions on numbers, we can ask <b>how likely</b> each value is — and what value to <b>expect on average</b>. Next slide.
+    </p>
+  </div>
+  <div class="slide-name">Random Variable</div>
+  <div class="slide-num">04 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 5 — PROBABILITY · DISTRIBUTION + E[X]    -->
+<!-- ============================================ -->
+<section class="slide" data-name="Distribution &amp; Expectation">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">PROBABILITY PRIMER · 3 OF 4</span>
+    <h2 class="h2 reveal">How likely — and what to <span class="hl">expect.</span></h2>
+    <p class="body dim reveal" style="max-width:940px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Once \(X\) is a random variable, two questions follow: <b>how often does it take each value</b>, and <b>what value should we expect on average</b>?
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch">
+      <div class="var-formula" style="text-align:left;display:flex;flex-direction:column;gap:.55rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">DISTRIBUTION</span>
+        <div class="big" style="text-align:center">\[ p_X(x) = P(X = x) \]</div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45;color:var(--ink)">For each possible value \(x\), the chance that \(X\) equals it. The whole list sums to 1.</p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.6;margin-top:auto">
+          🎲 Fair die: \(p_X(k) = \tfrac{1}{6}\) for \(k = 1,\ldots,6\)
+        </div>
+      </div>
+      <div class="var-formula" style="text-align:left;display:flex;flex-direction:column;gap:.55rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">EXPECTATION</span>
+        <div class="big" style="text-align:center">\[ \mathbb{E}[X] = \sum_x x \cdot p_X(x) \]</div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45;color:var(--ink)">
+          A <b>weighted average</b> of the values — each value \(x\) weighted by its probability \(p_X(x)\). More-probable values pull the average toward them. There's <b>no notion of time</b> here — it's just a sum. <i>(How this connects to real repeated trials → next slide.)</i>
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.7;margin-top:auto">
+          🎲 Die: \(\mathbb{E}[X] = 1{\cdot}\tfrac{1}{6} + 2{\cdot}\tfrac{1}{6} + \cdots + 6{\cdot}\tfrac{1}{6} = \tfrac{21}{6} = 3.5\)
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:920px;margin-left:auto;margin-right:auto">
+      <b>Why we care:</b> RL agents maximize \(\mathbb{E}[G_t]\) — the <b>expected</b> total reward, not any single outcome. The symbol \(\mathbb{E}\) will show up in nearly every formula from here on.
+    </p>
+  </div>
+  <div class="slide-name">Distribution &amp; Expectation</div>
+  <div class="slide-num">05 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 6 — FREQUENCY → PROBABILITY (interactive) -->
+<!-- ============================================ -->
+<section class="slide" data-name="Frequency &amp; Probability" id="coinfreq-slide">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">WHAT PROBABILITY MEANS</span>
+    <h2 class="h2 reveal">Frequency <span class="hl">becomes</span> probability.</h2>
+    <p class="body dim reveal" style="max-width:980px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      We keep writing \(P(H)=\tfrac12\) — but what does that <i>number</i> mean? Flip a coin \(n\) times and track the <b>frequency</b> of heads. As \(n\) grows, that fraction stops wandering and settles onto the probability.
+    </p>
+
+    <div class="cf-layout reveal">
+      <div class="cf-concept">
+        <div class="cf-row">
+          <span class="cf-k">FREQUENCY · what you observe</span>
+          <div class="big" style="text-align:center">\[ \hat{p}_n = \frac{\#\,\text{heads in } n \text{ flips}}{n} \]</div>
+          <p>The <b>empirical</b> fraction — it changes with every flip.</p>
+        </div>
+        <div class="cf-row">
+          <span class="cf-k">PROBABILITY · what it converges to</span>
+          <div class="big" style="text-align:center">\[ \hat{p}_n \;\longrightarrow\; p=\tfrac12 \quad (n\to\infty) \]</div>
+          <p>The fixed value the frequency settles on — the <b>law of large numbers</b>. It's <i>why</i> a weighted average (expectation) predicts real performance.</p>
+        </div>
+        <p style="font-size:clamp(.72rem,.92vw,.85rem);line-height:1.4;color:var(--dim);margin:0;font-style:italic">
+          † Law of large numbers — Jacob Bernoulli, <i>Ars Conjectandi</i> (1713); strong form: Borel (1909), Kolmogorov (1933).
+        </p>
+      </div>
+
+      <div class="cf-demo">
+        <canvas id="cf-canvas" width="560" height="290"></canvas>
+        <div class="cf-stats">
+          <div class="cf-stat"><span class="cf-stat-num" id="cf-flips">0</span><span class="cf-stat-lab">flips</span></div>
+          <div class="cf-stat"><span class="cf-stat-num" id="cf-heads">0</span><span class="cf-stat-lab">heads</span></div>
+          <div class="cf-stat"><span class="cf-stat-num" id="cf-freq">—</span><span class="cf-stat-lab">frequency</span></div>
+        </div>
+        <div class="cf-btns">
+          <button class="cf-btn" data-flip="1">Flip ×1</button>
+          <button class="cf-btn" data-flip="10">Flip ×10</button>
+          <button class="cf-btn" data-flip="100">Flip ×100</button>
+          <button class="cf-btn cf-reset" data-flip="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Frequency &amp; Probability</div>
+  <div class="slide-num">06 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — EMPIRICAL MEAN → EXPECTATION (game)  -->
+<!-- ============================================ -->
+<section class="slide" data-name="Mean &amp; Expectation" id="meanconv-slide">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">WHAT EXPECTATION MEANS</span>
+    <h2 class="h2 reveal">The average <span class="hl">settles</span> on \(\mathbb{E}[X]\).</h2>
+    <p class="body dim reveal" style="max-width:980px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      We computed \(\mathbb{E}[X]=3.5\) for a fair die as a <i>weighted average</i>. Now roll it for real: the <b>empirical mean</b> of the numbers you roll converges to that very value.
+    </p>
+
+    <div class="cf-layout reveal">
+      <div class="cf-concept">
+        <div class="cf-row">
+          <span class="cf-k">EMPIRICAL MEAN · what you observe</span>
+          <div class="big" style="text-align:center">\[ \bar{X}_n = \frac{X_1 + \cdots + X_n}{n} \]</div>
+          <p>The running average of the numbers you actually rolled — it jumps around at first.</p>
+        </div>
+        <div class="cf-row">
+          <span class="cf-k">EXPECTATION · what it converges to</span>
+          <div class="big" style="text-align:center">\[ \bar{X}_n \;\longrightarrow\; \mathbb{E}[X]=3.5 \quad (n\to\infty) \]</div>
+          <p>The weighted average from the last slide, now confirmed by experiment. This is <i>why</i> RL can optimize \(\mathbb{E}\).</p>
+        </div>
+        <p style="font-size:clamp(.72rem,.92vw,.85rem);line-height:1.4;color:var(--dim);margin:0;font-style:italic">
+          † Law of large numbers — Jacob Bernoulli, <i>Ars Conjectandi</i> (1713); strong form: Borel (1909), Kolmogorov (1933).
+        </p>
+      </div>
+
+      <div class="cf-demo">
+        <canvas id="mean-canvas" width="560" height="290"></canvas>
+        <div class="cf-stats">
+          <div class="cf-stat"><span class="cf-stat-num" id="em-rolls">0</span><span class="cf-stat-lab">rolls</span></div>
+          <div class="cf-stat"><span class="cf-stat-num" id="em-sum">0</span><span class="cf-stat-lab">sum</span></div>
+          <div class="cf-stat"><span class="cf-stat-num" id="em-mean">—</span><span class="cf-stat-lab">mean</span></div>
+        </div>
+        <div class="cf-btns">
+          <button class="cf-btn" data-flip="1">Roll ×1</button>
+          <button class="cf-btn" data-flip="10">Roll ×10</button>
+          <button class="cf-btn" data-flip="100">Roll ×100</button>
+          <button class="cf-btn cf-reset" data-flip="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Mean &amp; Expectation</div>
+  <div class="slide-num">07 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 8 — PROBABILITY · CONDITIONAL            -->
+<!-- ============================================ -->
+<section class="slide" data-name="Conditional">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">PROBABILITY PRIMER · 4 OF 4</span>
+    <h2 class="h2 reveal">When new info <span class="hl">changes the odds.</span></h2>
+    <p class="body dim reveal" style="max-width:960px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Probabilities update when you learn something. If I tell you it's cloudy outside, your guess that it'll rain rises. We write the updated probability as \(P(A \mid B)\) — read aloud "<b>probability of \(A\) given \(B\)</b>."
+    </p>
+
+    <div class="formula-box reveal" style="padding:1rem 1.5rem;margin:.5rem auto;max-width:900px">
+      <div class="formula" style="font-size:clamp(1.4rem,2.4vw,1.95rem)">\[ P(A \mid B) = \frac{P(A \cap B)}{P(B)} \]</div>
+      <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.4rem;letter-spacing:.05em">
+        \(P(A \cap B)\) is the chance that <b>both</b> \(A\) and \(B\) happen. So: of all the times \(B\) happens, what fraction also have \(A\)? <i>(We need \(P(B) > 0\).)</i>
+      </div>
+    </div>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch;margin-top:.4rem">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:1rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">CARDS · A WORKED EXAMPLE</span>
+        <div style="font-family:var(--font-mono);font-size:clamp(.85rem,1.1vw,1rem);line-height:1.7;margin:.2rem 0">
+          \(A\) = "King" \(\to P(A) = \tfrac{4}{52}\)<br>
+          \(B\) = "face card" \(\to P(B) = \tfrac{12}{52}\)<br>
+          All Kings are face cards: \(P(A \cap B) = \tfrac{4}{52}\)<br>
+          \(P(A \mid B) = \dfrac{4/52}{12/52} = \tfrac{1}{3}\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45">
+          Knowing \(B\) jumps the chance: \(\tfrac{1}{13} \to \tfrac{1}{3}\).
+        </p>
+      </div>
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:1rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">RL IS BUILT FROM CONDITIONAL DISTRIBUTIONS</span>
+        <div style="font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;font-size:clamp(1.05rem,1.4vw,1.3rem);line-height:1.9;margin:.2rem 0;text-align:center">
+          Transition: \(P(s' \mid s, a)\)<br>
+          Policy: \(\pi(a \mid s)\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45">
+          Each is a whole <b>conditional distribution</b> — a probability for <i>every</i> next state \(s'\) (or action \(a\)), given what we condition on. Every <b>|</b> asks: <i>"what's likely next, given what we know now?"</i>
+        </p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.9rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:920px;margin-left:auto;margin-right:auto">
+      That's our probability toolkit. Now we use it to formalize every part of the agent–environment loop.
+    </p>
+  </div>
+  <div class="slide-name">Conditional</div>
+  <div class="slide-num">08 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — PROBABILITY QUIZ                     -->
+<!-- ============================================ -->
+<section class="slide" data-name="Probability Quiz" id="pquiz-slide">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:6%"></span>
+
+  <div class="slide-inner" style="justify-content:flex-start">
+    <span class="tag sun reveal">PAUSE &amp; THINK</span>
+    <h2 class="h2 reveal">Quick <span class="hl">probability check.</span></h2>
+    <p class="body dim reveal" style="font-size:clamp(.85rem,1.1vw,1rem);margin-bottom:.3rem">Q1 is a worked demo — the recipe is always: <b>① what is \(\Omega\)? ② model the event ③ compute \(P\)</b>. Tap Q2 and Q3 to check yourself.</p>
+
+    <div class="pq-grid reveal">
+      <!-- Q1 — worked demo: Ω → event → P -->
+      <div class="pq-card tinted-mint revealed" data-pq="0">
+        <span class="pq-label">Q1 · WORKED DEMO · Ω → EVENT → P</span>
+        <div class="pq-back">
+          <p style="margin-bottom:.4rem"><b>Flip 3 fair coins.</b> Find \(P(\text{exactly 2 heads})\).</p>
+          <span class="pq-answer">\(P = 3/8\)</span>
+          <p>
+            <b>① Sample space.</b> \(\Omega = \{HHH,HHT,HTH,HTT,THH,THT,TTH,TTT\}\); \(|\Omega| = 2^3 = 8\), all equally likely.<br>
+            <b>② Model the event.</b> \(A = \{HHT, HTH, THH\}\), so \(|A| = 3\).<br>
+            <b>③ Probability.</b> \(P(A) = \dfrac{|A|}{|\Omega|} = \dfrac{3}{8}.\)
+          </p>
+        </div>
+      </div>
+
+      <!-- Q2 — your turn: Ω → event → P -->
+      <div class="pq-card tinted-peach" data-pq="1">
+        <span class="pq-label">Q2 · YOUR TURN · Ω → EVENT → P</span>
+        <div class="pq-front">
+          <p>Roll <b>two fair dice</b>. What is \(P(\text{sum} = 7)\)? Work the three steps: what is \(\Omega\), which outcomes form the event, then the probability.</p>
+        </div>
+        <div class="pq-back">
+          <span class="pq-answer">\(P = 6/36 = 1/6\)</span>
+          <p>
+            <b>① \(\Omega\).</b> Ordered pairs \((d_1,d_2)\), \(d_i\in\{1,\ldots,6\}\); \(|\Omega| = 36\).<br>
+            <b>② Event.</b> \(A = \{(1,6),(2,5),(3,4),(4,3),(5,2),(6,1)\}\), \(|A| = 6\).<br>
+            <b>③ Probability.</b> \(P(A) = \dfrac{6}{36} = \dfrac{1}{6}.\)
+          </p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <!-- Q3 — conditional → belief → Bayes, built step by step -->
+      <div class="pq-card tinted-lilac pq-stepper" data-pq="2">
+        <span class="pq-label">Q3 · CONDITIONAL · BUILD IT STEP BY STEP</span>
+        <div class="pq-question">
+          <p>Two chests, you can't tell them apart: 🎁 a <b>Legendary</b> (rare drop <b>80%</b>) and 📦 a <b>Standard</b> (<b>50%</b>), each equally likely. You get <b>2 pulls</b>. Pull #1 — <b>RARE!</b> 🎉 For pull #2: <b>stick or switch?</b></p>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">① Prior — before any pull</span>
+          <p>You can't tell the chests apart, so each is Legendary or Standard with equal chance: \(P(\text{Leg}) = P(\text{Std}) = \tfrac12.\)</p>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">② How likely was a rare at all?</span>
+          <p>Average the two rare-rates over your prior (law of total probability):<br>
+          \(P(\text{rare}) = \underbrace{\tfrac12(0.8)}_{\text{Leg branch}} + \underbrace{\tfrac12(0.5)}_{\text{Std branch}} = 0.65.\)</p>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">③ Update your belief — this is Bayes</span>
+          <p>\(P(\text{Leg}\mid\text{rare}) = \dfrac{P(\text{rare}\mid\text{Leg})\,P(\text{Leg})}{P(\text{rare})} = \dfrac{0.8 \cdot 0.5}{0.65} = \tfrac{8}{13} \approx 62\%.\)<br>
+          So \(P(\text{Std}\mid\text{rare}) = \tfrac{5}{13}\). The rare made Legendary <i>more</i> believable: \(50\% \to 62\%\).</p>
+          <div class="pq-belief" style="background:var(--sun)">
+            <span class="pq-belief-tag">📜 BAYES' THEOREM</span>
+            <span>\(P(H\mid E) = \dfrac{P(E\mid H)\,P(H)}{P(E)}\) — <b>posterior ∝ likelihood × prior</b>. The single most-used equation in RL belief updates. (Bayes, 1763.)</span>
+          </div>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">④ STICK — pull the same chest again</span>
+          <p>Mix the rare-rates by your <i>updated</i> belief:<br>
+          \(\underbrace{0.8}_{\text{Leg drops rare}}\cdot\underbrace{\tfrac{8}{13}}_{\text{belief it's Leg}} + \underbrace{0.5}_{\text{Std drops rare}}\cdot\underbrace{\tfrac{5}{13}}_{\text{belief it's Std}} = \tfrac{8.9}{13} \approx 68\%.\)<br>
+          Each term reads: <b>(this chest's rare-rate) × (your belief you're holding it)</b>. E.g. \(0.8 \cdot \tfrac{8}{13}\) = "I'm \(\tfrac{8}{13}\) sure it's Legendary, and a Legendary drops rare 80% of the time."</p>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">⑤ SWITCH — try the other chest</span>
+          <p>If this one is Legendary the other is Standard, and vice-versa — so the <i>other</i> chest is Legendary with prob \(\tfrac{5}{13}\):<br>
+          \(0.8\cdot\tfrac{5}{13} + 0.5\cdot\tfrac{8}{13} = \tfrac{8}{13} \approx 62\%.\)</p>
+        </div>
+
+        <div class="pq-step">
+          <span class="pq-step-k">⑥ Decision</span>
+          <span class="pq-answer">Stick — 68% &gt; 62%</span>
+          <div class="pq-belief">
+            <span class="pq-belief-tag">📌 BELIEF</span>
+            <span>That updated probability <b>is</b> your belief — using it to pick the better chest is how observations turn into smarter actions.</span>
+          </div>
+          <div class="pq-belief" style="background:var(--sky);margin-top:.4rem">
+            <span class="pq-belief-tag">⚡ DÉJÀ VU?</span>
+            <span>Now imagine <b>3 chests, 20 pulls</b> — that's the <b>multi-armed bandit</b> from Lecture 1. Belief is exactly the math behind <b>explore-vs-exploit</b>.</span>
+          </div>
+        </div>
+
+        <span class="pq-tap">tap to start →</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Probability Quiz</div>
+  <div class="slide-num">09 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 8 — BRIDGE · CHEST vs MAB                -->
+<!-- ============================================ -->
+<section class="slide" data-name="Bridge: Chest vs MAB">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">BRIDGE · PROBABILITY → RL</span>
+    <h2 class="h2 reveal">What's actually <span class="hl">different?</span></h2>
+    <p class="body dim reveal" style="max-width:920px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      The chest problem looked a lot like the 3-box bandit you played in Lecture 1. <b>Where do they actually diverge?</b>
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch;margin-top:.5rem">
+      <div class="var-formula" style="background:var(--lilac);text-align:left;display:flex;flex-direction:column;gap:.5rem;padding:1rem 1.2rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">CHEST PROBLEM (today)</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.5vw,1.35rem);line-height:1.2;margin:0">Rates are <b>known</b>.</h3>
+        <p style="font-size:clamp(.9rem,1.15vw,1.05rem);line-height:1.5;margin:0">You're given the rates — 🎁 80% rare, 📦 50% rare. You only need to figure out <b>which chest is which</b>.</p>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0;font-style:italic;color:var(--dim)">Bayesian update is exact: one observation directly maps to a posterior.</p>
+      </div>
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.5rem;padding:1rem 1.2rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">MULTI-ARMED BANDIT (L1)</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.5vw,1.35rem);line-height:1.2;margin:0">Rates are <b>hidden</b>.</h3>
+        <p style="font-size:clamp(.9rem,1.15vw,1.05rem);line-height:1.5;margin:0">You don't know any box's drop rate. You learn the rates <b>only by pulling</b> — every action also produces data.</p>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0;font-style:italic;color:var(--dim)">No closed-form answer. Explore-vs-exploit kicks in. ε-greedy lives here.</p>
+      </div>
+    </div>
+
+    <div class="pq-belief reveal" style="background:var(--mint);max-width:1100px;margin:1rem auto 0">
+      <span class="pq-belief-tag">⏭ ON TO RL</span>
+      <span>Same idea, harder setting: maintain a <b>belief</b> about each option, use it to choose actions. The probability tools we just built are the language of RL — time to start naming the parts.</span>
+    </div>
+  </div>
+  <div class="slide-name">Bridge</div>
+  <div class="slide-num">10 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — ★ OPTIONAL APPENDIX · INTRO         -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Deep Dive Begins">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-lilac square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-rose pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag sky reveal">★ OPTIONAL APPENDIX</span>
+    <h1 class="title reveal">Deep dive into the<br><span class="hl">probability world.</span></h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.5vw,1.25rem);max-width:1100px;margin-bottom:1.1rem;text-align:center">
+      The next nine slides peek under the hood — σ-algebras, measures, almost-sure convergence, the geometry of random variables, Bayesian vs frequentist views, and even a tour of the Bayesian brain. <b>Interestingly abstract</b> (and honestly, hard).
+    </p>
+
+    <div class="reveal" style="background:var(--sun);border:3px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:1.1rem 1.4rem;max-width:900px;margin:.4rem auto 0;display:flex;align-items:center;gap:.95rem">
+      <span style="font-size:clamp(1.8rem,2.8vw,2.4rem);line-height:1">⚠️</span>
+      <div style="text-align:left">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.25rem">A FRIENDLY HEADS-UP</span>
+        <p style="font-size:clamp(.95rem,1.2vw,1.12rem);line-height:1.5;margin:0">
+          If you don't follow everything — <b>that's totally okay</b>. <i>None of this is a prerequisite</i> for the rest of the course. Skim it, savor it, or skip ahead. You can always come back.
+        </p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1.1rem;font-style:italic;text-align:center;font-size:clamp(.9rem,1.15vw,1.05rem)">
+      The aim isn't mastery — it's a guided look at how mathematicians think about probability.
+    </p>
+  </div>
+  <div class="slide-name">★ Deep Dive Begins</div>
+  <div class="slide-num">11 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 12 — ★ OPTIONAL · PROBABILITY TRIPLE     -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Triple">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 1 OF 8 · TRIPLE</span>
+    <h2 class="h2 reveal">The formal object: \((\Omega, \mathcal{F}, P)\).</h2>
+    <p class="body dim reveal" style="max-width:980px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      The probability space is a <b>three-piece object</b>. We've used \(\Omega\) and \(P\) all along; the hidden third piece is \(\mathcal{F}\) — the <b>family of allowable events</b>. Together they form the <b>probability triple</b>.
+    </p>
+
+    <div class="foundations-grid reveal">
+      <div class="found-card">
+        <span class="f-tag">SAMPLE SPACE</span>
+        <div class="f-sym">\(\Omega\)</div>
+        <p class="f-def">Set of all possible outcomes \(\omega\). A single trial picks one.</p>
+        <div class="f-ex">
+          🎲 \(\Omega = \{1,\ldots,6\}\)<br>
+          🎯 \(\Omega = [0, 2\pi)\) (dart angle)
+        </div>
+      </div>
+      <div class="found-card">
+        <span class="f-tag">σ-ALGEBRA</span>
+        <div class="f-sym">\(\mathcal{F}\)</div>
+        <p class="f-def">A family of subsets of \(\Omega\) — the events you're allowed to ask about. Closed under <b>complement</b>, closed under <b>countable union</b>, and contains \(\Omega\).</p>
+        <div class="f-ex">
+          🎲 Discrete: \(\mathcal{F} = 2^\Omega\) (all 64 subsets)<br>
+          🎯 Continuous: <b>Borel σ-algebra</b> on \([0, 2\pi)\)
+        </div>
+      </div>
+      <div class="found-card">
+        <span class="f-tag">PROBABILITY MEASURE</span>
+        <div class="f-sym">\(P : \mathcal{F} \to [0,1]\)</div>
+        <p class="f-def">Assigns a number to each event in \(\mathcal{F}\). Rules: \(P(\Omega) = 1\); for disjoint \(A_1, A_2, \ldots \in \mathcal{F}\), \(P\!\left(\bigcup_i A_i\right) = \sum_i P(A_i)\) (<b>countable additivity</b>).</p>
+        <div class="f-ex">
+          🎲 \(P(\{2,4,6\}) = 1/2\)<br>
+          🎯 \(P([0, \pi)) = 1/2\)
+        </div>
+      </div>
+    </div>
+
+    <aside class="side-note reveal">
+      <span class="sn-label">📝 Why bother with \(\mathcal{F}\)?</span>
+      <p>For finite or countable \(\Omega\) (dice, coin flips), \(\mathcal{F}\) is just the power set — every subset gets a probability. But on continuous \(\Omega\) like the real line, you literally <i>cannot</i> assign a probability to every subset consistently (Vitali, 1905). \(\mathcal{F}\) is the polite list of "the subsets we'll talk to."</p>
+      <p class="skip">The Borel σ-algebra is the smallest \(\mathcal{F}\) generated by all open intervals — closed under complement and countable union. It's what underpins every continuous distribution you'll meet. <i>(learn more in <b>measure theory</b> or <b>real analysis</b>)</i></p>
+    </aside>
+  </div>
+  <div class="slide-name">★ Triple</div>
+  <div class="slide-num">12 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — ★ OPTIONAL · MEASURE FAMILY         -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Measures">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 2 OF 8</span>
+    <h2 class="h2 reveal">Probability is just a <span class="hl">measure.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Two ideas fit together. <b>Events are sets</b> — so logic on events is just <b>set algebra</b>. <b>Probability is a "size function" on those sets</b> — like length, area, or volume. The whole machinery has a name: <b>measure theory</b>.
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch;margin-top:.55rem">
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.4rem;padding:.85rem 1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">EVENTS ↔ SETS · LOGIC IS SET ALGEBRA</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.5;margin-top:.1rem">
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"<i>A</i> or <i>B</i>" → \(A \cup B\)</div>
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"<i>A</i> and <i>B</i>" → \(A \cap B\)</div>
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"not <i>A</i>" → \(A^c\)</div>
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"<i>A</i> implies <i>B</i>" → \(A \subseteq B\)</div>
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"impossible" → \(\emptyset\)</div>
+          <div style="background:rgba(255,255,255,0.6);border:1.5px solid var(--line);border-radius:7px;padding:.32rem .5rem">"certain" → \(\Omega\)</div>
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--dim);margin:.3rem 0 0;font-style:italic">
+          A σ-algebra is closed under \(\cup, \cap, ^c\) — exactly so the events you can talk about stay in the family.
+        </p>
+      </div>
+
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.4rem;padding:.85rem 1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">A MEASURE IS A "SIZE FUNCTION"</span>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          A <b>measure</b> on \((\Omega, \mathcal{F})\) is any function \(\mu : \mathcal{F} \to [0, \infty]\) with:
+        </p>
+        <div style="background:rgba(255,255,255,0.65);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .75rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.02vw,.92rem);line-height:1.8">
+          ① \(\mu(\emptyset) = 0\)<br>
+          ② \(\mu\!\left(\bigcup_i A_i\right) = \sum_i \mu(A_i)\) for disjoint \(A_i\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:.05rem 0 0">
+          A <b>probability measure</b> adds one rule: \(P(\Omega) = 1\).
+        </p>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--dim);margin:0;font-style:italic">
+          Total "mass" equals 1 — the only thing that makes probability special.
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:.55rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:.35rem">SAME AXIOMS · MANY WORLDS</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem">
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.7rem .65rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:clamp(1.4rem,2vw,1.7rem);line-height:1;margin-bottom:.2rem">📏 🟦 🧊</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.1vw,1rem);margin-bottom:.15rem">Lebesgue</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.72rem,.9vw,.82rem);color:var(--dim);line-height:1.45">length / area / volume<br>on \(\mathbb{R}, \mathbb{R}^2, \mathbb{R}^3, \ldots\)</div>
+        </div>
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.7rem .65rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:clamp(1.4rem,2vw,1.7rem);line-height:1;margin-bottom:.2rem">🔢</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.1vw,1rem);margin-bottom:.15rem">Counting</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.72rem,.9vw,.82rem);color:var(--dim);line-height:1.45">\(\mu(A) = |A|\)<br>on a countable set</div>
+        </div>
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.7rem .65rem;box-shadow:3px 3px 0 var(--line);text-align:center">
+          <div style="font-size:clamp(1.4rem,2vw,1.7rem);line-height:1;margin-bottom:.2rem">🎲</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.1vw,1rem);margin-bottom:.15rem">Probability</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.72rem,.9vw,.82rem);color:var(--dim);line-height:1.45">any \(P\) with \(P(\Omega) = 1\)<br>(normalized)</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.6rem;font-style:italic;text-align:center;font-size:clamp(.82rem,1.05vw,.95rem);max-width:980px;margin-left:auto;margin-right:auto">
+      Studying all of these together is <b>measure theory</b> (Lebesgue, 1902) — one foundation under modern integrals, probability, and signal processing.
+    </p>
+  </div>
+  <div class="slide-name">★ Measures</div>
+  <div class="slide-num">13 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — ★ OPTIONAL · RIGOR DEEP DIVE        -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Rigor">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 3 OF 8 · RIGOR</span>
+    <h2 class="h2 reveal">Rigor: <span class="hl">a.s. convergence</span> and the Strong Law.</h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Remember slides 6–7? The coin frequency settled near \(\tfrac12\), the dice average settled near 3.5 — but neither <i>stopped wobbling</i>. How do you state "it converges" precisely, when the path keeps fluctuating? <b>Two answers, two strengths</b> — both made possible by Kolmogorov's measure theory (1933).
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.4rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">WEAK LAW · \(\xrightarrow{P}\)</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin:0">"At any huge \(n\), you're probably close."</h3>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          Pick a massive \(n\) (say \(10^6\)). The probability that the running average at <i>that exact step</i> is far from \(\tfrac12\) is nearly zero.
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .7rem;text-align:center;font-family:var(--font-mono);font-size:clamp(.85rem,1.05vw,.95rem)">
+          \(P\!\left(|\bar{X}_n - \mu| > \varepsilon\right) \to 0\)
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--ink);font-style:italic;margin:0">
+          A statement about <b>fixed-time</b> probability. Says nothing about whole paths.
+        </p>
+      </div>
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.4rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">STRONG LAW · \(\xrightarrow{\text{a.s.}}\)</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin:0">"In every universe but a measure-zero one, you converge."</h3>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          Run the experiment forever. The sequence of running averages converges to \(\tfrac12\) for <b>every universe</b>, except a collection of pathological universes whose total probability is \(0\).
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .7rem;text-align:center;font-family:var(--font-mono);font-size:clamp(.85rem,1.05vw,.95rem)">
+          \(P\!\left(\lim_{n\to\infty}\bar{X}_n = \mu\right) = 1\)
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--ink);font-style:italic;margin:0">
+          A statement about <b>whole paths</b>. To even ask "what's the measure of the bad set?" you need \(\mathcal{F}\).
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:.55rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:.3rem">WHAT THIS UNLOCKED</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem">
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">📊</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Stochastic processes</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Markov chains · Brownian motion</div>
+        </div>
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">∫</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Stochastic integrals</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Itô calculus · option pricing</div>
+        </div>
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">📡</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Information theory</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Shannon entropy · codes</div>
+        </div>
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:3px 3px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">🤖</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">RL convergence</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Q-learning a.s. convergence proofs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">★ Rigor</div>
+  <div class="slide-num">14 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — ★ OPTIONAL · UNIFICATION DEEP DIVE  -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Unification">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 4 OF 8 · UNIFICATION</span>
+    <h2 class="h2 reveal">Unification: <span class="hl">discrete</span> and <span class="hl">continuous</span>, one frame.</h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Pre-Kolmogorov, dice problems and continuous random variables (gas-particle velocities, daily temperatures, stock prices) needed different machinery — counting on one side, calculus on the other. After 1933, they're <b>the same object</b>: a probability measure on a measurable space. Different sets, identical axioms.
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">DISCRETE WORLD</span>
+        <p style="font-size:clamp(.88rem,1.13vw,1.02rem);line-height:1.5;margin:0">
+          🪙 Coin flip · 🎲 Dice · 🎴 Cards · 📦 Bandit arms.
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.02vw,.92rem);line-height:1.7">
+          \(\Omega = \{\omega_1, \omega_2, \ldots\}\)<br>
+          \(\mathbb{E}[X] = \sum_k x_k\, p_X(x_k)\)
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--dim);font-style:italic;margin:0">
+          Sums. Counting measure underneath.
+        </p>
+      </div>
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">CONTINUOUS WORLD</span>
+        <p style="font-size:clamp(.88rem,1.13vw,1.02rem);line-height:1.5;margin:0">
+          🌡 Temperature · 💹 Stock price · 🏃 Reaction time · 📡 Sensor noise.
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.02vw,.92rem);line-height:1.7">
+          \(\Omega \subseteq \mathbb{R}\)<br>
+          \(\mathbb{E}[X] = \int_{\mathbb{R}} x\, f_X(x)\, dx\)
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.45;color:var(--dim);font-style:italic;margin:0">
+          Integrals. Lebesgue measure underneath.
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal" style="background:var(--sun);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.85rem 1.1rem;margin-top:.55rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;text-align:center">ONE FRAMEWORK · BOTH WORLDS</span>
+      <div style="text-align:center;margin-top:.4rem;font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;font-size:clamp(1.1rem,1.65vw,1.45rem)">
+        \(\mathbb{E}[X] = \int_\Omega X(\omega) \, dP(\omega)\)
+      </div>
+      <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;text-align:center;margin:.4rem 0 0">
+        One Lebesgue integral against the measure \(P\). Whether \(\Omega\) is discrete or continuous, the formula is the same — the measure does the work. <b>LLN, CLT, Bayes</b> all hold simultaneously in both worlds.
+      </p>
+    </div>
+  </div>
+  <div class="slide-name">★ Unification</div>
+  <div class="slide-num">15 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — ★ OPTIONAL · GEOMETRY DEEP DIVE     -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Geometry">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 5 OF 8 · GEOMETRY</span>
+    <h2 class="h2 reveal">Geometry: random variables as <span class="hl">vectors.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Sets become spaces; spaces inherit geometry. Once \(L^2\) — the space of square-integrable random variables — is the playground, abstract probability concepts <i>turn into</i> familiar vector geometry.
+    </p>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">RANDOM VARIABLES = VECTORS</span>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          In \(L^2\), an inner product encodes covariance:
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;text-align:center;font-family:var(--font-mono);font-size:clamp(.85rem,1.05vw,.95rem);line-height:1.7">
+          \(\langle X, Y \rangle = \mathbb{E}[XY]\)<br>
+          \(\|X\|^2 = \mathbb{E}[X^2]\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          <b>Uncorrelated</b> ↔ <b>orthogonal</b>: \(\langle X, Y \rangle = 0\) iff \(\mathrm{Cov}(X,Y) = 0\) (after centering).
+        </p>
+        <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.5;margin:.15rem 0 0;padding:.45rem .6rem;background:rgba(255,255,255,0.55);border:1.5px dashed var(--line);border-radius:7px;color:var(--ink)">
+          <b>† Wait — aren't random variables <i>functions</i>?</b><br>
+          Yes: \(X : \Omega \to \mathbb{R}\). And <i>functions are vectors</i> — they live inside an abstract, infinite-dimensional vector space (here, \(L^2\)). You can add them, scale them, take inner products. "Function" and "vector" aren't a contradiction; the second is a coordinate-free way to think about the first. <i>(learn more in <b>functional analysis</b>)</i>
+        </p>
+      </div>
+      <div class="var-formula" style="background:var(--lilac);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:.95rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">COND. EXPECTATION = PROJECTION</span>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          \(\mathbb{E}[X \mid \mathcal{G}]\) is the <b>orthogonal projection</b> of \(X\) onto the subspace of \(\mathcal{G}\)-measurable random variables.
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;text-align:center;font-family:var(--font-mono);font-size:clamp(.85rem,1.05vw,.95rem);line-height:1.7">
+          \(\hat{X} = \mathbb{E}[X \mid \mathcal{G}] = \mathrm{proj}_{L^2(\mathcal{G})}\, X\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          The "best guess of \(X\) using only info \(\mathcal{G}\)" is, geometrically, the <b>closest point</b> in that subspace — exactly like dropping a perpendicular.
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:.55rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:.3rem">WHERE THE GEOMETRIC VIEW LIVES</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem">
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">📐</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Information geometry</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Fisher metric · KL divergence</div>
+        </div>
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">🚚</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Optimal transport</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Wasserstein distance</div>
+        </div>
+        <div style="background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:2px 2px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">🎨</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">Diffusion models</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">Score = \(\nabla \log p\)</div>
+        </div>
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.55rem .55rem;box-shadow:3px 3px 0 var(--line);text-align:center">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.18rem">🤖</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(.78rem,.95vw,.88rem);margin-bottom:.08rem">RL value functions</div>
+          <div style="font-family:var(--font-mono);font-size:clamp(.7rem,.85vw,.8rem);color:var(--dim);line-height:1.35">\(V_\pi\) = projection of returns</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">★ Geometry</div>
+  <div class="slide-num">16 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 16 — ★ OPTIONAL · PUSHFORWARD MEASURE    -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Pushforward">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 6 OF 8</span>
+    <h2 class="h2 reveal">A random variable <span class="hl">pushes</span> a measure onto \(\mathbb{R}\).</h2>
+    <p class="body dim reveal" style="max-width:980px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      A random variable \(X : \Omega \to \mathbb{R}\) doesn't just turn outcomes into numbers — it <b>carries the probability with it</b>. To ask "what's the chance \(X \in B\)?" we pull \(B\) back to a set of outcomes in \(\Omega\), where probability already lives.
+    </p>
+
+    <div class="formula-box reveal" style="padding:1rem 1.5rem;margin:.4rem auto;max-width:980px">
+      <div class="formula" style="font-size:clamp(1.25rem,2.1vw,1.7rem)">\[ P_X(B) \;\equiv\; (X_* P)(B) \;=\; P\!\left(X^{-1}(B)\right) \;=\; P\!\left(\{\omega : X(\omega) \in B\}\right) \]</div>
+      <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.4rem;letter-spacing:.05em">
+        \(P_X\) is the <b>pushforward</b> (or <b>induced</b>) measure on \(\mathbb{R}\). It's the probability rule \(X\) creates out of \(P\).
+      </div>
+    </div>
+
+    <div class="var-detail reveal" style="grid-template-columns:1fr 1fr;align-items:stretch">
+      <div class="var-formula" style="background:var(--mint);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:1rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">EXAMPLE · TWO COIN FLIPS</span>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45;margin:0">
+          \(\Omega = \{HH, HT, TH, TT\}\), each outcome \(\tfrac{1}{4}\). Define \(X(\omega)\) = number of heads.
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.55rem .75rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem);line-height:1.75">
+          \(P_X(\{0\}) = P(\{TT\}) = 1/4\)<br>
+          \(P_X(\{1\}) = P(\{HT, TH\}) = 1/2\)<br>
+          \(P_X(\{2\}) = P(\{HH\}) = 1/4\)
+        </div>
+        <p style="font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.45;color:var(--dim);font-style:italic;margin:0">
+          The distribution we've been calling \(p_X\) is exactly \(P_X\).
+        </p>
+      </div>
+      <div class="var-formula" style="background:var(--peach);text-align:left;display:flex;flex-direction:column;gap:.45rem;padding:1rem 1.1rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase">WHY IT MATTERS</span>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          Two random variables can have the <b>same distribution</b> on totally different sample spaces. Your dice game and a casino's roulette can share \(P_X\), even though their \(\Omega\) and \(P\) look nothing alike.
+        </p>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0">
+          Expectation can be computed in either space:
+        </p>
+        <div style="background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .75rem;text-align:center">
+          \(\displaystyle \mathbb{E}[X] = \int_\Omega X \, dP = \int_{\mathbb{R}} x \, dP_X\)
+        </div>
+        <p style="font-size:clamp(.78rem,1vw,.92rem);line-height:1.5;font-style:italic;color:var(--dim);margin:0">
+          For \(P_X\) to be a valid measure, \(X\) must be <b>measurable</b>: \(X^{-1}(B) \in \mathcal{F}\) for every Borel \(B\).
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">★ Pushforward</div>
+  <div class="slide-num">17 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — ★ OPTIONAL · BAYESIAN VS FREQUENTIST -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Bayes vs Freq">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 7 OF 8</span>
+    <h2 class="h2 reveal">Two ways to read the same <span class="hl">\(P(A)\)</span>.</h2>
+    <p class="body dim reveal" style="max-width:980px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      Same axioms (Kolmogorov), same equations — two interpretations of what \(P(A)\) actually <i>means</i>. The split runs through 250 years of statistics and shows up everywhere in modern AI.
+    </p>
+
+    <div class="dvs-grid reveal" style="margin-top:.5rem">
+      <div class="dvs-col det">
+        <h3>Frequentist</h3>
+        <div class="formula-mini">\(P(A) = \displaystyle \lim_{n \to \infty} \frac{\#\{A \text{ in } n \text{ trials}\}}{n}\)</div>
+        <p style="font-size:clamp(.88rem,1.13vw,1.02rem);line-height:1.55">
+          Probability is a <b>long-run frequency</b>. <b>Parameters</b> are fixed but unknown; <b>data</b> is random. We use <b>confidence intervals</b>, <b>p-values</b>, and <b>maximum likelihood</b>. Slide 6's coin demo lives in this view.
+        </p>
+        <p style="font-size:clamp(.8rem,1.02vw,.93rem);line-height:1.5;font-style:italic;color:var(--dim);margin-top:.4rem">
+          Trouble: requires a "repeatable experiment." Hard to assign \(P(\text{rain tomorrow})\) — there's only one tomorrow.
+        </p>
+      </div>
+      <div class="dvs-col stoch">
+        <h3>Bayesian</h3>
+        <div class="formula-mini">\(P(\theta \mid \text{data}) \propto P(\text{data} \mid \theta) \, P(\theta)\)</div>
+        <p style="font-size:clamp(.88rem,1.13vw,1.02rem);line-height:1.55">
+          Probability is a <b>degree of belief</b>. <b>Parameters</b> are uncertain (random); <b>data</b> is observed (fixed). We use <b>priors</b>, <b>posteriors</b>, <b>credible intervals</b>. Slide 9's chest puzzle lives in this view.
+        </p>
+        <p style="font-size:clamp(.8rem,1.02vw,.93rem);line-height:1.5;font-style:italic;color:var(--dim);margin-top:.4rem">
+          Trouble: where does the prior come from? Two analysts with different priors can read the same data and reach different posteriors.
+        </p>
+      </div>
+    </div>
+
+    <div class="pq-belief reveal" style="background:var(--sun);max-width:1100px;margin:.85rem auto 0">
+      <span class="pq-belief-tag">⚖️ IN RL</span>
+      <span>Q-learning takes empirical averages of returns — frequentist in spirit. Thompson sampling, posterior sampling, and "Bayesian RL" maintain a posterior over the world model — Bayesian in spirit. Both ship.</span>
+    </div>
+  </div>
+  <div class="slide-name">★ Bayes vs Freq</div>
+  <div class="slide-num">18 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — ★ OPTIONAL · BAYESIAN BRAIN          -->
+<!-- ============================================ -->
+<section class="slide" data-name="★ Bayesian Brain">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">★ OPTIONAL · DEEP DIVE · 8 OF 8</span>
+    <h2 class="h2 reveal">Your brain is a (sometimes <span class="hl">broken</span>) Bayesian machine.</h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      The <b>Bayesian brain hypothesis</b> (Helmholtz, 1860s; revived by Knill, Pouget, and Friston in the 2000s) says perception and decisions are <b>posterior inferences</b>: prior expectations meet sensory likelihood, and we act on the result. Same machinery — beautiful when it works, buggy when it doesn't.
+    </p>
+
+    <div class="formula-box reveal" style="padding:.75rem 1.5rem;margin:.3rem auto;max-width:920px">
+      <div class="formula" style="font-size:clamp(1.05rem,1.7vw,1.4rem)">\[ \underbrace{P(\text{world} \mid \text{senses})}_{\text{what you perceive}} \;\propto\; \underbrace{P(\text{senses} \mid \text{world})}_{\text{likelihood}} \cdot \underbrace{P(\text{world})}_{\text{prior}} \]</div>
+    </div>
+
+    <div class="dvs-grid reveal" style="margin-top:.5rem">
+      <div class="dvs-col" style="background:var(--mint);padding:.95rem 1.15rem">
+        <h3 style="font-size:clamp(1rem,1.45vw,1.2rem)">✨ When it wins</h3>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.35rem;font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45">
+          <li>👁️ <b>Perception:</b> noisy retinal signals + prior on object shapes → a stable, recognizable scene.</li>
+          <li>🦾 <b>Motor control:</b> noisy proprioception + prior on body dynamics → reaching that doesn't overshoot.</li>
+          <li>🗣️ <b>Speech:</b> garbled phonemes + prior on words → "what they probably said."</li>
+          <li>📚 <b>Learning:</b> evidence updates beliefs about the world model — exactly what RL agents do.</li>
+        </ul>
+      </div>
+      <div class="dvs-col" style="background:#ffd9d9;padding:.95rem 1.15rem">
+        <h3 style="font-size:clamp(1rem,1.45vw,1.2rem)">💥 When it breaks</h3>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.35rem;font-size:clamp(.85rem,1.1vw,1rem);line-height:1.45">
+          <li>🩺 <b>Base-rate neglect:</b> 1% prevalence + 95% accurate test → most "positives" are false. Doctors and patients miss this.</li>
+          <li>🪜 <b>Anchoring:</b> the first number you see becomes a strong prior; later estimates drag toward it.</li>
+          <li>🛡️ <b>Confirmation bias:</b> ambiguous data gets read as confirming the prior. Stubborn beliefs survive contrary evidence.</li>
+          <li>👥 <b>Stereotypes:</b> we weight the group prior <i>far above</i> the actual base rate. "Shy and methodical" → people guess "engineer" — even when salespeople outnumber engineers ~10:1. The stereotype is real, but the prior we apply is much stronger than the truth.</li>
+        </ul>
+      </div>
+    </div>
+
+    <aside class="side-note reveal" style="margin-top:.6rem">
+      <span class="sn-label">📚 Going deeper</span>
+      <p>Search "predictive coding" (Rao &amp; Ballard, 1999), Friston's <b>free-energy principle</b>, Kahneman's <i>Thinking, Fast and Slow</i>, or Tom Griffiths' "Bayesian models of cognition" review. The same Bayes equation shows up in computer vision, neuroscience, behavioral economics, and RL — a lot of mileage from one little theorem.</p>
+    </aside>
+  </div>
+  <div class="slide-name">★ Bayesian Brain</div>
+  <div class="slide-num">19 / 20</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — NEXT TIME → L3                      -->
+<!-- ============================================ -->
+<section class="slide" data-name="Next">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:130px;height:130px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:14%;right:18%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag peach reveal">NEXT WEEK · LECTURE 3</span>
+    <h2 class="h2 reveal">From probability tools<br>to <span class="hl">naming the loop.</span></h2>
+
+    <div class="warrior-discuss reveal" style="margin-top:1.2rem;max-width:980px;gap:1.2rem">
+      <div class="wd-q" style="padding:1.05rem 1.25rem">
+        <span class="wd-tag" style="font-size:.78rem">📌 TODAY · THE LANGUAGE</span>
+        <p style="font-size:clamp(1.02rem,1.3vw,1.18rem);line-height:1.45">Outcomes, random variables, expectation, conditional probability, and Bayes — every <b>|</b> in RL is one of these. The bandit teaser shows where they meet RL.</p>
+      </div>
+      <div class="wd-q" style="padding:1.05rem 1.25rem">
+        <span class="wd-tag" style="font-size:.78rem">🔭 L3 · NAME EVERY PIECE</span>
+        <p style="font-size:clamp(1.02rem,1.3vw,1.18rem);line-height:1.45">State, action, reward, transition, policy — bundled into the <b>MDP</b>. Then we play a doors game and meet two values, <b>V</b> and <b>Q</b>.</p>
+      </div>
+    </div>
+
+    <div class="lecture-nav reveal" style="margin-top:1.4rem">
+      <a class="prev" href="lecture-1.html">← Lecture 1</a>
+      <a class="home" href="../index.html">Home</a>
+      <a class="next" href="lecture-3.html">Lecture 3: MDP, V &amp; Q →</a>
+    </div>
+  </div>
+  <div class="slide-name">Next</div>
+  <div class="slide-num">20 / 20</div>
+</section>
+
+<script src="shared.js"></script>
+
+<script>
+
+/* ============================================================
+   PROBABILITY QUIZ — slide 7
+   Tap each card to reveal the answer + explanation.
+   Q3 reveal includes the BELIEF callout (built into HTML).
+   ============================================================ */
+class ProbabilityQuiz{
+  constructor(){
+    this.cards=[...document.querySelectorAll('.pq-card')];
+    if(!this.cards.length)return;
+    this.cards.forEach(card=>{
+      if(card.classList.contains('pq-stepper')){this.initStepper(card);return;}
+      card.addEventListener('click',()=>{
+        if(card.classList.contains('revealed'))return;
+        card.classList.add('revealed');
+      });
+    });
+  }
+  initStepper(card){
+    const steps=[...card.querySelectorAll('.pq-step')];
+    const tap=card.querySelector('.pq-tap');
+    let shown=0;
+    const update=()=>{
+      if(!tap)return;
+      if(shown>=steps.length){tap.style.display='none';}
+      else{tap.textContent = shown===0 ? 'tap to start →' : 'tap for next step ('+shown+'/'+steps.length+') →';}
+    };
+    card.addEventListener('click',()=>{
+      if(shown>=steps.length)return;
+      steps[shown].classList.add('show');
+      shown++;
+      if(shown>=steps.length)card.classList.add('revealed');
+      update();
+    });
+  }
+}
+
+/* ============================================================
+   FREQUENCY → PROBABILITY — slide 6
+   Click to flip coins; watch the running frequency of heads
+   converge to p = 0.5 on a live line chart.
+   ============================================================ */
+class CoinFreqDemo{
+  constructor(){
+    this.canvas=document.getElementById('cf-canvas');
+    if(!this.canvas)return;
+    this.ctx=this.canvas.getContext('2d');
+    this.flips=0;this.heads=0;this.freqs=[];
+    this.elFlips=document.getElementById('cf-flips');
+    this.elHeads=document.getElementById('cf-heads');
+    this.elFreq=document.getElementById('cf-freq');
+    document.querySelectorAll('#coinfreq-slide .cf-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const v=btn.dataset.flip;
+        if(v==='reset')this.reset();
+        else this.flip(parseInt(v,10));
+      });
+    });
+    this.draw();
+  }
+  reset(){this.flips=0;this.heads=0;this.freqs=[];this.update();}
+  flip(n){
+    for(let i=0;i<n;i++){
+      this.flips++;
+      if(Math.random()<0.5)this.heads++;
+      this.freqs.push(this.heads/this.flips);
+    }
+    this.update();
+  }
+  update(){
+    this.elFlips.textContent=this.flips;
+    this.elHeads.textContent=this.heads;
+    this.elFreq.textContent=this.flips?(this.heads/this.flips).toFixed(3):'—';
+    this.draw();
+  }
+  draw(){
+    const c=this.ctx,W=this.canvas.width,H=this.canvas.height;
+    const padL=42,padR=14,padT=16,padB=26;
+    const x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+    c.clearRect(0,0,W,H);
+    const yOf=p=>y1-p*(y1-y0);
+    const n=Math.max(this.freqs.length-1,1);
+    const xOf=i=>x0+(i/n)*(x1-x0);
+    c.font='11px monospace';c.textAlign='right';c.textBaseline='middle';
+    [0,0.25,0.5,0.75,1].forEach(p=>{
+      const y=yOf(p);
+      if(p!==0.5){c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;
+        c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();}
+      c.fillStyle='rgba(0,0,0,0.45)';c.fillText(p.toFixed(2),x0-6,y);
+    });
+    // p = 0.5 reference (dashed red)
+    c.save();c.setLineDash([6,5]);c.strokeStyle='#e23e3e';c.lineWidth=2;
+    c.beginPath();c.moveTo(x0,yOf(0.5));c.lineTo(x1,yOf(0.5));c.stroke();c.restore();
+    c.fillStyle='#e23e3e';c.textAlign='left';c.fillText('p = 0.5',x0+6,yOf(0.5)-9);
+    // axes
+    c.strokeStyle='rgba(0,0,0,0.55)';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x0,y0);c.lineTo(x0,y1);c.lineTo(x1,y1);c.stroke();
+    c.fillStyle='rgba(0,0,0,0.5)';c.textAlign='center';c.textBaseline='top';
+    c.fillText('flips → '+this.flips,(x0+x1)/2,y1+9);
+    // frequency curve
+    if(this.freqs.length){
+      c.strokeStyle='#1f6feb';c.lineWidth=2.5;c.beginPath();
+      this.freqs.forEach((f,i)=>{const X=xOf(i),Y=yOf(f);i?c.lineTo(X,Y):c.moveTo(X,Y);});
+      c.stroke();
+      const li=this.freqs.length-1;
+      c.fillStyle='#1f6feb';c.beginPath();
+      c.arc(xOf(li),yOf(this.freqs[li]),3.5,0,Math.PI*2);c.fill();
+    }
+  }
+}
+
+/* ============================================================
+   EMPIRICAL MEAN → EXPECTATION — slide 7
+   Roll a fair die; watch the running average converge to 3.5.
+   ============================================================ */
+class MeanConvergeDemo{
+  constructor(){
+    this.canvas=document.getElementById('mean-canvas');
+    if(!this.canvas)return;
+    this.ctx=this.canvas.getContext('2d');
+    this.rolls=0;this.sum=0;this.means=[];
+    this.elRolls=document.getElementById('em-rolls');
+    this.elSum=document.getElementById('em-sum');
+    this.elMean=document.getElementById('em-mean');
+    document.querySelectorAll('#meanconv-slide .cf-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const v=btn.dataset.flip;
+        if(v==='reset')this.reset();
+        else this.roll(parseInt(v,10));
+      });
+    });
+    this.draw();
+  }
+  reset(){this.rolls=0;this.sum=0;this.means=[];this.update();}
+  roll(n){
+    for(let i=0;i<n;i++){
+      this.rolls++;
+      this.sum+=1+Math.floor(Math.random()*6);
+      this.means.push(this.sum/this.rolls);
+    }
+    this.update();
+  }
+  update(){
+    this.elRolls.textContent=this.rolls;
+    this.elSum.textContent=this.sum;
+    this.elMean.textContent=this.rolls?(this.sum/this.rolls).toFixed(3):'—';
+    this.draw();
+  }
+  draw(){
+    const c=this.ctx,W=this.canvas.width,H=this.canvas.height;
+    const padL=42,padR=14,padT=16,padB=26;
+    const x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+    const lo=1,hi=6;
+    c.clearRect(0,0,W,H);
+    const yOf=v=>y1-((v-lo)/(hi-lo))*(y1-y0);
+    const n=Math.max(this.means.length-1,1);
+    const xOf=i=>x0+(i/n)*(x1-x0);
+    c.font='11px monospace';c.textAlign='right';c.textBaseline='middle';
+    for(let v=1;v<=6;v++){
+      const y=yOf(v);
+      c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;
+      c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();
+      c.fillStyle='rgba(0,0,0,0.45)';c.fillText(v.toFixed(0),x0-6,y);
+    }
+    // E[X] = 3.5 reference (dashed red)
+    c.save();c.setLineDash([6,5]);c.strokeStyle='#e23e3e';c.lineWidth=2;
+    c.beginPath();c.moveTo(x0,yOf(3.5));c.lineTo(x1,yOf(3.5));c.stroke();c.restore();
+    c.fillStyle='#e23e3e';c.textAlign='left';c.fillText('E[X] = 3.5',x0+6,yOf(3.5)-9);
+    // axes
+    c.strokeStyle='rgba(0,0,0,0.55)';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x0,y0);c.lineTo(x0,y1);c.lineTo(x1,y1);c.stroke();
+    c.fillStyle='rgba(0,0,0,0.5)';c.textAlign='center';c.textBaseline='top';
+    c.fillText('rolls → '+this.rolls,(x0+x1)/2,y1+9);
+    // mean curve
+    if(this.means.length){
+      c.strokeStyle='#1f6feb';c.lineWidth=2.5;c.beginPath();
+      this.means.forEach((m,i)=>{const X=xOf(i),Y=yOf(m);i?c.lineTo(X,Y):c.moveTo(X,Y);});
+      c.stroke();
+      const li=this.means.length-1;c.fillStyle='#1f6feb';
+      c.beginPath();c.arc(xOf(li),yOf(this.means[li]),3.5,0,Math.PI*2);c.fill();
+    }
+  }
+}
+
+/* ============================================================
+   DOORS GAME — slide 19
+   Peek-and-pick game over a 4-step binary tree.
+   Reward values are identical to the warrior tree on slide 20.
+   ============================================================ */
+class DoorsGame{
+  constructor(){
+    this.root=document.getElementById('doors-slide');
+    if(!this.root)return;
+    this.REWARDS={
+      'L':-9,'R':-6,
+      'LL':8,'LR':6,'RL':4,'RR':-8,
+      'LLL':-9,'LLR':5,'LRL':10,'LRR':-7,'RLL':6,'RLR':-8,'RRL':7,'RRR':-6,
+      'LLLL':-7,'LLLR':-5,'LLRL':-6,'LLRR':5,
+      'LRLL':9,'LRLR':10,'LRRL':6,'LRRR':-8,
+      'RLLL':-7,'RLLR':8,'RLRL':5,'RLRR':-6,
+      'RRLL':7,'RRLR':-8,'RRRL':-7,'RRRR':9
+    };
+    this.OPTIMAL=17; // L → LR → LRL → LRLR
+    this.elDoors=this.root.querySelector('#dg-doors');
+    this.elFinal=this.root.querySelector('#dg-final');
+    this.elFinalNum=this.root.querySelector('#dg-final-num');
+    this.elFinalMsg=this.root.querySelector('#dg-final-msg');
+    this.elStep=this.root.querySelector('#dg-step');
+    this.elPath=this.root.querySelector('#dg-path');
+    this.elTotal=this.root.querySelector('#dg-total');
+    this.elPeepL=this.root.querySelector('#dg-peep-L');
+    this.elPeepR=this.root.querySelector('#dg-peep-R');
+    this.btnReset=this.root.querySelector('#dg-reset');
+    this.elDoors.querySelectorAll('.dg-door').forEach(d=>{
+      d.addEventListener('click',()=>this.pick(d.dataset.side));
+    });
+    this.btnReset.addEventListener('click',()=>this.reset());
+    this.reset();
+  }
+  fmt(n){return (n>=0?'+':'')+n;}
+  reset(){
+    this.path='';this.total=0;this.history=[];
+    this.elFinal.hidden=true;
+    this.elDoors.style.display='';
+    this.update();
+  }
+  pick(side){
+    if(this.path.length>=4)return;
+    const next=this.path+side;
+    const r=this.REWARDS[next];
+    this.path=next;this.total+=r;this.history.push({side,r});
+    if(this.path.length>=4){this.update();this.finish();return;}
+    this.update();
+    this.elDoors.classList.remove('entering');
+    void this.elDoors.offsetWidth;
+    this.elDoors.classList.add('entering');
+  }
+  update(){
+    const step=Math.min(this.path.length+1,4);
+    this.elStep.textContent=step+' / 4';
+    this.elPath.textContent=this.history.length
+      ? this.history.map(h=>h.side+' ('+this.fmt(h.r)+')').join(' → ')
+      : '—';
+    this.elTotal.textContent=this.fmt(this.total);
+    this.elTotal.className='val '+(this.history.length===0?'':(this.total>=0?'pos':'neg'));
+    if(this.path.length>=4)return;
+    const rL=this.REWARDS[this.path+'L'];
+    const rR=this.REWARDS[this.path+'R'];
+    this.elPeepL.textContent=this.fmt(rL);
+    this.elPeepR.textContent=this.fmt(rR);
+    this.elPeepL.className='dg-peep-val '+(rL>=0?'pos':'neg');
+    this.elPeepR.className='dg-peep-val '+(rR>=0?'pos':'neg');
+  }
+  finish(){
+    this.elDoors.style.display='none';
+    this.elFinal.hidden=false;
+    this.elFinalNum.textContent=this.fmt(this.total);
+    this.elFinalNum.className='dg-final-num '+(this.total>=0?'pos':'neg');
+    let msg;
+    if(this.total>=this.OPTIMAL) msg='🏆 Optimal! You found the best route ('+this.fmt(this.OPTIMAL)+').';
+    else if(this.total>=10) msg='Strong run. Best possible is '+this.fmt(this.OPTIMAL)+' — could you spot it?';
+    else if(this.total>=0) msg='Survived. Best possible is '+this.fmt(this.OPTIMAL)+'. The biggest peep number isn’t always the best move.';
+    else msg='Ouch. Best possible is '+this.fmt(this.OPTIMAL)+' — greedy peeking gets you trapped.';
+    this.elFinalMsg.textContent=msg;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  new ProbabilityQuiz();
+  new CoinFreqDemo();
+  new MeanConvergeDemo();
+  new DoorsGame();
+});
+</script>
+
+</body>
+</html>

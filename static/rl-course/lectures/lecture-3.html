@@ -1,0 +1,3815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 3 — From Loop to MDP, V &amp; Q</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+/* ============================================================
+   LECTURE 2 — What Is Reinforcement Learning?
+   Slide-specific styles only; base styles live in shared.css.
+   ============================================================ */
+
+/* MathJax sizing + colors */
+mjx-container[jax="SVG"]{color:var(--ink)}
+.formula mjx-container{font-size:1em!important}
+.formula-box mjx-container{font-size:1em!important}
+
+/* Bigger card-title labels across L2 (SAMPLE SPACE, EVENT, etc.) */
+:root{ --tiny-size: clamp(.82rem, 1.05vw, .95rem); }
+
+/* Larger topic-pill tags for L2 (e.g. "PROBABILITY PRIMER · 2 OF 4") */
+.slide .tag{
+  font-size:clamp(.92rem,1.25vw,1.1rem);
+  padding:.55rem 1.25rem;
+  letter-spacing:.06em;
+  font-weight:600;
+}
+.slide .tag::before{
+  width:10px;height:10px;
+}
+
+/* Slide 2 — Recap */
+.recap-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);margin-top:.8rem;
+}
+.recap-col{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  padding:1.2rem;
+  box-shadow:5px 5px 0 var(--line);
+}
+.recap-col.l1{background:var(--peach)}
+.recap-col.l2{background:var(--mint)}
+.recap-col h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.1rem,1.7vw,1.4rem);
+  margin-bottom:.5rem;line-height:1.1;
+}
+.recap-col .label{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:.3rem;
+}
+.recap-col ul{list-style:none;padding:0}
+.recap-col li{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  padding:.3rem 0 .3rem 1.4rem;
+  position:relative;line-height:1.4;
+}
+.recap-col li::before{
+  content:'';position:absolute;left:0;top:.65em;
+  width:8px;height:8px;background:var(--ink);border-radius:50%;
+}
+@media (max-width:780px){.recap-grid{grid-template-columns:1fr}}
+
+/* Slide 2 — L1 review (takeaway cards) */
+.takeaways-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  margin-top:.9rem;
+}
+.take-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem 1.1rem;
+  display:flex;flex-direction:column;
+}
+.take-card .num{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  color:var(--dim);
+  letter-spacing:.18em;
+  margin-bottom:.3rem;
+}
+.take-card h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.5vw,1.25rem);
+  margin-bottom:.3rem;
+  line-height:1.15;
+}
+.take-card p{
+  font-size:clamp(.9rem,1.15vw,1.05rem);
+  color:var(--ink);line-height:1.45;
+}
+.loop-flow{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:.4rem;margin-top:.7rem;
+}
+.lf-chip{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.95vw,.85rem);
+  font-weight:700;
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:8px;
+  padding:.18rem .5rem;
+}
+.lf-arr{color:var(--dim);font-weight:700}
+.take-card:nth-child(1){background:var(--mint)}
+.take-card:nth-child(2){background:var(--peach)}
+.take-card:nth-child(3){background:var(--lilac)}
+.take-card:nth-child(4){background:var(--sun)}
+@media (max-width:780px){.takeaways-grid{grid-template-columns:1fr}}
+
+/* Slide 3 — Probability foundations (Ω, event, P) */
+.foundations-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.8vw,1.2rem);
+  margin-top:.8rem;
+}
+.found-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.4rem;
+}
+.found-card:nth-child(1){background:var(--mint)}
+.found-card:nth-child(2){background:var(--peach)}
+.found-card:nth-child(3){background:var(--lilac)}
+.found-card .f-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);
+}
+.found-card .f-sym{
+  font-size:clamp(1.3rem,2vw,1.7rem);
+  text-align:center;
+  margin:.15rem 0 .2rem;
+  font-weight:600;
+}
+.found-card .f-def{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+}
+.found-card .f-ex{
+  font-family:var(--font-mono);
+  font-size:clamp(.78rem,1vw,.9rem);
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.45rem .6rem;
+  margin-top:auto;
+  line-height:1.6;
+}
+@media (max-width:780px){.foundations-grid{grid-template-columns:1fr}}
+
+/* Slide 9 — Probability recap (illustrated, one die) */
+.recap-flow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.6vw,1.2rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.recap-stage{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.recap-stage:nth-child(1){background:var(--mint)}
+.recap-stage:nth-child(2){background:var(--peach)}
+.recap-stage:nth-child(3){background:var(--lilac)}
+.recap-stage .rs-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.recap-stage > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.recap-stage .rs-viz{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.65rem .5rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.4rem;
+  min-height:90px;
+}
+.recap-stage .rs-caption{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.85vw,.78rem);
+  color:var(--dim);
+  letter-spacing:.05em;
+  text-align:center;
+}
+.recap-stage .rs-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.3vw,1.18rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .7rem;
+  margin-top:auto;
+}
+.die-row{display:flex;gap:3px;justify-content:center}
+.die-face{
+  width:clamp(22px,2.6vw,30px);
+  aspect-ratio:1;
+  background:white;
+  border:2px solid var(--line);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(.85rem,1.1vw,1.05rem);
+  box-shadow:1.5px 1.5px 0 var(--line);
+  color:var(--ink);
+}
+.die-face.hl{background:var(--sun)}
+.bar-chart{
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:60px;
+  justify-content:center;
+}
+.bar-cell{
+  width:clamp(20px,2.5vw,26px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.bar-cell .bar-bar{
+  width:100%;
+  background:var(--ink);
+  border:1.5px solid var(--line);
+  border-radius:3px 3px 0 0;
+}
+.bar-cell.dim .bar-bar{
+  background:rgba(31,29,43,.18);
+  border-color:rgba(31,29,43,.3);
+}
+.bar-cell.hl .bar-bar{background:var(--good)}
+.bar-cell .bar-lbl{
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:clamp(.7rem,.85vw,.78rem);
+  margin-top:3px;
+  color:var(--dim);
+}
+.bar-cell.hl .bar-lbl{color:var(--ink)}
+@media (max-width:900px){.recap-flow{grid-template-columns:1fr}}
+
+/* Slide 19 — Warrior teaser tree (binary, 4 steps) */
+.warrior-tree{
+  margin-top:.5rem;
+  display:flex;justify-content:center;
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.6rem,1.4vw,1rem);
+  margin-top:.7rem;
+}
+.warrior-discuss .wd-q{
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss .wd-q:nth-child(1){background:var(--peach)}
+.warrior-discuss .wd-q:nth-child(2){background:var(--mint)}
+.warrior-discuss .wd-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.warrior-discuss .wd-q p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.4;
+  margin:0;
+}
+@media (max-width:780px){.warrior-discuss{grid-template-columns:1fr}}
+
+/* Slide 19 — Doors Game (peek-and-pick game before the tree) */
+.doors-game{
+  display:flex;flex-direction:column;
+  gap:clamp(.55rem,1.2vw,.85rem);
+  margin-top:.5rem;
+  flex:1;min-height:0;
+}
+.dg-status{display:flex;gap:.5rem;flex-wrap:wrap}
+.dg-status > div{
+  flex:1;min-width:120px;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .8rem;
+  display:flex;flex-direction:column;gap:.05rem;
+}
+.dg-status .lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-status .val{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.35vw,1.18rem);
+  color:var(--ink);line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dg-status .dg-total{background:var(--sun)}
+.dg-status .val.pos{color:var(--good)}
+.dg-status .val.neg{color:var(--bad)}
+
+.dg-doors{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  flex:1;min-height:0;
+}
+.dg-door{
+  position:relative;
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:14px 14px 6px 6px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:0;cursor:pointer;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font-display);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+}
+.dg-door:hover:not(:disabled){
+  transform:translate(-3px,-3px);
+  box-shadow:8px 8px 0 var(--line);
+}
+.dg-door:disabled{cursor:not-allowed;opacity:.55}
+.dg-door[data-side="L"]{background:var(--mint)}
+.dg-door[data-side="R"]{background:var(--peach)}
+.dg-door-frame{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1.1rem 1rem .9rem;
+  position:relative;
+  background:linear-gradient(180deg,rgba(0,0,0,0.06) 0%,transparent 35%);
+}
+.dg-peephole{
+  width:clamp(105px,15vw,160px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--bg);
+  border:5px solid var(--line);
+  box-shadow:inset 4px 4px 0 rgba(0,0,0,0.10), 3px 3px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.15rem;
+}
+.dg-peep-lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-peep-val{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(1.7rem,3.4vw,2.6rem);
+  line-height:1;color:var(--ink);
+}
+.dg-peep-val.pos{color:var(--good)}
+.dg-peep-val.neg{color:var(--bad)}
+.dg-door-handle{
+  position:absolute;top:50%;
+  width:10px;height:26px;
+  background:var(--line);
+  border-radius:5px;
+  transform:translateY(-50%);
+}
+.dg-door[data-side="L"] .dg-door-handle{right:14px}
+.dg-door[data-side="R"] .dg-door-handle{left:14px}
+.dg-door-side{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;text-align:center;
+  padding:.5rem 0;
+  background:rgba(0,0,0,0.06);
+  border-top:2px dashed rgba(0,0,0,0.22);
+  color:var(--ink);
+}
+.dg-doors.entering{animation:dg-enter .28s var(--ease)}
+@keyframes dg-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.dg-final{
+  flex:1;
+  background:var(--sun);
+  border:3px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1rem;gap:.4rem;
+  animation:dg-final-pop .35s var(--ease);
+}
+@keyframes dg-final-pop{
+  0%{transform:scale(.85);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.dg-final-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;color:var(--ink);
+  text-transform:uppercase;
+}
+.dg-final-num{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(2.6rem,5.5vw,4.4rem);
+  line-height:1;color:var(--ink);
+}
+.dg-final-num.pos{color:var(--good)}
+.dg-final-num.neg{color:var(--bad)}
+.dg-final-msg{
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.1vw,1rem);
+  text-align:center;color:var(--ink);
+  max-width:600px;line-height:1.45;
+}
+.dg-controls{display:flex;justify-content:center;gap:.6rem}
+.dg-btn{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  padding:.5rem 1.15rem;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.dg-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.dg-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+@media (max-width:780px){
+  .dg-doors{grid-template-columns:1fr}
+  .dg-status{flex-direction:column}
+}
+
+/* Slide 20 — V and Q (answer to greedy) */
+.vq-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.8rem,1.8vw,1.3rem);
+  margin-top:.7rem;
+  align-items:stretch;
+}
+.vq-card{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.1rem 1.05rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.vq-card.v{background:var(--mint)}
+.vq-card.q{background:var(--peach)}
+.vq-card .vq-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.vq-card .vq-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1.15rem,1.7vw,1.5rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .8rem;
+}
+.vq-card > p{
+  font-size:clamp(.88rem,1.1vw,1.02rem);
+  line-height:1.45;
+  margin:0;
+}
+.vq-card .vq-numbers{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.55rem .75rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  line-height:1.7;
+  margin-top:auto;
+}
+.vq-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.85rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.9rem,1.15vw,1.05rem);
+  line-height:1.5;
+  max-width:1100px;
+  margin-left:auto;margin-right:auto;
+}
+.vq-callout .vq-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+@media (max-width:780px){.vq-grid{grid-template-columns:1fr}}
+
+/* Slide 21 — V & Q computed on the warrior */
+.compute-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.8rem,1.8vw,1.3rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.compute-card{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.1rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.compute-card.v{background:var(--mint)}
+.compute-card.q{background:var(--peach)}
+.compute-card .c-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.compute-card .c-title{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  line-height:1.2;
+}
+.compute-card .c-steps{
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.05vw,.98rem);
+  line-height:1.85;
+}
+.compute-card .c-steps .arrow{color:var(--dim);margin:0 .15em}
+.compute-card .c-steps .final{
+  font-weight:700;
+  background:var(--sun);
+  border:1.5px solid var(--line);
+  border-radius:6px;
+  padding:.05rem .35rem;
+  margin-left:.2em;
+}
+.compute-card > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+  color:var(--ink);
+}
+.compute-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.85rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+  max-width:1100px;
+  margin-left:auto;margin-right:auto;
+}
+.compute-callout .cc-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+@media (max-width:780px){.compute-grid{grid-template-columns:1fr}}
+
+/* Slides 21–22 — V on the tree (deterministic + random policy) */
+.vt-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:clamp(.5rem,1vw,.8rem);
+  margin-top:.55rem;
+}
+.vt-tree{
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+.vt-tree svg{width:100%;height:auto;max-height:46vh}
+.vt-math{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.85rem 1rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.45rem;
+}
+.vt-math.det{background:var(--mint)}
+.vt-math.stoch{background:var(--peach)}
+.vt-math .vt-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.vt-math .vt-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.35vw,1.2rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.45rem .7rem;
+}
+.vt-math > p{
+  font-size:clamp(.85rem,1.05vw,.98rem);
+  line-height:1.4;
+  margin:0;
+}
+.vt-chain{
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.5rem .8rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.8rem,1vw,.92rem);
+  line-height:1.85;
+}
+.vt-chain .final{
+  background:var(--sun);
+  border:1.5px solid var(--line);
+  border-radius:6px;
+  padding:.05rem .35rem;
+  font-weight:700;
+  margin-left:.2em;
+}
+.vt-q{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.5rem 1rem;
+  margin-top:.55rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.05vw,1rem);
+  text-align:center;
+  box-shadow:3px 3px 0 var(--line);
+}
+.vt-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.6rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+}
+.vt-callout .vt-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 3 — 5 ingredients */
+.ingredients-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.6rem,1.4vw,1rem);margin-top:1rem;
+}
+.ing-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem;
+  display:flex;flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+}
+.ing-card .ico{font-size:clamp(1.6rem,2.6vw,2.2rem);line-height:1;margin-bottom:.4rem}
+.ing-card .sym{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.78rem,1.05vw,.95rem);
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  padding:.15rem .55rem;border-radius:99px;
+  box-shadow:1.5px 1.5px 0 var(--line);
+  margin-bottom:.5rem;
+}
+.ing-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.92rem,1.25vw,1.1rem);
+  margin-bottom:.25rem;
+}
+.ing-card p{
+  font-size:clamp(.72rem,.95vw,.85rem);
+  color:var(--dim);line-height:1.4;
+}
+.ing-card:nth-child(1){background:var(--mint)}
+.ing-card:nth-child(2){background:var(--peach)}
+.ing-card:nth-child(3){background:var(--lilac)}
+.ing-card:nth-child(4){background:var(--sky)}
+.ing-card:nth-child(5){background:var(--sun)}
+@media (max-width:900px){.ingredients-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 4 — Agent-env interface */
+.aei-wrap{
+  display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:0;margin-top:.5rem;
+}
+.aei-svg{width:min(80vw,720px);height:auto;max-height:55vh}
+@keyframes pulse-node{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.04)}
+}
+.aei-svg .agent-node,.aei-svg .env-node{
+  transform-origin:center;
+  animation:pulse-node 3s ease-in-out infinite;
+}
+.aei-svg .env-node{animation-delay:1.5s}
+@keyframes dash-flow{to{stroke-dashoffset:-30}}
+.aei-svg path.flow{
+  stroke-dasharray:6 4;
+  animation:dash-flow 1.4s linear infinite;
+}
+
+/* Slide 5/6/7 — variable detail card */
+.var-detail{
+  display:grid;
+  grid-template-columns:1fr 1.3fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.5rem;
+  align-items:center;
+}
+.var-formula{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.3rem;
+  text-align:center;
+}
+.var-formula .big{
+  font-size:clamp(1.5rem,3vw,2.4rem);
+  margin-bottom:.4rem;
+}
+.var-formula .label{
+  font-family:var(--font-mono);
+  font-size:var(--small-size);
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);
+}
+.var-examples{
+  display:flex;flex-direction:column;gap:.55rem;
+}
+.var-ex{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .85rem;
+  display:flex;align-items:center;gap:.7rem;
+  box-shadow:2px 2px 0 var(--line);
+  font-size:clamp(.82rem,1.05vw,.95rem);
+}
+.var-ex .vico{font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.var-ex b{font-family:var(--font-mono)}
+@media (max-width:780px){.var-detail{grid-template-columns:1fr}}
+
+/* Slide 8 — daily life grid */
+.daily-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:clamp(.6rem,1.4vw,1rem);margin-top:.8rem;
+}
+.daily-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem;
+  display:flex;flex-direction:column;
+  min-width:0;
+}
+.daily-card .ico{font-size:clamp(1.8rem,3vw,2.4rem);margin-bottom:.4rem}
+.daily-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.25vw,1.1rem);
+  margin-bottom:.4rem;line-height:1.15;
+}
+.daily-card .triple{
+  display:flex;flex-direction:column;gap:.2rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.9vw,.82rem);
+}
+.daily-card .triple .row{display:flex;gap:.4rem}
+.daily-card .triple .row b{
+  color:var(--dim);width:50px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;
+}
+.daily-card .triple .row span{color:var(--ink)}
+.daily-card:nth-child(1){background:var(--mint)}
+.daily-card:nth-child(2){background:var(--peach)}
+.daily-card:nth-child(3){background:var(--lilac)}
+.daily-card:nth-child(4){background:var(--sun)}
+@media (max-width:900px){.daily-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 7 — Probability quiz (tap-to-reveal) */
+.pq-grid{
+  display:flex;
+  flex-direction:column;
+  gap:clamp(.45rem,1vw,.7rem);
+  margin-top:.5rem;
+}
+.pq-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.6rem .9rem;
+  cursor:pointer;
+  position:relative;
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.pq-card.tinted-mint{background:var(--mint)}
+.pq-card.tinted-peach{background:var(--peach)}
+.pq-card.tinted-lilac{background:var(--lilac)}
+.pq-card.tinted-sky{background:var(--sky)}
+.pq-card:hover:not(.revealed){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.pq-card.revealed{cursor:default}
+.pq-card .pq-label{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.pq-card .pq-front p{
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  line-height:1.45;
+  margin:0;
+}
+.pq-card .pq-back{display:none;margin-top:.35rem}
+.pq-card.revealed .pq-front{display:none}
+.pq-card.revealed .pq-back{display:block}
+.pq-card .pq-back p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.pq-card .pq-answer{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.2vw,1.1rem);
+  background:var(--good);color:white;
+  padding:.18rem .6rem;border-radius:99px;
+  display:inline-block;
+  margin-bottom:.4rem;
+  border:1.5px solid var(--line);
+  box-shadow:2px 2px 0 var(--line);
+}
+.pq-card .pq-tap{
+  position:absolute;
+  top:.6rem;right:.9rem;
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  color:var(--dim);
+  letter-spacing:.15em;
+}
+.pq-card.revealed .pq-tap{display:none}
+.pq-belief{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:10px;
+  padding:.45rem .75rem;
+  margin-top:.45rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.6rem;
+  box-shadow:3px 3px 0 var(--line);
+  font-size:clamp(.83rem,1.05vw,.98rem);
+  line-height:1.45;
+}
+.pq-belief .pq-belief-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 12 — RL types quiz: chip-row + 5-ingredient table inside pq-back */
+.pq-card .pq-types{
+  display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.45rem;
+}
+.pq-card .pq-type{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.75rem,.95vw,.88rem);
+  letter-spacing:.04em;
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:99px;
+  padding:.18rem .65rem;
+  box-shadow:1.5px 1.5px 0 var(--line);
+}
+.pq-card .pq-table{
+  display:grid;grid-template-columns:auto 1fr;
+  gap:.18rem .85rem;
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.5rem .75rem;
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  line-height:1.45;
+  margin:0 0 .4rem;
+}
+.pq-card .pq-table dt{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:700;
+  color:var(--ink);
+  align-self:start;
+}
+.pq-card .pq-table dd{margin:0;color:var(--ink)}
+
+/* Slide 13 — axes cheat-sheet footer */
+.axes-footer{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.5rem,1.2vw,.85rem);
+  margin-top:clamp(.5rem,1.2vw,.8rem);
+}
+.axes-footer .axis-chip{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.45rem .8rem;
+  display:flex;flex-direction:column;
+  align-items:center;
+  gap:.1rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+.axes-footer .axis-name{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);
+}
+.axes-footer .axis-vals{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.78rem,1vw,.92rem);
+  color:var(--ink);
+  text-align:center;
+}
+.axes-footer .ax-dim{color:var(--dim);font-weight:600}
+@media (max-width:780px){
+  .axes-footer{grid-template-columns:1fr}
+}
+
+/* Slide 13 — RL Types Quiz: 4 cards in 2x2 to fit the page */
+[data-name="RL Types Quiz"] .pq-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:clamp(.45rem,1vw,.75rem);
+  margin-top:.4rem;
+}
+[data-name="RL Types Quiz"] .pq-card{
+  padding:.5rem .85rem .55rem;
+}
+[data-name="RL Types Quiz"] .pq-card .pq-label{
+  margin-bottom:.2rem;
+}
+[data-name="RL Types Quiz"] .pq-card .pq-front p{
+  font-size:clamp(.85rem,1.05vw,.98rem);
+  line-height:1.35;
+}
+[data-name="RL Types Quiz"] .pq-card .pq-tap{
+  top:.45rem;right:.7rem;
+}
+@media (max-width:780px){
+  [data-name="RL Types Quiz"] .pq-grid{grid-template-columns:1fr}
+}
+
+/* Slide 19 — When Greedy Wins: 2 stages, not 3 */
+[data-name="When Greedy Wins"] .recap-flow{
+  grid-template-columns:repeat(2,1fr);
+  max-width:920px;
+  margin-left:auto;margin-right:auto;
+}
+@media (max-width:900px){
+  [data-name="When Greedy Wins"] .recap-flow{grid-template-columns:1fr}
+}
+
+/* Slide 9 — Q3 step-by-step reveal */
+.pq-stepper .pq-question p{
+  font-size:clamp(.95rem,1.2vw,1.1rem);line-height:1.45;margin:0;
+}
+.pq-step{
+  display:none;margin-top:.5rem;
+  border-left:3px solid var(--line);padding-left:.7rem;
+}
+.pq-step.show{display:block;animation:pqStepIn .28s var(--ease)}
+@keyframes pqStepIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.pq-step-k{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.1em;
+  color:var(--ink);text-transform:uppercase;display:block;margin-bottom:.15rem;
+}
+.pq-step p{font-size:clamp(.8rem,.98vw,.92rem);line-height:1.6;margin:0}
+
+/* Slide 6 — coin frequency → probability demo */
+.cf-layout{
+  display:grid;
+  grid-template-columns:1fr 1.05fr;
+  gap:clamp(.8rem,2vw,1.4rem);
+  margin-top:.7rem;
+  align-items:stretch;
+}
+.cf-concept{display:flex;flex-direction:column;gap:.7rem}
+.cf-row{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem .95rem;
+  display:flex;flex-direction:column;justify-content:center;flex:1;
+}
+.cf-row:nth-child(1){background:var(--mint)}
+.cf-row:nth-child(2){background:var(--sun)}
+.cf-row .cf-k{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.1rem;
+}
+.cf-row p{font-size:clamp(.8rem,1.05vw,.95rem);line-height:1.4;margin-top:.3rem;color:var(--ink)}
+.cf-demo{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.8rem;
+  display:flex;flex-direction:column;gap:.55rem;
+}
+#cf-canvas{
+  width:100%;height:auto;display:block;
+  background:var(--bg);
+  border:2px solid var(--line);border-radius:10px;
+}
+.cf-stats{display:flex;gap:.55rem}
+.cf-stat{
+  flex:1;text-align:center;
+  background:var(--bg);
+  border:2px solid var(--line);border-radius:10px;
+  padding:.35rem .25rem;
+}
+.cf-stat-num{display:block;font-family:var(--font-mono);font-weight:700;font-size:clamp(1.05rem,1.8vw,1.45rem);line-height:1.1}
+.cf-stat-lab{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.cf-btns{display:flex;gap:.45rem;flex-wrap:wrap}
+.cf-btn{
+  flex:1;min-width:80px;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.78rem,1.05vw,.92rem);
+  background:var(--sky);
+  border:2.5px solid var(--line);border-radius:10px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .5rem;cursor:pointer;color:var(--ink);
+  transition:transform .12s var(--ease),box-shadow .12s var(--ease);
+}
+.cf-btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--line)}
+.cf-btn:active{transform:translate(0,0);box-shadow:1px 1px 0 var(--line)}
+.cf-btn.cf-reset{background:var(--peach);flex:0 0 auto}
+@media (max-width:820px){.cf-layout{grid-template-columns:1fr}}
+
+/* Slide 9 — quiz interactive */
+.quiz-wrap{
+  display:flex;flex-direction:column;
+  gap:.8rem;margin-top:.5rem;
+}
+.quiz-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:clamp(.7rem,1.6vw,1.1rem);
+}
+.quiz-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.9rem 1.1rem;
+  cursor:pointer;
+  position:relative;
+  display:flex;flex-direction:column;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+  min-height:clamp(120px,16vh,160px);
+}
+.quiz-card:hover:not(.revealed){
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--line);
+}
+.quiz-card.revealed{
+  cursor:default;
+}
+.quiz-card .q-label{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);letter-spacing:.18em;
+  color:var(--dim);margin-bottom:.4rem;
+}
+.quiz-card .q-front{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+  line-height:1.3;flex:1;
+}
+.quiz-card .q-back{
+  display:none;flex:1;flex-direction:column;gap:.35rem;
+}
+.quiz-card.revealed .q-front{display:none}
+.quiz-card.revealed .q-back{display:flex}
+.quiz-card .q-verdict{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  padding:.25rem .65rem;border-radius:99px;
+  align-self:flex-start;
+  text-transform:uppercase;
+}
+.quiz-card .q-verdict.no{background:var(--bad);color:white}
+.quiz-card .q-verdict.yes{background:var(--good);color:white}
+.quiz-card .q-explain{
+  font-size:clamp(.78rem,1vw,.92rem);
+  color:var(--ink);line-height:1.45;
+}
+.quiz-card.revealed.yes{background:rgba(34,170,85,0.15)}
+.quiz-card.revealed.no{background:rgba(226,62,62,0.1)}
+.quiz-card .tap{
+  position:absolute;bottom:.55rem;right:.85rem;
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.15em;
+}
+.quiz-card.revealed .tap{display:none}
+@media (max-width:780px){.quiz-grid{grid-template-columns:1fr}}
+
+.quiz-summary{
+  display:none;
+  align-items:center;gap:.8rem;
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.6rem 1rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.85rem,1.1vw,1rem);
+}
+.quiz-summary.show{display:flex}
+
+/* Slide 10 — Markov */
+.markov-vis{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem 1.5rem;
+  margin-top:.8rem;
+  display:flex;flex-direction:column;align-items:center;gap:.8rem;
+}
+.markov-line{
+  display:flex;align-items:center;gap:.5rem;
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.15vw,1rem);
+  flex-wrap:wrap;justify-content:center;
+}
+.markov-step{
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.4rem .7rem;min-width:48px;
+  box-shadow:2px 2px 0 var(--line);
+}
+.markov-step .t{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.15em;
+}
+.markov-step .v{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+}
+.markov-step.now{background:var(--mint);border-width:3px}
+.markov-step.future{background:var(--sun);border-style:dashed}
+.markov-step.past{background:var(--paper);opacity:0.4}
+.markov-arrow{font-size:1.2em;color:var(--dim)}
+.markov-caption{
+  font-style:italic;color:var(--dim);
+  text-align:center;font-size:clamp(.85rem,1.1vw,1rem);
+  max-width:760px;
+}
+
+/* Side note — sticky-note callout for "for later" hooks */
+.side-note{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.85rem 1.1rem .8rem;
+  box-shadow:3px 3px 0 var(--line);
+  max-width:760px;
+  margin:.9rem auto 0;
+  position:relative;
+  transform:rotate(-0.4deg);
+}
+.side-note::before{
+  /* paper-tape on top */
+  content:'';
+  position:absolute;
+  top:-9px;left:32px;
+  width:54px;height:14px;
+  background:rgba(254,248,240,0.7);
+  border:1.5px solid rgba(31,29,43,0.45);
+  border-radius:2px;
+  transform:rotate(-3deg);
+  box-shadow:1px 1px 0 rgba(31,29,43,0.15);
+}
+.side-note .sn-label{
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--ink);
+  display:block;
+  margin-bottom:.35rem;
+}
+.side-note p{
+  font-size:clamp(.8rem,1.05vw,.93rem);
+  line-height:1.5;
+  margin:0;
+}
+.side-note p + p{margin-top:.35rem}
+.side-note .skip{
+  font-style:italic;color:var(--dim);font-size:.93em;
+}
+
+/* Slide 11 — types of RL problems (axis taxonomy) */
+.rl-axes{
+  display:flex;flex-direction:column;
+  gap:clamp(.45rem,.9vw,.7rem);margin-top:.6rem;
+}
+.rl-axis{
+  display:grid;grid-template-columns:130px 1fr 36px 1fr;
+  gap:clamp(.5rem,1vw,.8rem);align-items:stretch;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.55rem .8rem;
+}
+.rl-axis .axis-label{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  letter-spacing:.16em;text-transform:uppercase;
+  align-self:center;font-weight:700;color:var(--ink);
+}
+.rl-axis .axis-end{
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.4rem .65rem;
+  display:flex;flex-direction:column;justify-content:center;gap:.1rem;
+}
+.rl-axis .axis-end.left{background:var(--mint)}
+.rl-axis .axis-end.right{background:var(--peach)}
+.rl-axis .end-name{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.9rem,1.2vw,1.05rem);
+}
+.rl-axis .end-name .end-pomdp{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.1em;color:var(--dim);font-weight:600;
+}
+.rl-axis .end-detail{
+  font-size:clamp(.78rem,1vw,.92rem);
+  line-height:1.35;color:var(--ink);
+}
+.rl-axis .end-detail em{color:var(--dim);font-style:italic}
+.rl-axis .axis-vs{
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.12em;color:var(--dim);font-weight:700;
+}
+@media (max-width:780px){
+  .rl-axis{grid-template-columns:1fr;}
+  .rl-axis .axis-vs{display:none;}
+}
+
+/* Slide 12 — MDP tuple */
+.mdp-tuple{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:6px 6px 0 var(--line);
+  padding:clamp(1.2rem,2.5vw,2rem);
+  margin:.5rem auto;max-width:1000px;
+}
+.mdp-tuple .big-tuple{
+  font-size:clamp(1.5rem,2.8vw,2.4rem);
+  text-align:center;margin-bottom:1rem;
+}
+.mdp-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.5rem,1.2vw,.9rem);
+}
+.mdp-item{
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.6rem;
+  text-align:center;
+  box-shadow:2px 2px 0 var(--line);
+}
+.mdp-item .sym{
+  font-size:clamp(1rem,1.5vw,1.3rem);
+  margin-bottom:.2rem;
+}
+.mdp-item h5{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.78rem,1vw,.9rem);
+  margin-bottom:.2rem;
+}
+.mdp-item p{
+  font-size:clamp(.68rem,.85vw,.78rem);
+  color:var(--dim);line-height:1.3;
+}
+.mdp-item:nth-child(1){background:var(--mint)}
+.mdp-item:nth-child(2){background:var(--peach)}
+.mdp-item:nth-child(3){background:var(--lilac)}
+.mdp-item:nth-child(4){background:var(--sky)}
+.mdp-item:nth-child(5){background:var(--sun)}
+@media (max-width:780px){.mdp-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Slide 15 — Policy */
+.policy-block{
+  display:grid;grid-template-columns:1fr 1.1fr;
+  gap:clamp(1rem,2.5vw,2rem);
+  margin-top:.6rem;align-items:center;
+}
+.policy-formula{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.3rem;text-align:center;
+}
+.policy-illus{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:.5rem;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.7rem;
+}
+.policy-illus .pi-cell{
+  aspect-ratio:1;
+  background:var(--bg);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(1.4rem,2.5vw,2rem);
+  font-weight:700;
+}
+.policy-illus .pi-cell.start{background:var(--peach)}
+.policy-illus .pi-cell.goal{background:var(--mint)}
+@media (max-width:780px){.policy-block{grid-template-columns:1fr}}
+
+/* Slide 16 — det vs stoch */
+.dvs-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,2rem);margin-top:.5rem;
+}
+.dvs-col{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1.2rem;
+}
+.dvs-col.det{background:var(--mint)}
+.dvs-col.stoch{background:var(--lilac)}
+.dvs-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.7vw,1.4rem);margin-bottom:.5rem}
+.dvs-col .formula-mini{
+  background:var(--paper);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:.5rem 1rem;text-align:center;
+  margin:.5rem 0;box-shadow:2px 2px 0 var(--line);
+}
+.dvs-col p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+@media (max-width:780px){.dvs-grid{grid-template-columns:1fr}}
+
+/* Slide 17 — Policy designer */
+.pd-wrap{
+  display:flex;flex-direction:column;
+  gap:clamp(.5rem,1.2vh,.9rem);
+  margin-top:.4rem;flex:1;min-height:0;
+}
+.pd-header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:.5rem;
+}
+.pd-header h2{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(1.2rem,2.2vw,1.7rem);line-height:1;margin:0;
+}
+.pd-header .help{
+  font-family:var(--font-mono);font-size:var(--small-size);
+  color:var(--dim);
+}
+.pd-main{
+  display:grid;grid-template-columns:auto 1fr;
+  gap:clamp(.8rem,2vw,1.5rem);align-items:center;
+  flex:1;min-height:0;
+}
+.pd-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:4px;
+  background:var(--line);
+  border:3px solid var(--line);
+  border-radius:12px;padding:4px;
+  width:clamp(240px,36vh,360px);
+  height:clamp(240px,36vh,360px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pd-cell{
+  background:var(--paper);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;cursor:pointer;
+  font-size:clamp(1.4rem,2.8vw,2rem);
+  transition:background .2s var(--ease);
+}
+.pd-cell:not(.locked):hover{background:var(--bg);outline:2px solid var(--line)}
+.pd-cell.start{background:var(--peach)}
+.pd-cell.goal{background:var(--mint)}
+.pd-cell.wall{background:var(--ink);cursor:not-allowed}
+.pd-cell.trap{background:var(--rose);cursor:not-allowed}
+.pd-cell.locked{cursor:not-allowed}
+.pd-cell .pd-emoji{font-size:1em;line-height:1}
+.pd-cell .pd-arrow{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.4rem,2.6vw,1.9rem);
+  line-height:1;
+  color:var(--ink);
+}
+.pd-cell .pd-arrow.q{color:var(--dim);font-style:italic}
+.pd-cell.agent::after{
+  content:'\01F916';
+  position:absolute;
+  font-size:clamp(1.2rem,2.2vw,1.6rem);
+  z-index:3;line-height:1;
+  animation:agent-pop .3s var(--ease);
+}
+@keyframes agent-pop{
+  0%{transform:scale(.7)}
+  50%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+.pd-cell.trail{background:rgba(216,200,255,0.6)}
+
+.pd-side{
+  display:flex;flex-direction:column;gap:.6rem;
+  height:100%;justify-content:flex-start;
+}
+.pd-status{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.7rem .9rem;
+  font-family:var(--font-mono);font-size:var(--small-size);
+  line-height:1.5;
+}
+.pd-status .lbl{
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:.3rem;
+}
+.pd-status .val{font-weight:700;color:var(--ink);font-size:clamp(.95rem,1.2vw,1.1rem)}
+.pd-status .val.win{color:var(--good)}
+.pd-status .val.die{color:var(--bad)}
+.pd-controls{
+  display:flex;gap:.5rem;flex-wrap:wrap;
+}
+.pd-btn{
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);border-radius:99px;
+  padding:.55rem 1.1rem;
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.1em;
+  cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.pd-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pd-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pd-btn.secondary{background:var(--paper);color:var(--ink)}
+.pd-legend{
+  font-family:var(--font-mono);
+  font-size:var(--tiny-size);
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:8px;padding:.5rem .7rem;
+  box-shadow:2px 2px 0 var(--line);
+  line-height:1.6;
+}
+.pd-legend .row{display:block}
+.pd-legend b{font-weight:700}
+@media (max-width:780px){
+  .pd-main{grid-template-columns:1fr;justify-items:center}
+}
+
+/* Slide 18 — confusions */
+.confusions-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.8vw,1.2rem);margin-top:.8rem;
+}
+.confuse-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:1rem;
+  display:flex;flex-direction:column;
+}
+.confuse-card h4{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.95rem,1.3vw,1.15rem);
+  margin-bottom:.4rem;
+}
+.confuse-card .vs{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);letter-spacing:.15em;
+  color:var(--bad);margin-bottom:.4rem;text-transform:uppercase;
+}
+.confuse-card p{
+  font-size:clamp(.78rem,1vw,.92rem);
+  line-height:1.45;color:var(--ink);margin-bottom:.5rem;
+}
+.confuse-card .next{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  color:var(--dim);letter-spacing:.1em;
+  border-top:1.5px dashed var(--line);
+  padding-top:.4rem;margin-top:auto;
+}
+.confuse-card:nth-child(1){background:var(--mint)}
+.confuse-card:nth-child(2){background:var(--peach)}
+.confuse-card:nth-child(3){background:var(--lilac)}
+@media (max-width:780px){.confusions-grid{grid-template-columns:1fr}}
+
+/* Slide 19 — recap symbols */
+.recap-symbols{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:clamp(.5rem,1.2vw,.9rem);margin-top:.8rem;
+}
+.rs-card{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.85rem;
+  text-align:center;
+}
+.rs-card .ico{font-size:clamp(1.4rem,2.4vw,2rem);margin-bottom:.3rem}
+.rs-card .sym{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(1.1rem,1.6vw,1.4rem);
+  margin-bottom:.2rem;
+}
+.rs-card h5{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(.78rem,1vw,.9rem);margin-bottom:.2rem;
+}
+.rs-card .explain{
+  font-size:clamp(.68rem,.85vw,.78rem);
+  color:var(--dim);line-height:1.3;
+}
+.rs-card:nth-child(1){background:var(--mint)}
+.rs-card:nth-child(2){background:var(--peach)}
+.rs-card:nth-child(3){background:var(--lilac)}
+.rs-card:nth-child(4){background:var(--sky)}
+.rs-card:nth-child(5){background:var(--sun)}
+@media (max-width:900px){.recap-symbols{grid-template-columns:repeat(2,1fr)}}
+
+.recap-tuple{
+  margin-top:1rem;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  padding:1rem;
+  text-align:center;
+  box-shadow:4px 4px 0 var(--line);
+}
+.recap-tuple .lbl{
+  font-family:var(--font-mono);font-size:var(--tiny-size);
+  letter-spacing:.2em;color:var(--sun);margin-bottom:.4rem;
+}
+.recap-tuple mjx-container{color:var(--bg)!important}
+
+/* Slide 10 — Discount γ */
+.discount-eq{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:18px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:1rem 1.4rem 1.05rem;
+  margin:.7rem auto 0;
+  max-width:920px;
+  display:flex;flex-direction:column;gap:.5rem;
+  text-align:center;
+}
+.discount-eq .de-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);
+}
+.discount-eq .de-formula{
+  font-size:clamp(1.05rem,1.6vw,1.4rem);
+}
+.discount-eq p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;color:var(--ink);
+  margin:0;
+}
+.discount-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.6vw,1.1rem);
+  margin-top:.85rem;
+}
+.disc-card{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.85rem 1rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.4rem;
+}
+.disc-card:nth-child(1){background:var(--mint)}
+.disc-card:nth-child(2){background:var(--peach)}
+.disc-card:nth-child(3){background:var(--lilac)}
+.disc-card .dc-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);
+}
+.disc-card .dc-eq{
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.45rem .65rem;
+  font-size:clamp(.85rem,1.1vw,1rem);
+  text-align:center;
+}
+.disc-card p{
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  line-height:1.45;
+  margin:0;
+  color:var(--ink);
+}
+@media (max-width:780px){.discount-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → / SPACE to navigate</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 1 — TITLE                                -->
+<!-- ============================================ -->
+<section class="slide" data-name="Title">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag reveal" style="background:var(--mint)">LECTURE 03 · MDP, V/Q &amp; BELLMAN EQUATION</span>
+    <h1 class="title reveal">MDPs, <span class="hl">Bellman Equation</span>,<br>and Dynamic Programming.</h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.6vw,1.3rem);max-width:1300px;margin-bottom:1.5rem;">
+      Last time we built the probability toolkit. Today we use it to name every part of the agent–environment loop —
+      <b>state, action, reward, transition, policy</b> — bundle them as the <b>MDP</b>, meet two values <b>V</b> and <b>Q</b>, and write down the equation that ties them together: <b>Bellman</b>.
+    </p>
+    <div class="s1-cards reveal">
+      <span class="card tinted-mint"><span>🧭</span> S, A, R</span>
+      <span class="card tinted-peach"><span>⛓️</span> Markov &amp; MDP</span>
+      <span class="card tinted-sun"><span>🎮</span> Doors &amp; tree game</span>
+      <span class="card tinted-lilac"><span>📐</span> V, Q &amp; Bellman</span>
+    </div>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">01 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 9 — PROBABILITY RECAP (illustrated)      -->
+<!-- ============================================ -->
+<section class="slide" data-name="Probability Recap">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">RECAP · ALL ON ONE DIE</span>
+    <h2 class="h2 reveal">Every probability tool, <span class="hl">on one die.</span></h2>
+    <p class="body dim reveal" style="max-width:920px;font-size:clamp(.9rem,1.2vw,1.1rem)">
+      One running example — a fair 6-sided die — touches every concept we built. From outcomes all the way to belief.
+    </p>
+
+    <div class="recap-flow reveal">
+      <!-- Stage 1: Setup -->
+      <div class="recap-stage">
+        <span class="rs-tag">① SETUP — \(\Omega, A, P\)</span>
+        <p>Sample space \(\Omega = \{1,2,3,4,5,6\}\). Pick out an event \(A = \{2,4,6\}\) ("even").</p>
+        <div class="rs-viz">
+          <div class="die-row">
+            <span class="die-face">1</span>
+            <span class="die-face hl">2</span>
+            <span class="die-face">3</span>
+            <span class="die-face hl">4</span>
+            <span class="die-face">5</span>
+            <span class="die-face hl">6</span>
+          </div>
+          <div class="rs-caption">highlighted = event \(A\)</div>
+        </div>
+        <div class="rs-formula">\(P(A) = \tfrac{3}{6} = \tfrac{1}{2}\)</div>
+      </div>
+
+      <!-- Stage 2: Random variables + expectation -->
+      <div class="recap-stage">
+        <span class="rs-tag">② BUILD — \(X, p_X, \mathbb{E}[X]\)</span>
+        <p>Define a random variable \(X(\omega)=\omega\). Each face has the same chance — \(p_X(k)=\tfrac{1}{6}\).</p>
+        <div class="rs-viz">
+          <div class="bar-chart">
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">1</span></div>
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">2</span></div>
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">3</span></div>
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">4</span></div>
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">5</span></div>
+            <div class="bar-cell"><div class="bar-bar" style="height:42px"></div><span class="bar-lbl">6</span></div>
+          </div>
+          <div class="rs-caption">distribution \(p_X\) — uniform</div>
+        </div>
+        <div class="rs-formula">\(\mathbb{E}[X] = \sum_k k \cdot \tfrac{1}{6} = 3.5\)</div>
+      </div>
+
+      <!-- Stage 3: Conditional / belief -->
+      <div class="recap-stage">
+        <span class="rs-tag">③ UPDATE — \(P(\cdot \mid B)\)</span>
+        <p>You learn \(B = \{2,4,6\}\). Odd values drop to 0; even values rise to \(\tfrac{1}{3}\) each.</p>
+        <div class="rs-viz">
+          <div class="bar-chart">
+            <div class="bar-cell dim"><div class="bar-bar" style="height:4px"></div><span class="bar-lbl">1</span></div>
+            <div class="bar-cell hl"><div class="bar-bar" style="height:55px"></div><span class="bar-lbl">2</span></div>
+            <div class="bar-cell dim"><div class="bar-bar" style="height:4px"></div><span class="bar-lbl">3</span></div>
+            <div class="bar-cell hl"><div class="bar-bar" style="height:55px"></div><span class="bar-lbl">4</span></div>
+            <div class="bar-cell dim"><div class="bar-bar" style="height:4px"></div><span class="bar-lbl">5</span></div>
+            <div class="bar-cell hl"><div class="bar-bar" style="height:55px"></div><span class="bar-lbl">6</span></div>
+          </div>
+          <div class="rs-caption">belief after observing \(B\)</div>
+        </div>
+        <div class="rs-formula">\(P(X{=}4 \mid B) = \tfrac{1/6}{1/2} = \tfrac{1}{3}\)</div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.9rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:920px;margin-left:auto;margin-right:auto">
+      Same die, three lenses. Now we use these tools to formalize the agent–environment loop.
+    </p>
+  </div>
+  <div class="slide-name">Probability Recap</div>
+  <div class="slide-num">02 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 03 — META · MATH PROBLEM-SOLVING         -->
+<!-- ============================================ -->
+<section class="slide" data-name="Math Framework">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:10%;left:5%"></span>
+  <span class="shape s-rose square bordered anim-spin-slow" style="width:60px;height:60px;top:18%;left:8%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">FRAMEWORK · 3 STEPS</span>
+    <h2 class="h2 reveal">How math tackles a <span class="hl">real-world problem.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Almost every applied-math task &mdash; from physics to RL &mdash; follows the same pattern. Today's lecture walks all three steps, once, end to end.
+    </p>
+
+    <div class="reveal" style="display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.7rem,1.6vw,1.2rem);margin-top:.6rem">
+      <div style="background:var(--mint);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">&#9312; MODEL</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.05rem,1.4vw,1.25rem);line-height:1.2;margin:0">Real life &rarr; math.</h3>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0;color:var(--ink);flex:1">
+          Pick symbols and structure so a messy real-world problem becomes a <b>precise math object</b> you can reason about.
+        </p>
+        <div style="padding-top:.6rem;border-top:1.5px dashed var(--line);font-family:var(--font-mono);font-size:var(--small-size);letter-spacing:.1em;color:var(--ink)">
+          Today &rarr; <b>MDP</b> &middot; Part 1
+        </div>
+      </div>
+
+      <div style="background:var(--peach);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">&#9313; SOLVE</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.05rem,1.4vw,1.25rem);line-height:1.2;margin:0">Find a method.</h3>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0;color:var(--ink);flex:1">
+          Given the math model, design an <b>algorithm</b> that produces the answer. Try it on small examples first.
+        </p>
+        <div style="padding-top:.6rem;border-top:1.5px dashed var(--line);font-family:var(--font-mono);font-size:var(--small-size);letter-spacing:.1em;color:var(--ink)">
+          Today &rarr; <b>Dynamic Programming</b> &middot; Part 2
+        </div>
+      </div>
+
+      <div style="background:var(--rose);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)">&#9314; VERIFY</span>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.05rem,1.4vw,1.25rem);line-height:1.2;margin:0">Prove it works.</h3>
+        <p style="font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin:0;color:var(--ink);flex:1">
+          The math is abstract &mdash; but that's the <b>superpower</b>. Proofs of correctness, convergence rates: guarantees, not hope.
+        </p>
+        <div style="padding-top:.6rem;border-top:1.5px dashed var(--line);font-family:var(--font-mono);font-size:var(--small-size);letter-spacing:.1em;color:var(--ink)">
+          Today &rarr; <b>Bellman equation</b> &middot; Part 3
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.85rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:1000px;margin-left:auto;margin-right:auto">
+      Same recipe everywhere &mdash; physics: laws &rarr; solve &rarr; measure. Finance: model &rarr; strategy &rarr; backtest. RL is no different.
+    </p>
+  </div>
+  <div class="slide-name">Math Framework</div>
+  <div class="slide-num">03 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 03 — PART 1 DIVIDER · MDP                -->
+<!-- ============================================ -->
+<section class="slide" data-name="Part 1: MDP">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag mint reveal">PART 1 OF 3</span>
+    <h1 class="title reveal">MDP &mdash; the <span class="hl">Problem</span>.</h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.5vw,1.25rem);max-width:1100px;margin-bottom:1.1rem;text-align:center">
+      First, name every piece of the agent&ndash;environment loop. <b>State, action, reward, transition, discount factor</b> &mdash; bundled as the <b>Markov Decision Process</b>. This is how we write the problem down precisely.
+    </p>
+  </div>
+  <div class="slide-name">Part 1: MDP</div>
+  <div class="slide-num">04 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 4 — AGENT-ENV INTERFACE                  -->
+<!-- ============================================ -->
+<section class="slide" data-name="Interface">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">MDP · INTERFACE</span>
+    <h2 class="h2 reveal">Two players, each with <span class="hl">one rule.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Same picture as Lecture 1 — but now we name what lives <i>inside</i> each box. The agent carries a <b>policy</b> \(\pi(a \mid s)\); the environment carries a <b>transition kernel</b> \(P(s' \mid s, a)\). Both are conditional probabilities — exactly the kind we just built.
+    </p>
+
+    <div class="aei-wrap reveal">
+      <svg class="aei-svg" viewBox="0 0 700 360">
+        <defs>
+          <marker id="arrowhead2" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1d2b"/>
+          </marker>
+        </defs>
+
+        <!-- Agent box -->
+        <g class="agent-node">
+          <rect x="30" y="100" width="200" height="170" rx="14"
+                fill="#bff0d0" stroke="#1f1d2b" stroke-width="3"/>
+          <text x="130" y="146" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="32" fill="#1f1d2b">Agent</text>
+          <text x="130" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#5a5a5a" letter-spacing="2">THE LEARNER</text>
+          <text x="130" y="198" text-anchor="middle" font-size="22">🤖</text>
+          <!-- Policy chip -->
+          <rect x="46" y="220" width="168" height="36" rx="14" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="130" y="234" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="10" fill="#5a5a5a" letter-spacing="2">POLICY</text>
+          <text x="130" y="251" text-anchor="middle" font-family="Cabinet Grotesk" font-style="italic" font-weight="700" font-size="17" fill="#1f1d2b">π(a | s)</text>
+        </g>
+
+        <!-- Environment box -->
+        <g class="env-node">
+          <rect x="470" y="100" width="200" height="170" rx="14"
+                fill="#ffd6c2" stroke="#1f1d2b" stroke-width="3"/>
+          <text x="570" y="146" text-anchor="middle" font-family="Cabinet Grotesk" font-weight="800" font-size="28" fill="#1f1d2b">Environment</text>
+          <text x="570" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#5a5a5a" letter-spacing="2">THE WORLD</text>
+          <text x="570" y="198" text-anchor="middle" font-size="22">🌍</text>
+          <!-- Kernel chip -->
+          <rect x="486" y="220" width="168" height="36" rx="14" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="570" y="234" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="10" fill="#5a5a5a" letter-spacing="2">KERNEL</text>
+          <text x="570" y="251" text-anchor="middle" font-family="Cabinet Grotesk" font-style="italic" font-weight="700" font-size="17" fill="#1f1d2b">P(s' | s, a)</text>
+        </g>
+
+        <!-- Action arrow (top) -->
+        <path class="flow" d="M 230 145 Q 350 60 470 145"
+              fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead2)"/>
+        <rect x="320" y="55" width="60" height="32" rx="16" fill="#fef8f0" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="350" y="76" text-anchor="middle" font-family="Cabinet Grotesk" font-style="italic" font-weight="700" font-size="20" fill="#1f1d2b">A<tspan font-size="13" baseline-shift="sub">t</tspan></text>
+
+        <!-- State + Reward arrow (bottom) -->
+        <path class="flow" d="M 470 240 Q 350 320 230 240"
+              fill="none" stroke="#1f1d2b" stroke-width="3" marker-end="url(#arrowhead2)"/>
+        <rect x="270" y="312" width="160" height="32" rx="16" fill="#ffe27a" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="350" y="333" text-anchor="middle" font-family="Cabinet Grotesk" font-style="italic" font-weight="700" font-size="18" fill="#1f1d2b">S<tspan font-size="12" baseline-shift="sub">t+1</tspan>, R<tspan font-size="12" baseline-shift="sub">t+1</tspan></text>
+      </svg>
+    </div>
+
+    <p class="body dim reveal" style="text-align:center;margin-top:.5rem;font-style:italic;max-width:900px;margin-left:auto;margin-right:auto;font-size:clamp(.85rem,1.1vw,1rem)">
+      At time \(t\) the agent feeds \(S_t\) to its policy \(\pi\) and samples \(A_t\). The environment feeds \((S_t, A_t)\) to its kernel \(P\) and returns \(S_{t+1}, R_{t+1}\). Two conditional distributions, taking turns.
+    </p>
+  </div>
+  <div class="slide-name">Interface</div>
+  <div class="slide-num">05 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 5 — STATE                                -->
+<!-- ============================================ -->
+<section class="slide" data-name="State">
+  <span class="shape s-mint pill bordered anim-wobble" style="width:130px;height:55px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">MDP · STATE</span>
+    <h2 class="h2 reveal">What you see right now.</h2>
+
+    <div class="var-detail reveal">
+      <div class="var-formula">
+        <div class="big">\[ S_t \in \mathcal{S} \]</div>
+        <div class="label">A state at time \(t\)<br>belongs to the state space \(\mathcal{S}\)</div>
+      </div>
+      <div class="var-examples">
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.6rem .9rem;box-shadow:3px 3px 0 var(--line)">
+          <p style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.15rem);line-height:1.3;margin:0">How big is the state space?</p>
+          <p style="font-size:clamp(.8rem,1.05vw,.95rem);line-height:1.4;margin:.25rem 0 0 0">Small enough to list, or <b>too big to even count</b>.</p>
+        </div>
+        <div style="background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">SMALL · DISCRETE</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            🎮 Tic-tac-toe: \(\sim\)5,000 board positions<br>
+            🎲 Snakes &amp; Ladders: 100 squares
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">Few enough you could write them all down.</p>
+        </div>
+        <div style="background:var(--peach);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">HUGE OR CONTINUOUS</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            ⚫ Go: \(\sim 10^{170}\) board positions<br>
+            🤖 Robot: joint angles + velocities (real numbers)<br>
+            🚗 Self-driving: camera + lidar + GPS
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">Real-world tasks usually live here.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem)">
+      Crucially: the state should contain <b>everything you need to decide what to do next</b>. (More on this when we hit the Markov property.)
+    </p>
+  </div>
+  <div class="slide-name">State</div>
+  <div class="slide-num">06 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 6 — ACTION                               -->
+<!-- ============================================ -->
+<section class="slide" data-name="Action">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+  <span class="shape s-lilac square bordered anim-spin-slow" style="width:60px;height:60px;bottom:10%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--peach)">MDP · ACTION</span>
+    <h2 class="h2 reveal">What you can do.</h2>
+
+    <div class="var-detail reveal">
+      <div class="var-formula">
+        <div class="big">\[ A_t \in \mathcal{A}(S_t) \]</div>
+        <div class="label">The action you choose<br>from the legal set in state \(S_t\)</div>
+      </div>
+      <div class="var-examples">
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.6rem .9rem;box-shadow:3px 3px 0 var(--line)">
+          <p style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.15rem);line-height:1.3;margin:0">What does an action look like?</p>
+          <p style="font-size:clamp(.8rem,1.05vw,.95rem);line-height:1.4;margin:.25rem 0 0 0">Pick from a finite list, or <b>choose a real number</b>.</p>
+        </div>
+        <div style="background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">DISCRETE · PICK FROM A LIST</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            ⬆️ Gridworld: \(\{\)up, down, left, right\(\}\)<br>
+            ⚫ Go: any legal stone placement (\(\sim\)250)
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">A finite menu of choices.</p>
+        </div>
+        <div style="background:var(--peach);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">CONTINUOUS · PICK A NUMBER</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            🛞 Steering: angle \(\in [-90°, +90°]\)<br>
+            🦾 Robot arm: 7 joint torques at once
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">A vector of one or more real numbers.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem)">
+      Note \(\mathcal{A}\) can depend on the state — a chess piece can move differently depending on where it is.
+    </p>
+  </div>
+  <div class="slide-name">Action</div>
+  <div class="slide-num">07 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — REWARD                               -->
+<!-- ============================================ -->
+<section class="slide" data-name="Reward">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;left:5%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">MDP · REWARD</span>
+    <h2 class="h2 reveal">Reward: a function of <span class="hl">\((s, a, s')\)</span>.</h2>
+
+    <div class="var-detail reveal">
+      <div class="var-formula">
+        <div class="big">\[ R(s, a, s') \in \mathbb{R} \]</div>
+        <div class="label">The reward earned on transition<br>from \(s\) via \(a\) to next state \(s'\)</div>
+      </div>
+      <div class="var-examples">
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.6rem .9rem;box-shadow:3px 3px 0 var(--line)">
+          <p style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.15rem);line-height:1.3;margin:0">Does \(R\) always need all three?</p>
+          <p style="font-size:clamp(.8rem,1.05vw,.95rem);line-height:1.4;margin:.25rem 0 0 0">Often the action drops out. Sometimes the next state does. The general form <b>covers either case</b>.</p>
+        </div>
+        <div style="background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">R(s') · LANDING TELLS THE STORY</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            🐭 Maze: \(R = +1\) only when \(s' =\) goal cell<br>
+            ♟️ Chess: \(R = +1/-1/0\) only when \(s'\) is terminal
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">Where you land tells you everything — the action you chose to get there doesn't matter.</p>
+        </div>
+        <div style="background:var(--peach);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.25rem">R(s, a) · ACTIONS HAVE THEIR OWN COST</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);line-height:1.65">
+            🦾 Robot: each motor command burns a different amount of energy<br>
+            🚗 Driver: braking, idling, accelerating — different fuel costs
+          </div>
+          <p style="font-size:clamp(.76rem,.98vw,.88rem);line-height:1.4;margin:.3rem 0 0 0;font-style:italic;color:var(--dim)">The action you choose has its own cost — regardless of where you end up.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pq-card tinted-lilac reveal" data-pq="r-asym" style="margin-top:.85rem">
+      <span class="pq-label">🤔 PAUSE &amp; THINK · ASYMMETRY</span>
+      <div class="pq-front">
+        <p>Why is \(R(s, a)\) "enough" — but \(R(s')\) sometimes isn't?</p>
+      </div>
+      <div class="pq-back">
+        <span class="pq-answer">R(s,a) absorbs s'; R(s') can't see the action.</span>
+        <p>Once \((s, a)\) is fixed, the kernel \(P(s' \mid s, a)\) determines \(s'\). So \(R(s, a) := \mathbb{E}_{s' \sim P}[\,R(s, a, s')\,]\) — averaging over \(s'\) loses nothing. But \(R(s')\) can't distinguish two actions that land in the same \(s'\): a robot that spins <i>gently</i> vs <i>hard</i> reaching the same cell gets the same reward, and action costs vanish.</p>
+        <p style="margin-top:.4rem"><b>So:</b> \(R(s, a)\) is the canonical form. \(R(s')\) is a special case for goal-only tasks where "where you land" tells the whole story.</p>
+      </div>
+      <span class="pq-tap">tap to reveal</span>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:none">
+      In our warrior tree the reward sits on each cell — that's \(R(s')\). Whatever the form, the agent's only goal is to <b>maximize the sum over time</b>.
+    </p>
+  </div>
+  <div class="slide-name">Reward</div>
+  <div class="slide-num">08 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 10 — KERNEL + MARKOV ASSUMPTION          -->
+<!-- ============================================ -->
+<section class="slide" data-name="Kernel">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">MDP · KERNEL</span>
+    <h2 class="h2 reveal">Next state: the <span class="hl">transition kernel</span>.</h2>
+
+    <div class="reveal" style="display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(.9rem,2vw,1.4rem);margin-top:.5rem;align-items:start">
+      <!-- LEFT — Definition + Markov assumption -->
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div style="background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:.75rem 1.05rem">
+          <p style="margin:0 0 .25rem;font-family:var(--font-mono);font-size:var(--tiny-size);color:var(--dim);letter-spacing:.18em">DEFINITION · TRANSITION KERNEL</p>
+          <div class="formula" style="font-size:clamp(.9rem,1.25vw,1.1rem);text-align:center;margin:.25rem 0">
+            \[ P(s' \mid s, a) \;=\; \Pr\!\bigl(\,S_{t+1} = s' \,\big|\, S_t = s,\; A_t = a\,\bigr) \]
+          </div>
+          <p class="body dim" style="margin:.25rem 0 0;text-align:center;font-size:clamp(.76rem,1vw,.88rem)">
+            For each \((s, a)\), a distribution over next states — \(\sum_{s'} P(s' \mid s, a) = 1\).
+          </p>
+        </div>
+        <div class="markov-vis" style="margin-top:0;padding:.75rem 1rem;gap:.55rem">
+          <p style="margin:0;font-family:var(--font-mono);font-size:var(--tiny-size);color:var(--dim);letter-spacing:.18em">ASSUMPTION · MARKOV</p>
+          <div class="markov-line">
+            <span class="markov-step past"><span class="t">t-2</span><span class="v">S<sub>t-2</sub></span></span>
+            <span class="markov-arrow">→</span>
+            <span class="markov-step past"><span class="t">t-1</span><span class="v">S<sub>t-1</sub></span></span>
+            <span class="markov-arrow">→</span>
+            <span class="markov-step now"><span class="t">NOW</span><span class="v">S<sub>t</sub></span></span>
+            <span class="markov-arrow" style="color:var(--good)">→ ?</span>
+            <span class="markov-step future"><span class="t">t+1</span><span class="v">S<sub>t+1</sub></span></span>
+          </div>
+          <p class="markov-caption" style="font-size:clamp(.78rem,1vw,.9rem);max-width:none">
+            The kernel uses only the <b>current</b> \((S_t, A_t)\) — past states and actions don't enter.
+          </p>
+        </div>
+      </div>
+      <!-- RIGHT — Examples -->
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="background:var(--sun);border:2.5px solid var(--line);border-radius:10px;padding:.55rem .9rem;box-shadow:3px 3px 0 var(--line)">
+          <p style="font-family:var(--font-display);font-weight:700;font-size:clamp(.95rem,1.25vw,1.1rem);line-height:1.3;margin:0">Is the next state always determined?</p>
+          <p style="font-size:clamp(.78rem,1vw,.9rem);line-height:1.4;margin:.2rem 0 0 0">Sometimes \((s, a)\) fixes \(s'\). Sometimes the world <b>rolls dice</b>.</p>
+        </div>
+        <div style="background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.2rem">DETERMINISTIC · ONE OUTCOME</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.76rem,.98vw,.88rem);line-height:1.65">
+            ♟️ Chess: a move always lands on the same board<br>
+            🧩 Sliding puzzle: a tile slide always gives the same layout
+          </div>
+          <p style="font-size:clamp(.74rem,.95vw,.85rem);line-height:1.4;margin:.25rem 0 0 0;font-style:italic;color:var(--dim)">\(P(s' \mid s, a) = 1\) for one \(s'\), 0 for the rest.</p>
+        </div>
+        <div style="background:var(--peach);border:2px solid var(--line);border-radius:10px;padding:.5rem .85rem;box-shadow:2px 2px 0 var(--line)">
+          <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:.2rem">STOCHASTIC · A REAL DISTRIBUTION</span>
+          <div style="font-family:var(--font-mono);font-size:clamp(.76rem,.98vw,.88rem);line-height:1.65">
+            🎲 Snakes &amp; Ladders: dice decide where you land<br>
+            🤖 Robot: motor noise &amp; slippage<br>
+            🌦️ Weather, traffic, opponents
+          </div>
+          <p style="font-size:clamp(.74rem,.95vw,.85rem);line-height:1.4;margin:.25rem 0 0 0;font-style:italic;color:var(--dim)">Probability spreads over many possible \(s'\).</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;font-style:italic;text-align:center;font-size:clamp(.82rem,1.05vw,.95rem);max-width:880px;margin-left:auto;margin-right:auto">
+      A chess board state captures everything — you don't need the move history to decide your next move. <b>The state is sufficient.</b>
+    </p>
+  </div>
+  <div class="slide-name">Kernel</div>
+  <div class="slide-num">09 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE — DISCOUNT γ                              -->
+<!-- ============================================ -->
+<section class="slide" data-name="Discount">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">MDP · DISCOUNT γ</span>
+    <h2 class="h2 reveal">Future rewards matter — but a <span class="hl">little less.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.9rem,1.15vw,1.05rem)">
+      Same prize, sooner or later? Most people pick sooner. We bake that preference into the math by <i>discounting</i> each future step by a factor \(\gamma \in [0, 1]\) — the last knob we need before writing the MDP down.
+    </p>
+
+    <div class="discount-eq reveal">
+      <span class="de-tag">RETURN — TOTAL DISCOUNTED REWARD</span>
+      <div class="de-formula">\[ G \;=\; R_1 \;+\; \gamma R_2 \;+\; \gamma^2 R_3 \;+\; \gamma^3 R_4 \;+\; \cdots \]</div>
+      <p>Each step further out picks up one more factor of \(\gamma\). With \(\gamma &lt; 1\) the powers shrink fast, so far-future rewards barely register.</p>
+    </div>
+
+    <div class="discount-grid reveal">
+      <div class="disc-card">
+        <span class="dc-tag">γ = 0 — myopic</span>
+        <div class="dc-eq">\(G = R_1\)</div>
+        <p>Only the next reward counts. Everything past one step gets multiplied by 0 and disappears.</p>
+      </div>
+      <div class="disc-card">
+        <span class="dc-tag">γ = 0.9 — typical</span>
+        <div class="dc-eq">\(G = R_1 + 0.9\,R_2 + 0.81\,R_3 + \cdots\)</div>
+        <p>A reward 10 steps away is worth \(0.9^{10} \approx 0.35\) of one now — present-biased, but still long-sighted.</p>
+      </div>
+      <div class="disc-card">
+        <span class="dc-tag">γ = 1 — patient</span>
+        <div class="dc-eq">\(G = R_1 + R_2 + R_3 + \cdots\)</div>
+        <p>Every step weighs the same. Fine when the task <b>ends</b> (sum stops). Risky when it never ends — the total can blow up.</p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.85rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:920px;margin-left:auto;margin-right:auto">
+      One number turns "future" into a dial — from "only now" to "all equal." That's all γ does.
+    </p>
+  </div>
+  <div class="slide-name">Discount</div>
+  <div class="slide-num">10 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — MDP TUPLE                           -->
+<!-- ============================================ -->
+<section class="slide" data-name="MDP">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">MDP · THE TUPLE</span>
+    <h2 class="h2 reveal">RL's formal model: the <span class="hl">MDP.</span></h2>
+    <p class="body dim reveal" style="font-size:clamp(.88rem,1.15vw,1rem)">
+      A <b>Markov Decision Process</b> is just a 5-tuple. If you can write your problem this way, you can solve it with RL.
+    </p>
+
+    <div class="mdp-tuple reveal">
+      <div class="big-tuple">\[ \big(\,\mathcal{S},\;\; \mathcal{A},\;\; P,\;\; R,\;\; \gamma\,\big) \]</div>
+      <div class="mdp-grid">
+        <div class="mdp-item">
+          <div class="sym">\(\mathcal{S}\)</div>
+          <h5>States</h5>
+          <p>All possible situations</p>
+        </div>
+        <div class="mdp-item">
+          <div class="sym">\(\mathcal{A}\)</div>
+          <h5>Actions</h5>
+          <p>All possible moves</p>
+        </div>
+        <div class="mdp-item">
+          <div class="sym">\(P\)</div>
+          <h5>Transitions</h5>
+          <p>Rules of the world — \(P(s' \mid s, a)\)</p>
+        </div>
+        <div class="mdp-item">
+          <div class="sym">\(R\)</div>
+          <h5>Reward</h5>
+          <p>How well you're doing</p>
+        </div>
+        <div class="mdp-item">
+          <div class="sym">\(\gamma\)</div>
+          <h5>Discount</h5>
+          <p>How much future matters</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">MDP</div>
+  <div class="slide-num">11 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — TYPES OF RL PROBLEMS                -->
+<!-- ============================================ -->
+<section class="slide" data-name="RL Problem Types">
+  <span class="shape s-peach circle bordered anim-wobble" style="width:90px;height:90px;top:8%;right:5%"></span>
+  <span class="shape s-rose blob bordered anim-wobble-r" style="width:100px;height:100px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">MDP · RL PROBLEM TYPES</span>
+    <h2 class="h2 reveal">Different <span class="hl peach">types</span> of RL problems.</h2>
+    <p class="body dim reveal" style="font-size:clamp(.85rem,1.1vw,1rem);max-width:900px;margin-top:.2rem">
+      RL problems vary along a few axes. Where a problem sits on each one decides which methods apply — and how hard it is.
+    </p>
+
+    <div class="rl-axes reveal">
+      <div class="rl-axis">
+        <div class="axis-label">Observability</div>
+        <div class="axis-end left">
+          <span class="end-name">Full</span>
+          <span class="end-detail">Agent sees the true state, \(O_t = S_t\).</span>
+        </div>
+        <div class="axis-vs">vs</div>
+        <div class="axis-end right">
+          <span class="end-name">Partial <span class="end-pomdp">(POMDP)</span></span>
+          <span class="end-detail">Sees only part of it, \(O_t \neq S_t\).</span>
+        </div>
+      </div>
+
+      <div class="rl-axis">
+        <div class="axis-label">Model</div>
+        <div class="axis-end left">
+          <span class="end-name">Known kernel</span>
+          <span class="end-detail">\(P(s'\mid s,a)\) given — we can <em>plan</em>.</span>
+        </div>
+        <div class="axis-vs">vs</div>
+        <div class="axis-end right">
+          <span class="end-name">Unknown kernel</span>
+          <span class="end-detail">Agent must <em>learn</em> from experience.</span>
+        </div>
+      </div>
+
+      <div class="rl-axis">
+        <div class="axis-label">Horizon</div>
+        <div class="axis-end left">
+          <span class="end-name">Finite</span>
+          <span class="end-detail">Bounded steps \(T\) (episodic).</span>
+        </div>
+        <div class="axis-vs">vs</div>
+        <div class="axis-end right">
+          <span class="end-name">Infinite</span>
+          <span class="end-detail">No terminal step (continuing).</span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.6rem;font-style:italic;text-align:center;font-size:clamp(.78rem,1vw,.92rem);max-width:880px;margin-left:auto;margin-right:auto">
+      The MDP we just defined sits at <b>full obs</b>, <b>unknown kernel</b>, <b>stochastic</b> — the standard setting we'll work in for this course.
+    </p>
+  </div>
+  <div class="slide-name">RL Problem Types</div>
+  <div class="slide-num">12 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 12 — RL TYPES QUIZ                       -->
+<!-- ============================================ -->
+<section class="slide" data-name="RL Types Quiz">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner" style="justify-content:flex-start">
+    <span class="tag sun reveal">RL TYPES · QUIZ</span>
+    <h2 class="h2 reveal">Four games. <span class="hl">Place each one.</span></h2>
+    <p class="body dim reveal" style="font-size:clamp(.88rem,1.13vw,1.02rem);max-width:1000px;margin-bottom:.3rem">
+      For each scenario, decide where it sits on the three axes — and name the five ingredients \(\mathcal{S}, \mathcal{A}, R, P, \gamma\). Tap to reveal.
+    </p>
+
+    <div class="pq-grid reveal">
+      <div class="pq-card tinted-mint" data-pq="t1">
+        <span class="pq-label">Q1 · TEXAS HOLD'EM (poker)</span>
+        <div class="pq-front"><p>You're playing a hand of Texas Hold'em.</p></div>
+        <div class="pq-back">
+          <div class="pq-types">
+            <span class="pq-type">Partial obs (POMDP)</span>
+            <span class="pq-type">Unknown kernel</span>
+            <span class="pq-type">Finite horizon</span>
+          </div>
+          <dl class="pq-table">
+            <dt>\(\mathcal{S}\)</dt><dd>your hand · community cards · pot · stacks · betting history</dd>
+            <dt>\(\mathcal{A}\)</dt><dd>fold, check, call, raise (with amount)</dd>
+            <dt>\(R\)</dt><dd>chips won or lost when the hand ends</dd>
+            <dt>\(P\)</dt><dd>card draws (known) + opponents' decisions (unknown)</dd>
+            <dt>\(\gamma\)</dt><dd>\(\approx 1\) — one hand is short</dd>
+          </dl>
+          <p>You can never see opponents' hole cards — that's <b>partial</b> observability. The deck is fair, but opponents' strategies are the unknown part of the kernel.</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <div class="pq-card tinted-peach" data-pq="t2">
+        <span class="pq-label">Q2 · GO (the board game)</span>
+        <div class="pq-front"><p>You're playing Go on a 19×19 board.</p></div>
+        <div class="pq-back">
+          <div class="pq-types">
+            <span class="pq-type">Full obs</span>
+            <span class="pq-type">Unknown kernel</span>
+            <span class="pq-type">Finite horizon</span>
+          </div>
+          <dl class="pq-table">
+            <dt>\(\mathcal{S}\)</dt><dd>full board configuration + whose turn it is</dd>
+            <dt>\(\mathcal{A}\)</dt><dd>place a stone on any legal intersection (or pass)</dd>
+            <dt>\(R\)</dt><dd>\(+1\) win · \(-1\) loss (terminal, otherwise \(0\))</dd>
+            <dt>\(P\)</dt><dd>your move = deterministic rules; opponent's reply = unknown</dd>
+            <dt>\(\gamma\)</dt><dd>\(\approx 1\) — game length is bounded</dd>
+          </dl>
+          <p>The whole board is visible — that's <b>full</b> observability. Rules are deterministic, but the opponent's policy lives inside \(P\), and we don't know it.</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <div class="pq-card tinted-lilac" data-pq="t3">
+        <span class="pq-label">Q3 · THERMOSTAT (keep the room at 70°F)</span>
+        <div class="pq-front"><p>A smart thermostat runs continuously, switching the heater on or off to keep the room near 70°F.</p></div>
+        <div class="pq-back">
+          <div class="pq-types">
+            <span class="pq-type">Full obs</span>
+            <span class="pq-type">Unknown kernel</span>
+            <span class="pq-type">Infinite horizon</span>
+          </div>
+          <dl class="pq-table">
+            <dt>\(\mathcal{S}\)</dt><dd>current room temperature (and outdoor temp)</dd>
+            <dt>\(\mathcal{A}\)</dt><dd>heater off · heater on</dd>
+            <dt>\(R\)</dt><dd>\(-|T - 70|\) — penalty for being far from target</dd>
+            <dt>\(P\)</dt><dd>how the room temp evolves given heater state + weather</dd>
+            <dt>\(\gamma\)</dt><dd>\(\gamma &lt; 1\) — must discount; the loop never ends</dd>
+          </dl>
+          <p>No terminal step — it just keeps running. That's exactly when \(\gamma &lt; 1\) earns its keep: it makes the infinite sum of rewards finite.</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <div class="pq-card tinted-sky" data-pq="t4">
+        <span class="pq-label">Q4 · LLM (generating an answer)</span>
+        <div class="pq-front"><p>An LLM produces an answer one token at a time, then a reward model scores the finished response.</p></div>
+        <div class="pq-back">
+          <div class="pq-types">
+            <span class="pq-type">Full obs</span>
+            <span class="pq-type">Known kernel</span>
+            <span class="pq-type">Finite horizon</span>
+          </div>
+          <dl class="pq-table">
+            <dt>\(\mathcal{S}\)</dt><dd>prompt + tokens generated so far</dd>
+            <dt>\(\mathcal{A}\)</dt><dd>pick the next token from the vocabulary</dd>
+            <dt>\(R\)</dt><dd>\(0\) until done; reward-model score at the end</dd>
+            <dt>\(P\)</dt><dd>deterministic — append the chosen token to the state</dd>
+            <dt>\(\gamma\)</dt><dd>\(\approx 1\) — episodes are short and bounded</dd>
+          </dl>
+          <p>The transition is just "stick the token on the end" — fully known. That's why post-training methods can <i>plan</i> against the LLM itself.</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+    </div>
+
+    <div class="axes-footer reveal">
+      <div class="axis-chip">
+        <span class="axis-name">Observability</span>
+        <span class="axis-vals">Full · <span class="ax-dim">Partial (POMDP)</span></span>
+      </div>
+      <div class="axis-chip">
+        <span class="axis-name">Kernel</span>
+        <span class="axis-vals">Known · <span class="ax-dim">Unknown</span></span>
+      </div>
+      <div class="axis-chip">
+        <span class="axis-name">Horizon</span>
+        <span class="axis-vals">Finite · <span class="ax-dim">Infinite</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">RL Types Quiz</div>
+  <div class="slide-num">13 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — PART 2 DIVIDER · DP                 -->
+<!-- ============================================ -->
+<section class="slide" data-name="Part 2: DP">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-mint square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-rose pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag peach reveal">PART 2 OF 3</span>
+    <h1 class="title reveal">Dynamic Programming &mdash;<br>the <span class="hl">Algorithm</span>.</h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.5vw,1.25rem);max-width:1100px;margin-bottom:1.1rem;text-align:center">
+      Now, solve the problem. Walk backward from the future: compute the value of every state by reusing values you've already computed one step ahead. That's <b>dynamic programming</b>.
+    </p>
+  </div>
+  <div class="slide-name">Part 2: DP</div>
+  <div class="slide-num">14 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — DOORS GAME (play before the tree)   -->
+<!-- ============================================ -->
+<section class="slide" data-name="Doors Game" id="doors-slide">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · DOORS GAME</span>
+    <h2 class="h2 reveal">Pick a door. <span class="hl">Four rooms.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Two doors at every step. Each has a <b>peephole</b> — peek to see the reward inside. Step through to claim it; two new doors appear. <b>4 picks total. Highest score wins.</b>
+    </p>
+
+    <div class="doors-game reveal">
+      <div class="dg-status">
+        <div><span class="lbl">Step</span><span class="val" id="dg-step">1 / 4</span></div>
+        <div><span class="lbl">Path so far</span><span class="val" id="dg-path">—</span></div>
+        <div class="dg-total"><span class="lbl">Total reward</span><span class="val" id="dg-total">0</span></div>
+      </div>
+
+      <div class="dg-doors" id="dg-doors">
+        <button class="dg-door" data-side="L">
+          <div class="dg-door-frame">
+            <div class="dg-peephole">
+              <span class="dg-peep-lbl">peek</span>
+              <span class="dg-peep-val" id="dg-peep-L">—</span>
+            </div>
+            <div class="dg-door-handle"></div>
+          </div>
+          <div class="dg-door-side">⬅ LEFT</div>
+        </button>
+        <button class="dg-door" data-side="R">
+          <div class="dg-door-frame">
+            <div class="dg-peephole">
+              <span class="dg-peep-lbl">peek</span>
+              <span class="dg-peep-val" id="dg-peep-R">—</span>
+            </div>
+            <div class="dg-door-handle"></div>
+          </div>
+          <div class="dg-door-side">RIGHT ➡</div>
+        </button>
+      </div>
+
+      <div class="dg-final" id="dg-final" hidden>
+        <div class="dg-final-tag">Final score</div>
+        <div class="dg-final-num" id="dg-final-num">+0</div>
+        <div class="dg-final-msg" id="dg-final-msg"></div>
+      </div>
+
+      <div class="dg-controls">
+        <button class="dg-btn" id="dg-reset">↺ Play again</button>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.55rem;font-style:italic;text-align:center;font-size:clamp(.82rem,1.05vw,.95rem);max-width:920px;margin-left:auto;margin-right:auto">
+      The peephole shows only <i>this step's</i> reward — not what waits behind the next door. Easy to grab the big number now and lose later.
+    </p>
+  </div>
+  <div class="slide-name">Doors Game</div>
+  <div class="slide-num">15 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 20 — WARRIOR TEASER (binary tree game)   -->
+<!-- ============================================ -->
+<section class="slide" data-name="Warrior Test">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:75px;height:75px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">DP · TREE GAME</span>
+    <h2 class="h2 reveal">The warrior's <span class="hl">greedy trap.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Take <b>4 steps</b>. At each step, go <b>left</b> or <b>right</b>. Each cell pays a reward — a 🪙 coin (<b>+5 to +10</b>) or 💀 boss (<b>−10 to −5</b>). Goal: <b>finish with the highest total</b>. There are \(2^4 = 16\) possible paths.
+    </p>
+
+    <div class="warrior-tree reveal">
+      <svg viewBox="0 0 800 295" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:46vh">
+        <!-- Edges Layer 0 → 1 -->
+        <line x1="400" y1="20" x2="200" y2="75" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="400" y1="20" x2="600" y2="75" stroke="#1f1d2b" stroke-width="1.5"/>
+        <!-- Edges Layer 1 → 2 -->
+        <line x1="200" y1="75" x2="100" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="200" y1="75" x2="300" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="600" y1="75" x2="500" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="600" y1="75" x2="700" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <!-- Edges Layer 2 → 3 -->
+        <line x1="100" y1="130" x2="50"  y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="100" y1="130" x2="150" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="300" y1="130" x2="250" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="300" y1="130" x2="350" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="500" y1="130" x2="450" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="500" y1="130" x2="550" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="700" y1="130" x2="650" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="700" y1="130" x2="750" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <!-- Edges Layer 3 → 4 (16) -->
+        <line x1="50"  y1="185" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="50"  y1="185" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="150" y1="185" x2="125" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="150" y1="185" x2="175" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="250" y1="185" x2="225" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="250" y1="185" x2="275" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="350" y1="185" x2="325" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="350" y1="185" x2="375" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="450" y1="185" x2="425" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="450" y1="185" x2="475" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="550" y1="185" x2="525" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="550" y1="185" x2="575" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="650" y1="185" x2="625" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="650" y1="185" x2="675" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="750" y1="185" x2="725" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="750" y1="185" x2="775" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+
+        <!-- Greedy path (red dashed): R → RL → RLL → RLLR -->
+        <line x1="400" y1="20"  x2="600" y2="75"  stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="600" y1="75"  x2="500" y2="130" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="500" y1="130" x2="450" y2="185" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="450" y1="185" x2="475" y2="240" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+
+        <!-- Layer 0: start -->
+        <circle cx="400" cy="20" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="400" y="20" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+
+        <!-- Layer 1 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="200" cy="75" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="200" y="75">−9</text>
+          <circle cx="600" cy="75" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="600" y="75">−6</text>
+        </g>
+
+        <!-- Layer 2 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="100" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="100" y="130">+8</text>
+          <circle cx="300" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="300" y="130">+6</text>
+          <circle cx="500" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="500" y="130">+4</text>
+          <circle cx="700" cy="130" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="700" y="130">−8</text>
+        </g>
+
+        <!-- Layer 3 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="50"  cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="50"  y="185">−9</text>
+          <circle cx="150" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="150" y="185">+5</text>
+          <circle cx="250" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="250" y="185">+10</text>
+          <circle cx="350" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="350" y="185">−7</text>
+          <circle cx="450" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="450" y="185">+6</text>
+          <circle cx="550" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="550" y="185">−8</text>
+          <circle cx="650" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="650" y="185">+7</text>
+          <circle cx="750" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="750" y="185">−6</text>
+        </g>
+
+        <!-- Layer 4 (16 leaves) -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="25"  cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="25"  y="240">−7</text>
+          <circle cx="75"  cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="75"  y="240">−5</text>
+          <circle cx="125" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="125" y="240">−6</text>
+          <circle cx="175" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="175" y="240">+5</text>
+          <circle cx="225" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="225" y="240">+9</text>
+          <circle cx="275" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="275" y="240">+10</text>
+          <circle cx="325" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="325" y="240">+6</text>
+          <circle cx="375" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="375" y="240">−8</text>
+          <circle cx="425" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="425" y="240">−7</text>
+          <circle cx="475" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="475" y="240">+8</text>
+          <circle cx="525" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="525" y="240">+5</text>
+          <circle cx="575" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="575" y="240">−6</text>
+          <circle cx="625" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="625" y="240">+7</text>
+          <circle cx="675" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="675" y="240">−8</text>
+          <circle cx="725" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="725" y="240">−7</text>
+          <circle cx="775" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="775" y="240">+9</text>
+        </g>
+
+        <!-- Legend -->
+        <g transform="translate(20, 280)">
+          <circle cx="6" cy="0" r="5" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="16" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">🪙 coin (+5..+10)</text>
+          <circle cx="155" cy="0" r="5" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="165" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">💀 boss (−10..−5)</text>
+          <line x1="305" y1="0" x2="335" y2="0" stroke="#e23e3e" stroke-width="2.5" stroke-dasharray="4,2"/>
+          <text x="341" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">greedy path: pick the biggest reward at each step</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="warrior-discuss reveal">
+      <div class="wd-q">
+        <span class="wd-tag">Q1 · GREEDY</span>
+        <p>Sum the rewards along the red path. What total does greedy end with?</p>
+      </div>
+      <div class="wd-q">
+        <span class="wd-tag">Q2 · HOW TO AVOID GREEDY?</span>
+        <p>What information would let you make the right choice at <i>every</i> step?</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Warrior Test</div>
+  <div class="slide-num">16 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — KEY INSIGHT · PLAN, DON'T BE GREEDY -->
+<!-- ============================================ -->
+<section class="slide" data-name="Plan, Don't Be Greedy">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · KEY INSIGHT</span>
+    <h2 class="h2 reveal">Don't be greedy &mdash; <span class="hl">plan ahead.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.9rem,1.18vw,1.08rem)">
+      Greedy fails because it judges each move by <i>this step's</i> reward only. The fix in one sentence: <b>at every step, pick the move whose <i>whole future</i> looks best.</b> Today's choice is judged by where it eventually leads &mdash; all the way to the end.
+    </p>
+
+    <div class="warrior-discuss reveal">
+      <div class="wd-q" style="background:var(--peach)">
+        <span class="wd-tag">😬 GREEDY</span>
+        <p>"Take the biggest reward I can see <i>now</i>." Looks one step ahead. Walks straight into a boss two steps later.</p>
+      </div>
+      <div class="wd-q" style="background:var(--mint)">
+        <span class="wd-tag">🧭 PLANNING</span>
+        <p>"Take the move whose <b>total future reward</b> is highest." Looks all the way to the leaves before committing the first step.</p>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.8rem">
+      <span class="vt-callout-tag">🤔 THINK</span>
+      <span>Easy to <i>say</i>. But how would you actually <b>compute</b> "the total future reward of a move" on the warrior tree? Try the most direct idea you can think of &mdash; we'll try yours next.</span>
+    </div>
+  </div>
+  <div class="slide-name">Plan, Don't Be Greedy</div>
+  <div class="slide-num">17 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — VANILLA · ENUMERATE EVERY PLAN     -->
+<!-- ============================================ -->
+<section class="slide" data-name="Enumerate Every Plan">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">DP · BRUTE FORCE</span>
+    <h2 class="h2 reveal">First idea: <span class="hl">try every plan.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      A <b>plan</b> is a fixed 4-step sequence of L/R moves. There are \(2^4 = 16\) plans. For each one, sum the four rewards along its path; pick the plan with the highest total.
+    </p>
+
+    <div class="reveal" style="background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.95rem 1.2rem;margin-top:.5rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.5rem">A FEW OF THE 16 PLANS</span>
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:.35rem 1.1rem;font-family:var(--font-mono);font-size:clamp(.85rem,1.08vw,.98rem);line-height:1.7;align-items:center">
+        <div><b>LLLL</b></div>
+        <div>(&minus;9) + (+8) + (&minus;9) + (&minus;7)</div>
+        <div>= <b>&minus;17</b></div>
+
+        <div><b>LRLL</b></div>
+        <div>(&minus;9) + (+6) + (+10) + (+9)</div>
+        <div>= <b>+16</b></div>
+
+        <div><b>LRLR</b></div>
+        <div>(&minus;9) + (+6) + (+10) + (+10)</div>
+        <div>= <b style="background:var(--sun);padding:.05rem .4rem;border:1.5px solid var(--line);border-radius:6px">+17</b> &check;</div>
+
+        <div><b>RRRR</b></div>
+        <div>(&minus;6) + (&minus;8) + (&minus;6) + (+9)</div>
+        <div>= <b>&minus;11</b></div>
+
+        <div style="color:var(--dim)">&hellip; 12 more &hellip;</div>
+        <div style="color:var(--dim)">enumerate all 16, sum each</div>
+        <div style="color:var(--dim)">take the max</div>
+      </div>
+    </div>
+
+    <div class="warrior-discuss reveal" style="margin-top:.7rem">
+      <div class="wd-q" style="background:var(--rose)">
+        <span class="wd-tag">⚠️ Q · EFFICIENCY</span>
+        <p>4 steps gave <b>16</b> plans. What if the warrior took <b>10</b> steps? <b>20</b>? <b>50</b>? How many plans must we sum?</p>
+      </div>
+      <div class="wd-q" style="background:var(--lilac)">
+        <span class="wd-tag">📐 ANSWER</span>
+        <p>\(2^{10}{=}1{,}024\) &middot; \(2^{20}{\approx}10^6\) &middot; \(2^{50}{\approx}10^{15}\). <b>Exponential</b> &mdash; brute force is hopeless almost immediately. We need a smarter way.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Enumerate Every Plan</div>
+  <div class="slide-num">18 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — WHEN DOES GREEDY WIN? (BACKWARD INSIGHT) -->
+<!-- ============================================ -->
+<section class="slide" data-name="When Greedy Wins">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · WHEN GREEDY WINS</span>
+    <h2 class="h2 reveal">Greedy <span class="hl">does</span> work &mdash; on a 1-step tree.</h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Greedy got trapped on the big tree because each move hides a long future. Strip the future to nothing &mdash; make the problem one step &mdash; and greedy snaps back to optimal. Three observations turn that into a plan.
+    </p>
+
+    <div class="recap-flow reveal">
+      <div class="recap-stage">
+        <span class="rs-tag">&#9312; ONE STEP LEFT &mdash; DEFINE V</span>
+        <p>If the tree is just <b>one step deep</b>, the best total reward starting from \(s\) is just the larger reward. Call this best total \(V(s)\) &mdash; the <b>value</b> of state \(s\). No future, no trap.</p>
+        <div class="rs-viz">
+          <svg viewBox="0 0 220 110" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:110px">
+            <line x1="110" y1="22" x2="60"  y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <line x1="110" y1="22" x2="160" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <circle cx="110" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+            <text x="110" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">&#129335;</text>
+            <circle cx="60" cy="78" r="14" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="60" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" fill="#1f1d2b">+4</text>
+            <circle cx="160" cy="78" r="14" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="160" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" fill="#1f1d2b">+6</text>
+            <circle cx="160" cy="78" r="20" fill="none" stroke="#e23e3e" stroke-width="2.5" stroke-dasharray="4,2"/>
+          </svg>
+        </div>
+        <div class="rs-formula">\( V(s) = \max_a R(s,a) = +6 \)</div>
+      </div>
+
+      <div class="recap-stage">
+        <span class="rs-tag">&#9313; WALK BACKWARDS</span>
+        <p>What if every next state \(s'\) came tagged with its value \(V(s')\) &mdash; the best total starting from there? Then any step is again a 1-step problem: pick the action with the biggest <i>reward + value</i>.</p>
+        <div class="rs-viz">
+          <svg viewBox="0 0 220 110" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:110px">
+            <line x1="110" y1="22" x2="60"  y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <line x1="110" y1="22" x2="160" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <circle cx="110" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+            <text x="110" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">&#129335;</text>
+            <circle cx="60" cy="78" r="14" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="60" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="10.5" fill="#1f1d2b">&minus;9</text>
+            <text x="60" y="103" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="9" fill="#7a4dc2">+ V(s')</text>
+            <circle cx="160" cy="78" r="14" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="160" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="10.5" fill="#1f1d2b">&minus;6</text>
+            <text x="160" y="103" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="9" fill="#7a4dc2">+ V(s')</text>
+          </svg>
+        </div>
+        <div class="rs-formula">\( V(s) = \max_a \big[\, R(s,a) + V(s') \,\big] \)</div>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.8rem">
+      <span class="vt-callout-tag">&#129300; PROBE</span>
+      <span>At the leaves the future is <b>0</b> (no more steps), so depth-3 is already a 1-step problem &mdash; solve it. Now depth-2 sees depth-3’s &ldquo;future&rdquo; and is <i>also</i> 1-step. Roll up layer by layer until the root &mdash; this is <b>dynamic programming</b>. Next slide does it on the warrior tree.</span>
+    </div>
+  </div>
+  <div class="slide-name">When Greedy Wins</div>
+  <div class="slide-num">19 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 20 — V on tree, deterministic π*         -->
+<!-- ============================================ -->
+<section class="slide" data-name="V on Tree (det)">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">DP · OPTIMAL POLICY</span>
+    <h2 class="h2 reveal">Where do those numbers <span class="hl">come from?</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.85rem,1.1vw,1rem)">
+      Same warrior tree (rewards untouched). <span style="color:#7a4dc2;font-weight:700;font-family:var(--font-mono)">Violet</span> next to each node = <b>V</b> (state values). <span style="color:#e23e3e;font-weight:700;font-family:var(--font-mono)">Red</span> on each edge = <b>Q</b> (action values). The dashed path \(L\to LR\to LRL\to LRLR\) is the optimal route the math panel walks.
+    </p>
+
+    <div class="vt-grid reveal">
+      <div class="vt-tree">
+        <svg viewBox="0 0 800 270" preserveAspectRatio="xMidYMid meet">
+          <line x1="400" y1="22" x2="200" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="400" y1="22" x2="600" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="200" y1="78" x2="100" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="200" y1="78" x2="300" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="500" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="700" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="100" y1="132" x2="50"  y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="100" y1="132" x2="150" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="250" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="350" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="450" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="550" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="650" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="750" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="50"  y1="186" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="50"  y1="186" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="125" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="175" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="225" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="275" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="325" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="375" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="425" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="475" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="525" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="575" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="625" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="675" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="725" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="775" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+
+          <circle cx="400" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="400" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="200" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="200" y="78">−9</text>
+            <circle cx="600" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="600" y="78">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="100" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="100" y="132">+8</text>
+            <circle cx="300" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="300" y="132">+6</text>
+            <circle cx="500" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="500" y="132">+4</text>
+            <circle cx="700" cy="132" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/><text x="700" y="132">−8</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="50"  cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="50"  y="186">−9</text>
+            <circle cx="150" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="150" y="186">+5</text>
+            <circle cx="250" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="250" y="186">+10</text>
+            <circle cx="350" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="350" y="186">−7</text>
+            <circle cx="450" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="450" y="186">+6</text>
+            <circle cx="550" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="550" y="186">−8</text>
+            <circle cx="650" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="650" y="186">+7</text>
+            <circle cx="750" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="750" y="186">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="25"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="25"  y="240">−7</text>
+            <circle cx="75"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="75"  y="240">−5</text>
+            <circle cx="125" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="125" y="240">−6</text>
+            <circle cx="175" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="175" y="240">+5</text>
+            <circle cx="225" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="225" y="240">+9</text>
+            <circle cx="275" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="275" y="240">+10</text>
+            <circle cx="325" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="325" y="240">+6</text>
+            <circle cx="375" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="375" y="240">−8</text>
+            <circle cx="425" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="425" y="240">−7</text>
+            <circle cx="475" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="475" y="240">+8</text>
+            <circle cx="525" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="525" y="240">+5</text>
+            <circle cx="575" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="575" y="240">−6</text>
+            <circle cx="625" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="625" y="240">+7</text>
+            <circle cx="675" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="675" y="240">−8</text>
+            <circle cx="725" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="725" y="240">−7</text>
+            <circle cx="775" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="775" y="240">+9</text>
+          </g>
+
+          <!-- Optimal path overlay (L → LR → LRL → LRLR) -->
+          <g stroke="#e23e3e" stroke-width="3.5" stroke-dasharray="5,3" fill="none" stroke-linecap="round">
+            <line x1="400" y1="22"  x2="200" y2="78"/>
+            <line x1="200" y1="78"  x2="300" y2="132"/>
+            <line x1="300" y1="132" x2="250" y2="186"/>
+            <line x1="250" y1="186" x2="275" y2="240"/>
+          </g>
+
+          <g font-family="JetBrains Mono, monospace" font-weight="700" fill="#7a4dc2">
+            <text x="424" y="22"  text-anchor="start" dominant-baseline="central" font-size="10">V*=+17</text>
+            <text x="183" y="78"  text-anchor="end"   dominant-baseline="central" font-size="9.5">+26</text>
+            <text x="617" y="78"  text-anchor="start" dominant-baseline="central" font-size="9.5">+18</text>
+            <text x="85"  y="132" text-anchor="end"   dominant-baseline="central" font-size="9">+10</text>
+            <text x="315" y="132" text-anchor="start" dominant-baseline="central" font-size="9">+20</text>
+            <text x="485" y="132" text-anchor="end"   dominant-baseline="central" font-size="9">+14</text>
+            <text x="715" y="132" text-anchor="start" dominant-baseline="central" font-size="9">+14</text>
+            <text x="37"  y="186" text-anchor="end"   dominant-baseline="central" font-size="8">−5</text>
+            <text x="163" y="186" text-anchor="start" dominant-baseline="central" font-size="8">+5</text>
+            <text x="237" y="186" text-anchor="end"   dominant-baseline="central" font-size="8">+10</text>
+            <text x="363" y="186" text-anchor="start" dominant-baseline="central" font-size="8">+6</text>
+            <text x="437" y="186" text-anchor="end"   dominant-baseline="central" font-size="8">+8</text>
+            <text x="563" y="186" text-anchor="start" dominant-baseline="central" font-size="8">+5</text>
+            <text x="637" y="186" text-anchor="end"   dominant-baseline="central" font-size="8">+7</text>
+            <text x="763" y="186" text-anchor="start" dominant-baseline="central" font-size="8">+9</text>
+          </g>
+
+          <!-- Q values on all edges (just numbers, red with paper halo) -->
+          <g font-family="JetBrains Mono, monospace" font-weight="700" fill="#e23e3e" stroke="#fef8f0" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round">
+            <text x="300" y="50" text-anchor="middle" dominant-baseline="central" font-size="9.5">+17</text>
+            <text x="500" y="50" text-anchor="middle" dominant-baseline="central" font-size="9.5">+12</text>
+            <text x="150" y="105" text-anchor="middle" dominant-baseline="central" font-size="8.5">+18</text>
+            <text x="250" y="105" text-anchor="middle" dominant-baseline="central" font-size="8.5">+26</text>
+            <text x="550" y="105" text-anchor="middle" dominant-baseline="central" font-size="8.5">+18</text>
+            <text x="650" y="105" text-anchor="middle" dominant-baseline="central" font-size="8.5">+6</text>
+            <text x="75"  y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">−14</text>
+            <text x="125" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">+10</text>
+            <text x="275" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">+20</text>
+            <text x="325" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">−1</text>
+            <text x="475" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">+14</text>
+            <text x="525" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">−3</text>
+            <text x="675" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">+14</text>
+            <text x="725" y="159" text-anchor="middle" dominant-baseline="central" font-size="7.5">+3</text>
+          </g>
+
+          <g font-family="JetBrains Mono, monospace" font-size="8.5">
+            <text x="20"  y="265" fill="#1f1d2b">inside = reward</text>
+            <text x="140" y="265" fill="#7a4dc2">violet (nodes) = V</text>
+            <text x="285" y="265" fill="#e23e3e">red (edges) = Q</text>
+            <text x="430" y="265" fill="#6c6a7a">leaves: V = 0 (terminal)</text>
+          </g>
+        </svg>
+      </div>
+      <div class="vt-math det">
+        <span class="vt-tag">π* · IN SYMBOLS</span>
+        <div class="vt-formula">\( V(s) = \max_a Q(s,a) = \max_a \big[\, R(s,a) + V(s') \,\big] \)</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">V on Tree (det)</div>
+  <div class="slide-num">20 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 21 — V on tree, random π                 -->
+<!-- ============================================ -->
+<section class="slide" data-name="V on Tree (random)">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">DP · RANDOM POLICY</span>
+    <h2 class="h2 reveal">How can we <span class="hl">evaluate</span> a random policy?</h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.85rem,1.1vw,1rem)">
+      Same tree, same rewards. Suppose at every state π picks <b>L with probability 0.6, R with 0.4</b>. Max → expectation. <span style="color:#7a4dc2;font-weight:700;font-family:var(--font-mono)">Violet</span> = \(V_\pi\). <span style="color:#e23e3e;font-weight:700;font-family:var(--font-mono)">Red</span> = \(Q_\pi\).
+    </p>
+
+    <div class="vt-grid reveal">
+      <div class="vt-tree">
+        <svg viewBox="0 0 800 270" preserveAspectRatio="xMidYMid meet">
+          <line x1="400" y1="22" x2="200" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="400" y1="22" x2="600" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="200" y1="78" x2="100" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="200" y1="78" x2="300" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="500" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="700" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="100" y1="132" x2="50"  y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="100" y1="132" x2="150" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="250" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="350" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="450" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="550" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="650" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="750" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="50"  y1="186" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="50"  y1="186" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="125" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="175" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="225" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="275" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="325" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="375" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="425" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="475" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="525" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="575" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="625" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="675" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="725" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="775" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+
+          <circle cx="400" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="400" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="200" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="200" y="78">−9</text>
+            <circle cx="600" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="600" y="78">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="100" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="100" y="132">+8</text>
+            <circle cx="300" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="300" y="132">+6</text>
+            <circle cx="500" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="500" y="132">+4</text>
+            <circle cx="700" cy="132" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/><text x="700" y="132">−8</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="50"  cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="50"  y="186">−9</text>
+            <circle cx="150" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="150" y="186">+5</text>
+            <circle cx="250" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="250" y="186">+10</text>
+            <circle cx="350" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="350" y="186">−7</text>
+            <circle cx="450" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="450" y="186">+6</text>
+            <circle cx="550" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="550" y="186">−8</text>
+            <circle cx="650" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="650" y="186">+7</text>
+            <circle cx="750" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="750" y="186">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="25"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="25"  y="240">−7</text>
+            <circle cx="75"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="75"  y="240">−5</text>
+            <circle cx="125" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="125" y="240">−6</text>
+            <circle cx="175" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="175" y="240">+5</text>
+            <circle cx="225" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="225" y="240">+9</text>
+            <circle cx="275" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="275" y="240">+10</text>
+            <circle cx="325" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="325" y="240">+6</text>
+            <circle cx="375" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="375" y="240">−8</text>
+            <circle cx="425" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="425" y="240">−7</text>
+            <circle cx="475" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="475" y="240">+8</text>
+            <circle cx="525" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="525" y="240">+5</text>
+            <circle cx="575" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="575" y="240">−6</text>
+            <circle cx="625" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="625" y="240">+7</text>
+            <circle cx="675" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="675" y="240">−8</text>
+            <circle cx="725" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="725" y="240">−7</text>
+            <circle cx="775" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="775" y="240">+9</text>
+          </g>
+
+          <g font-family="JetBrains Mono, monospace" font-weight="700" fill="#7a4dc2">
+            <text x="424" y="22"  text-anchor="start" dominant-baseline="central" font-size="10">Vπ=−4.1</text>
+            <text x="183" y="78"  text-anchor="end"   dominant-baseline="central" font-size="9">+6.1</text>
+            <text x="617" y="78"  text-anchor="start" dominant-baseline="central" font-size="9">+0.1</text>
+            <text x="85"  y="132" text-anchor="end"   dominant-baseline="central" font-size="8.5">−7.8</text>
+            <text x="315" y="132" text-anchor="start" dominant-baseline="central" font-size="8.5">+9.0</text>
+            <text x="485" y="132" text-anchor="end"   dominant-baseline="central" font-size="8.5">0.0</text>
+            <text x="715" y="132" text-anchor="start" dominant-baseline="central" font-size="8.5">+2.2</text>
+            <text x="37"  y="186" text-anchor="end"   dominant-baseline="central" font-size="7.5">−6.2</text>
+            <text x="163" y="186" text-anchor="start" dominant-baseline="central" font-size="7.5">−1.6</text>
+            <text x="237" y="186" text-anchor="end"   dominant-baseline="central" font-size="7.5">+9.4</text>
+            <text x="363" y="186" text-anchor="start" dominant-baseline="central" font-size="7.5">+0.4</text>
+            <text x="437" y="186" text-anchor="end"   dominant-baseline="central" font-size="7.5">−1.0</text>
+            <text x="563" y="186" text-anchor="start" dominant-baseline="central" font-size="7.5">+0.6</text>
+            <text x="637" y="186" text-anchor="end"   dominant-baseline="central" font-size="7.5">+1.0</text>
+            <text x="763" y="186" text-anchor="start" dominant-baseline="central" font-size="7.5">−0.6</text>
+          </g>
+
+          <!-- Q_π values on all edges (just numbers, red with paper halo) -->
+          <g font-family="JetBrains Mono, monospace" font-weight="700" fill="#e23e3e" stroke="#fef8f0" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round">
+            <text x="300" y="50" text-anchor="middle" dominant-baseline="central" font-size="9.5">−2.9</text>
+            <text x="500" y="50" text-anchor="middle" dominant-baseline="central" font-size="9.5">−5.9</text>
+            <text x="150" y="105" text-anchor="middle" dominant-baseline="central" font-size="8">+0.2</text>
+            <text x="250" y="105" text-anchor="middle" dominant-baseline="central" font-size="8">+15.0</text>
+            <text x="550" y="105" text-anchor="middle" dominant-baseline="central" font-size="8">+4.0</text>
+            <text x="650" y="105" text-anchor="middle" dominant-baseline="central" font-size="8">−5.8</text>
+            <text x="75"  y="159" text-anchor="middle" dominant-baseline="central" font-size="7">−15.2</text>
+            <text x="125" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">+3.4</text>
+            <text x="275" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">+19.4</text>
+            <text x="325" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">−6.6</text>
+            <text x="475" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">+5.0</text>
+            <text x="525" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">−7.4</text>
+            <text x="675" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">+8.0</text>
+            <text x="725" y="159" text-anchor="middle" dominant-baseline="central" font-size="7">−6.6</text>
+          </g>
+
+          <g font-family="JetBrains Mono, monospace" font-size="8.5">
+            <text x="20"  y="265" fill="#1f1d2b">inside = reward</text>
+            <text x="140" y="265" fill="#7a4dc2">violet (nodes) = V_π</text>
+            <text x="295" y="265" fill="#e23e3e">red (edges) = Q_π</text>
+            <text x="445" y="265" fill="#6c6a7a">leaves: V = 0 (terminal)</text>
+          </g>
+        </svg>
+      </div>
+      <div class="vt-math stoch">
+        <span class="vt-tag">RANDOM π · IN SYMBOLS</span>
+        <div class="vt-formula">\( V_\pi(s) = \sum_a \pi(a\mid s)\, Q_\pi(s,a) = \sum_a \pi(a\mid s)\,\big[\, R(s,a) + V_\pi(s') \,\big] \)</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">V on Tree (random)</div>
+  <div class="slide-num">21 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 16 — PART 3 DIVIDER · BELLMAN            -->
+<!-- ============================================ -->
+<section class="slide" data-name="Part 3: Bellman">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-mint square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-sun pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag rose reveal">PART 3 OF 3</span>
+    <h1 class="title reveal">Bellman Equation &mdash; the <span class="hl">Math</span>.</h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.5vw,1.25rem);max-width:1100px;margin-bottom:1.1rem;text-align:center">
+      Finally, write it down as one equation: <b>the value of a state equals the reward plus the value of the next state.</b> Recursive, exact, and the foundation of every algorithm in the rest of the course.
+    </p>
+  </div>
+  <div class="slide-name">Part 3: Bellman</div>
+  <div class="slide-num">22 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 22 — V AND Q (formalize from examples)   -->
+<!-- ============================================ -->
+<section class="slide" data-name="Value &amp; Q">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">BELLMAN · V AND Q</span>
+    <h2 class="h2 reveal">V and Q <span class="hl">define each other.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Two values, one circular definition: <b>V averages Q over actions; Q reaches forward through V</b>. This recursion is the seed of <b>Bellman's equation</b> — the workhorse of RL we'll meet in L4.
+    </p>
+
+    <div class="vq-grid reveal">
+      <div class="vq-card v">
+        <span class="vq-tag">V — STATE VALUE · V FROM Q</span>
+        <div class="vq-formula">\( V_\pi(s) = \mathbb{E}_{a\sim\pi}\!\big[\, Q_\pi(s,a) \,\big] \)</div>
+        <p>The value of <i>being at</i> \(s\) is the <b>average action value at \(s\)</b>, weighted by how often the policy picks each action.</p>
+        <div class="vq-numbers">
+          Greedy π*: \(V(s) = \max_a Q(s,a)\)<br>
+          🤺 Slide 12: \(V(\text{start}) = \max(+17, +12) = +17\)
+        </div>
+      </div>
+      <div class="vq-card q">
+        <span class="vq-tag">Q — ACTION VALUE · Q FROM V</span>
+        <div class="vq-formula">\( Q_\pi(s, a) = r(s,a) + V_\pi(s') \)</div>
+        <p>The value of <i>taking</i> \(a\) from \(s\) is the <b>reward you collect now</b> plus the <b>value of the next state</b>.</p>
+        <div class="vq-numbers">
+          🤺 At the start, under π*:<br>
+          \(Q(\text{start}, L) = -9 + V(L) = -9 + 26 = +17\)
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Value &amp; Q</div>
+  <div class="slide-num">23 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE NEW — RANDOM KERNEL · BRIDGE             -->
+<!-- ============================================ -->
+<section class="slide" data-name="Random Kernel">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:85px;height:85px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">BELLMAN · RANDOM KERNEL</span>
+    <h2 class="h2 reveal">When the next state is <span class="hl">random.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      So far each \((s, a)\) landed at one fixed \(s'\). In general the kernel \(P(s' \mid s, a)\) — from slide 9 — gives a <b>distribution</b> over next states. \(Q\) can't peek at one \(s'\); it has to <b>average</b> over them.
+    </p>
+
+    <div class="vq-grid reveal">
+      <div class="vq-card v">
+        <span class="vq-tag">DETERMINISTIC · ONE NEXT STATE</span>
+        <div class="vq-formula">\( Q_\pi(s, a) = r(s, a) + V_\pi(s') \)</div>
+        <p>The warrior tree: each \((s, a)\) lands at exactly one \(s'\). \(V_\pi(s')\) is one number — no averaging needed.</p>
+      </div>
+      <div class="vq-card q">
+        <span class="vq-tag">STOCHASTIC · AVERAGE OVER NEXT STATES</span>
+        <div class="vq-formula">\( Q_\pi(s, a) = r(s, a) + \sum_{s'} P(s' \mid s, a)\, V_\pi(s') \)</div>
+        <p>Each \((s, a)\) gives a distribution over \(s'\). \(Q\) collects the reward, then takes the <b>expected</b> next-state value: \(\mathbb{E}_{s' \sim P(\cdot \mid s, a)}[V_\pi(s')]\).</p>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.6rem">
+      <span class="vt-callout-tag">📌 SAME PATTERN</span>
+      <span>\(V\) averages \(Q\) over actions (previous slide). Now \(Q\) averages \(V\) over next states. Two layers of expectation — add one more piece (discount \(\gamma\)) and we get <b>Bellman equation</b>.</span>
+    </div>
+  </div>
+  <div class="slide-name">Random Kernel</div>
+  <div class="slide-num">24 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — BELLMAN EQUATION                    -->
+<!-- ============================================ -->
+<section class="slide" data-name="Bellman">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">BELLMAN · THE EQUATION</span>
+    <h2 class="h2 reveal">Bellman equation: <span class="hl">V defines itself.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Slide 14 noticed something circular: \(V\) averages \(Q\) over actions; \(Q\) reaches forward through \(V\). Substitute one into the other and you get <b>Bellman's equation</b> — the most-used equation in all of RL.
+    </p>
+
+    <div class="vq-grid reveal">
+      <div class="vq-card v">
+        <span class="vq-tag">Q · DETERMINISTIC KERNEL</span>
+        <div class="vq-formula">\( Q_\pi(s, a) = R(s, a) + V_\pi(s') \)</div>
+        <p>One next state per \((s, a)\) — no averaging needed.</p>
+      </div>
+      <div class="vq-card q">
+        <span class="vq-tag">Q · STOCHASTIC KERNEL</span>
+        <div class="vq-formula">\( Q_\pi(s, a) = R(s, a) + \sum_{s'} P(s'\mid s, a)\, V_\pi(s') \)</div>
+        <p>\((s, a)\) gives a distribution over \(s'\) — average \(V_\pi\) over them.</p>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.6rem">
+      <span class="vt-callout-tag">📐 γ · DISCOUNT</span>
+      <span>\(\gamma \in [0, 1]\) — future rewards count less by a factor of \(\gamma\) per step. Use \(\gamma < 1\) for infinite tasks (so the tail shrinks); \(\gamma = 1\) works for finite ones like the warrior tree's 4 steps.</span>
+    </div>
+  </div>
+  <div class="slide-name">Bellman</div>
+  <div class="slide-num">25 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 17 — BELLMAN QUIZ (tap to reveal)        -->
+<!-- ============================================ -->
+<section class="slide-hidden" data-name="Bellman Quiz" id="bquiz-slide" hidden>
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner" style="justify-content:flex-start">
+    <span class="tag sun reveal">BELLMAN · QUIZ</span>
+    <h2 class="h2 reveal">Quick <span class="hl">Bellman check.</span></h2>
+    <p class="body dim reveal" style="font-size:clamp(.88rem,1.13vw,1.02rem);margin-bottom:.3rem">
+      Setup for all three: state \(s\) has two actions — <b>L</b>: \(R = +5\), lands in \(s'\) with \(V_\cdot(s') = +10\). <b>R</b>: \(R = +12\), lands in \(s''\) with \(V_\cdot(s'') = -3\). Tap to reveal.
+    </p>
+
+    <div class="pq-grid reveal">
+      <div class="pq-card tinted-mint" data-pq="0">
+        <span class="pq-label">Q1 · OPTIMAL · BELLMAN MAX (\(\gamma = 1\))</span>
+        <div class="pq-front"><p>Use Bellman optimality. What is \(V^*(s)\)? Which action is optimal?</p></div>
+        <div class="pq-back">
+          <span class="pq-answer">\(V^*(s) = +15\) · pick L</span>
+          <p>\(V^*(s) = \max\!\big(R_L + V^*(s'),\; R_R + V^*(s'')\big) = \max(5+10,\; 12-3) = \max(15, 9) = +15\). The bigger immediate reward (R = +12) loses to the better future (V = +10).</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <div class="pq-card tinted-peach" data-pq="1">
+        <span class="pq-label">Q2 · EXPECTATION · STOCHASTIC π (\(\gamma = 1\))</span>
+        <div class="pq-front"><p>Now \(\pi\) picks <b>L with prob 0.7, R with prob 0.3</b>. What is \(V_\pi(s)\)?</p></div>
+        <div class="pq-back">
+          <span class="pq-answer">\(V_\pi(s) = +13.2\)</span>
+          <p>\(V_\pi(s) = 0.7\,(5+10) + 0.3\,(12-3) = 0.7 \cdot 15 + 0.3 \cdot 9 = 10.5 + 2.7 = 13.2\). Average over actions, weighted by \(\pi\). Less than \(V^*\) because the random policy sometimes picks the worse action.</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+
+      <div class="pq-card tinted-lilac" data-pq="2">
+        <span class="pq-label">Q3 · WITH DISCOUNT · \(\gamma = 0.9\)</span>
+        <div class="pq-front"><p>Same as Q1, but future value is now <b>discounted by \(\gamma = 0.9\)</b>. Recompute \(V^*(s)\) and the optimal action.</p></div>
+        <div class="pq-back">
+          <span class="pq-answer">\(V^*(s) = +14\) · still L</span>
+          <p>\(V^*(s) = \max\!\big(5 + 0.9 \cdot 10,\; 12 + 0.9 \cdot (-3)\big) = \max(14,\; 9.3) = +14\). Discount shrinks both futures, but L still wins. (If \(\gamma\) were small enough — say \(\gamma = 0.3\) — the immediate +12 of R could overtake L.)</p>
+        </div>
+        <span class="pq-tap">tap to reveal</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Bellman Quiz</div>
+  <div class="slide-num">26 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — WHY BELLMAN MATTERS                 -->
+<!-- ============================================ -->
+<section class="slide-hidden" data-name="Why Bellman" hidden>
+  <span class="shape s-rose blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">BELLMAN · WHY IT MATTERS</span>
+    <h2 class="h2 reveal">Bellman is <span class="hl">everywhere</span> in RL.</h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      One equation, four jobs. Every algorithm we'll see for the rest of the course is some flavor of "satisfy Bellman."
+    </p>
+
+    <div class="takeaways-grid reveal">
+      <div class="take-card">
+        <span class="num">01 · DEFINES THE ANSWER</span>
+        <h3>The fixed-point characterization.</h3>
+        <p>\(V^*\) and \(Q^*\) are the <b>unique fixed points</b> of Bellman's optimality equation. The MDP's solution isn't a number — it's the function that satisfies this recursion. <i>Solving Bellman = solving the MDP.</i></p>
+      </div>
+      <div class="take-card">
+        <span class="num">02 · GIVES AN ALGORITHM</span>
+        <h3>Iterate the equation.</h3>
+        <p>Treat Bellman as an <b>update rule</b>: \(V_{k+1}(s) \leftarrow \max_a [R(s,a) + \gamma \sum_{s'} P\, V_k(s')]\). Start anywhere; iterate; converge to \(V^*\). That's <b>value iteration</b> — coming next.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">03 · POWERS ALL LEARNING</span>
+        <h3>Every learner is "Bellman with samples."</h3>
+        <p><b>TD-learning, Q-learning, SARSA, DQN, AlphaGo's value net</b> — all built on the recursion. The <b>TD error</b> \(\delta = R + \gamma V(s') - V(s)\) measures how far the current estimate strays from satisfying Bellman.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">04 · UNIVERSAL</span>
+        <h3>Same equation, every problem.</h3>
+        <p>Gridworld, Atari, Go, robotic arms, chip-design RL, RLHF for LLMs — substrate changes, equation doesn't. If you remember <i>one</i> formula from this whole course, this is the one.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Why Bellman</div>
+  <div class="slide-num">27 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — BELLMAN: FOUR ALGORITHMS            -->
+<!-- ============================================ -->
+<section class="slide-hidden" data-name="Bellman: 4 Algorithms" hidden>
+  <span class="shape s-rose blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">BELLMAN · FOUR ALGORITHMS</span>
+    <h2 class="h2 reveal">To solve RL — how do we <span class="hl">use Bellman</span>?</h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.13vw,1.02rem);margin-bottom:.4rem">
+      Every value-based RL algorithm is "<i>satisfy Bellman</i>." They differ on three knobs: <b>do you know the model?</b>, <b>full expectations or single samples?</b>, <b>table or neural net?</b>
+    </p>
+
+    <div class="formula-box reveal" style="padding:.5rem 1.1rem;margin:.2rem auto .55rem;max-width:920px;background:var(--paper)">
+      <div style="font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:.2rem">THE TARGET</div>
+      <div class="formula" style="font-size:clamp(1rem,1.45vw,1.25rem)">\( V^*(s) = \max_a \big[\, R(s,a) + \gamma \sum_{s'} P(s'\mid s,a)\, V^*(s')\,\big] \)</div>
+    </div>
+
+    <div class="takeaways-grid reveal">
+      <div class="take-card">
+        <span class="num">① VALUE ITERATION · model + sync sweep + table</span>
+        <h3>Sweep V until it stops moving.</h3>
+        <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);background:rgba(255,255,255,0.55);padding:.45rem .65rem;border-radius:7px;border:1.5px solid var(--line);line-height:1.7;margin:.25rem 0 .4rem">
+          \(V_{k+1}(s) \leftarrow \max_a \big[R(s,a) + \gamma \sum_{s'} P\, V_k(s')\big]\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.08vw,.98rem);font-style:italic;margin:0">When the MDP is fully known — the warrior tree, gridworld, inventory planning. <b>L4 starts here.</b></p>
+      </div>
+      <div class="take-card">
+        <span class="num">② Q-LEARNING · model-free + sample + table</span>
+        <h3>Nudge Q toward Bellman, one experience at a time.</h3>
+        <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);background:rgba(255,255,255,0.55);padding:.45rem .65rem;border-radius:7px;border:1.5px solid var(--line);line-height:1.7;margin:.25rem 0 .4rem">
+          \(Q(s,a) \leftarrow Q(s,a) + \alpha\,[\, r + \gamma \max_{a'} Q(s',a') - Q(s,a)\,]\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.08vw,.98rem);font-style:italic;margin:0">When you can <i>act</i> in the world but don't know \(R\) or \(P\) — robotic learning, simple games. The bracket is the <b>TD error</b>: how far Q is from satisfying Bellman.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">③ DEEP Q-NETWORK · model-free + sample + neural net</span>
+        <h3>Train a network to minimize squared Bellman error.</h3>
+        <div style="font-family:var(--font-mono);font-size:clamp(.76rem,.98vw,.88rem);background:rgba(255,255,255,0.55);padding:.45rem .65rem;border-radius:7px;border:1.5px solid var(--line);line-height:1.7;margin:.25rem 0 .4rem">
+          \(\mathcal{L}(\theta) = \mathbb{E}\!\big[\,(r + \gamma \max_{a'} Q(s',a';\theta^-) - Q(s,a;\theta))^2\,\big]\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.08vw,.98rem);font-style:italic;margin:0">When the state space is huge — Atari from pixels (DeepMind, 2013), Go (AlphaGo). The neural net <b>learns to satisfy Bellman</b>.</p>
+      </div>
+      <div class="take-card">
+        <span class="num">④ POLICY ITERATION · model + two-phase loop + table</span>
+        <h3>Evaluate π. Improve π. Repeat.</h3>
+        <div style="font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.9rem);background:rgba(255,255,255,0.55);padding:.45rem .65rem;border-radius:7px;border:1.5px solid var(--line);line-height:1.7;margin:.25rem 0 .4rem">
+          eval: \(V_\pi(s) = R(s,\pi(s)) + \gamma \sum_{s'} P\, V_\pi(s')\)<br>
+          improve: \(\pi'(s) = \arg\max_a Q_\pi(s,a)\)
+        </div>
+        <p style="font-size:clamp(.85rem,1.08vw,.98rem);font-style:italic;margin:0">Both halves are Bellman: eval uses <i>expectation</i>, improve uses <i>optimality</i>. Often fewer iterations than VI — control theory, dynamic programming.</p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.55rem;font-style:italic;text-align:center;font-size:clamp(.85rem,1.1vw,1rem);max-width:1020px;margin-left:auto;margin-right:auto">
+      Same equation, four solvers. Pick the one that matches what you have — <b>model</b>? <b>compute budget</b>? <b>state size</b>? — and the rest of RL fans out from there.
+    </p>
+  </div>
+  <div class="slide-name">Bellman: 4 Algorithms</div>
+  <div class="slide-num">28 / 25</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 16 — NEXT TIME → L4                      -->
+<!-- ============================================ -->
+<section class="slide-hidden" data-name="Next" hidden>
+  <span class="shape s-peach blob bordered anim-wobble" style="width:130px;height:130px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:14%;right:18%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag peach reveal">NEXT WEEK · LECTURE 4</span>
+    <h2 class="h2 reveal">From <i>defining</i> the answer<br>to <span class="hl">computing</span> it.</h2>
+
+    <div class="warrior-discuss reveal" style="margin-top:1.2rem;max-width:980px;gap:1.2rem">
+      <div class="wd-q" style="padding:1.05rem 1.25rem">
+        <span class="wd-tag" style="font-size:.78rem">📌 TODAY · MDP, V/Q, BELLMAN</span>
+        <p style="font-size:clamp(1.02rem,1.3vw,1.18rem);line-height:1.45">We named every part of the loop, met \(V\) and \(Q\), and wrote down <b>Bellman's equation</b> — the unique fixed point that <i>is</i> the MDP's solution.</p>
+      </div>
+      <div class="wd-q" style="padding:1.05rem 1.25rem">
+        <span class="wd-tag" style="font-size:.78rem">🔭 L4 · POLICY EVALUATION &amp; VALUE ITERATION</span>
+        <p style="font-size:clamp(1.02rem,1.3vw,1.18rem);line-height:1.45">Turn Bellman into an <b>algorithm</b>: iterate the equation until the values stop changing. That gives \(V_\pi\) for any policy, and \(V^*\) for the optimal one.</p>
+      </div>
+    </div>
+
+    <div class="lecture-nav reveal" style="margin-top:1.4rem">
+      <a class="prev" href="lecture-2.html">← Lecture 2</a>
+      <a class="home" href="../index.html">Home</a>
+      <a class="next" href="lecture-4.html">Lecture 4: Policy Evaluation →</a>
+    </div>
+  </div>
+  <div class="slide-name">Next</div>
+  <div class="slide-num">29 / 25</div>
+</section>
+
+<script src="shared.js"></script>
+
+<script>
+
+/* ============================================================
+   PROBABILITY QUIZ — slide 7
+   Tap each card to reveal the answer + explanation.
+   Q3 reveal includes the BELIEF callout (built into HTML).
+   ============================================================ */
+class ProbabilityQuiz{
+  constructor(){
+    this.cards=[...document.querySelectorAll('.pq-card')];
+    if(!this.cards.length)return;
+    this.cards.forEach(card=>{
+      if(card.classList.contains('pq-stepper')){this.initStepper(card);return;}
+      card.addEventListener('click',()=>{
+        if(card.classList.contains('revealed'))return;
+        card.classList.add('revealed');
+      });
+    });
+  }
+  initStepper(card){
+    const steps=[...card.querySelectorAll('.pq-step')];
+    const tap=card.querySelector('.pq-tap');
+    let shown=0;
+    const update=()=>{
+      if(!tap)return;
+      if(shown>=steps.length){tap.style.display='none';}
+      else{tap.textContent = shown===0 ? 'tap to start →' : 'tap for next step ('+shown+'/'+steps.length+') →';}
+    };
+    card.addEventListener('click',()=>{
+      if(shown>=steps.length)return;
+      steps[shown].classList.add('show');
+      shown++;
+      if(shown>=steps.length)card.classList.add('revealed');
+      update();
+    });
+  }
+}
+
+/* ============================================================
+   FREQUENCY → PROBABILITY — slide 6
+   Click to flip coins; watch the running frequency of heads
+   converge to p = 0.5 on a live line chart.
+   ============================================================ */
+class CoinFreqDemo{
+  constructor(){
+    this.canvas=document.getElementById('cf-canvas');
+    if(!this.canvas)return;
+    this.ctx=this.canvas.getContext('2d');
+    this.flips=0;this.heads=0;this.freqs=[];
+    this.elFlips=document.getElementById('cf-flips');
+    this.elHeads=document.getElementById('cf-heads');
+    this.elFreq=document.getElementById('cf-freq');
+    document.querySelectorAll('#coinfreq-slide .cf-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const v=btn.dataset.flip;
+        if(v==='reset')this.reset();
+        else this.flip(parseInt(v,10));
+      });
+    });
+    this.draw();
+  }
+  reset(){this.flips=0;this.heads=0;this.freqs=[];this.update();}
+  flip(n){
+    for(let i=0;i<n;i++){
+      this.flips++;
+      if(Math.random()<0.5)this.heads++;
+      this.freqs.push(this.heads/this.flips);
+    }
+    this.update();
+  }
+  update(){
+    this.elFlips.textContent=this.flips;
+    this.elHeads.textContent=this.heads;
+    this.elFreq.textContent=this.flips?(this.heads/this.flips).toFixed(3):'—';
+    this.draw();
+  }
+  draw(){
+    const c=this.ctx,W=this.canvas.width,H=this.canvas.height;
+    const padL=42,padR=14,padT=16,padB=26;
+    const x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+    c.clearRect(0,0,W,H);
+    const yOf=p=>y1-p*(y1-y0);
+    const n=Math.max(this.freqs.length-1,1);
+    const xOf=i=>x0+(i/n)*(x1-x0);
+    c.font='11px monospace';c.textAlign='right';c.textBaseline='middle';
+    [0,0.25,0.5,0.75,1].forEach(p=>{
+      const y=yOf(p);
+      if(p!==0.5){c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;
+        c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();}
+      c.fillStyle='rgba(0,0,0,0.45)';c.fillText(p.toFixed(2),x0-6,y);
+    });
+    // p = 0.5 reference (dashed red)
+    c.save();c.setLineDash([6,5]);c.strokeStyle='#e23e3e';c.lineWidth=2;
+    c.beginPath();c.moveTo(x0,yOf(0.5));c.lineTo(x1,yOf(0.5));c.stroke();c.restore();
+    c.fillStyle='#e23e3e';c.textAlign='left';c.fillText('p = 0.5',x0+6,yOf(0.5)-9);
+    // axes
+    c.strokeStyle='rgba(0,0,0,0.55)';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x0,y0);c.lineTo(x0,y1);c.lineTo(x1,y1);c.stroke();
+    c.fillStyle='rgba(0,0,0,0.5)';c.textAlign='center';c.textBaseline='top';
+    c.fillText('flips → '+this.flips,(x0+x1)/2,y1+9);
+    // frequency curve
+    if(this.freqs.length){
+      c.strokeStyle='#1f6feb';c.lineWidth=2.5;c.beginPath();
+      this.freqs.forEach((f,i)=>{const X=xOf(i),Y=yOf(f);i?c.lineTo(X,Y):c.moveTo(X,Y);});
+      c.stroke();
+      const li=this.freqs.length-1;
+      c.fillStyle='#1f6feb';c.beginPath();
+      c.arc(xOf(li),yOf(this.freqs[li]),3.5,0,Math.PI*2);c.fill();
+    }
+  }
+}
+
+/* ============================================================
+   EMPIRICAL MEAN → EXPECTATION — slide 7
+   Roll a fair die; watch the running average converge to 3.5.
+   ============================================================ */
+class MeanConvergeDemo{
+  constructor(){
+    this.canvas=document.getElementById('mean-canvas');
+    if(!this.canvas)return;
+    this.ctx=this.canvas.getContext('2d');
+    this.rolls=0;this.sum=0;this.means=[];
+    this.elRolls=document.getElementById('em-rolls');
+    this.elSum=document.getElementById('em-sum');
+    this.elMean=document.getElementById('em-mean');
+    document.querySelectorAll('#meanconv-slide .cf-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const v=btn.dataset.flip;
+        if(v==='reset')this.reset();
+        else this.roll(parseInt(v,10));
+      });
+    });
+    this.draw();
+  }
+  reset(){this.rolls=0;this.sum=0;this.means=[];this.update();}
+  roll(n){
+    for(let i=0;i<n;i++){
+      this.rolls++;
+      this.sum+=1+Math.floor(Math.random()*6);
+      this.means.push(this.sum/this.rolls);
+    }
+    this.update();
+  }
+  update(){
+    this.elRolls.textContent=this.rolls;
+    this.elSum.textContent=this.sum;
+    this.elMean.textContent=this.rolls?(this.sum/this.rolls).toFixed(3):'—';
+    this.draw();
+  }
+  draw(){
+    const c=this.ctx,W=this.canvas.width,H=this.canvas.height;
+    const padL=42,padR=14,padT=16,padB=26;
+    const x0=padL,x1=W-padR,y0=padT,y1=H-padB;
+    const lo=1,hi=6;
+    c.clearRect(0,0,W,H);
+    const yOf=v=>y1-((v-lo)/(hi-lo))*(y1-y0);
+    const n=Math.max(this.means.length-1,1);
+    const xOf=i=>x0+(i/n)*(x1-x0);
+    c.font='11px monospace';c.textAlign='right';c.textBaseline='middle';
+    for(let v=1;v<=6;v++){
+      const y=yOf(v);
+      c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;
+      c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();
+      c.fillStyle='rgba(0,0,0,0.45)';c.fillText(v.toFixed(0),x0-6,y);
+    }
+    // E[X] = 3.5 reference (dashed red)
+    c.save();c.setLineDash([6,5]);c.strokeStyle='#e23e3e';c.lineWidth=2;
+    c.beginPath();c.moveTo(x0,yOf(3.5));c.lineTo(x1,yOf(3.5));c.stroke();c.restore();
+    c.fillStyle='#e23e3e';c.textAlign='left';c.fillText('E[X] = 3.5',x0+6,yOf(3.5)-9);
+    // axes
+    c.strokeStyle='rgba(0,0,0,0.55)';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x0,y0);c.lineTo(x0,y1);c.lineTo(x1,y1);c.stroke();
+    c.fillStyle='rgba(0,0,0,0.5)';c.textAlign='center';c.textBaseline='top';
+    c.fillText('rolls → '+this.rolls,(x0+x1)/2,y1+9);
+    // mean curve
+    if(this.means.length){
+      c.strokeStyle='#1f6feb';c.lineWidth=2.5;c.beginPath();
+      this.means.forEach((m,i)=>{const X=xOf(i),Y=yOf(m);i?c.lineTo(X,Y):c.moveTo(X,Y);});
+      c.stroke();
+      const li=this.means.length-1;c.fillStyle='#1f6feb';
+      c.beginPath();c.arc(xOf(li),yOf(this.means[li]),3.5,0,Math.PI*2);c.fill();
+    }
+  }
+}
+
+/* ============================================================
+   DOORS GAME — slide 10
+   Peek-and-pick game over a 4-step binary tree.
+   Reward values are identical to the warrior tree on slide 11.
+   ============================================================ */
+class DoorsGame{
+  constructor(){
+    this.root=document.getElementById('doors-slide');
+    if(!this.root)return;
+    this.REWARDS={
+      'L':-9,'R':-6,
+      'LL':8,'LR':6,'RL':4,'RR':-8,
+      'LLL':-9,'LLR':5,'LRL':10,'LRR':-7,'RLL':6,'RLR':-8,'RRL':7,'RRR':-6,
+      'LLLL':-7,'LLLR':-5,'LLRL':-6,'LLRR':5,
+      'LRLL':9,'LRLR':10,'LRRL':6,'LRRR':-8,
+      'RLLL':-7,'RLLR':8,'RLRL':5,'RLRR':-6,
+      'RRLL':7,'RRLR':-8,'RRRL':-7,'RRRR':9
+    };
+    this.OPTIMAL=17; // L → LR → LRL → LRLR
+    this.elDoors=this.root.querySelector('#dg-doors');
+    this.elFinal=this.root.querySelector('#dg-final');
+    this.elFinalNum=this.root.querySelector('#dg-final-num');
+    this.elFinalMsg=this.root.querySelector('#dg-final-msg');
+    this.elStep=this.root.querySelector('#dg-step');
+    this.elPath=this.root.querySelector('#dg-path');
+    this.elTotal=this.root.querySelector('#dg-total');
+    this.elPeepL=this.root.querySelector('#dg-peep-L');
+    this.elPeepR=this.root.querySelector('#dg-peep-R');
+    this.btnReset=this.root.querySelector('#dg-reset');
+    this.elDoors.querySelectorAll('.dg-door').forEach(d=>{
+      d.addEventListener('click',()=>this.pick(d.dataset.side));
+    });
+    this.btnReset.addEventListener('click',()=>this.reset());
+    this.reset();
+  }
+  fmt(n){return (n>=0?'+':'')+n;}
+  reset(){
+    this.path='';this.total=0;this.history=[];
+    this.elFinal.hidden=true;
+    this.elDoors.style.display='';
+    this.update();
+  }
+  pick(side){
+    if(this.path.length>=4)return;
+    const next=this.path+side;
+    const r=this.REWARDS[next];
+    this.path=next;this.total+=r;this.history.push({side,r});
+    if(this.path.length>=4){this.update();this.finish();return;}
+    this.update();
+    this.elDoors.classList.remove('entering');
+    void this.elDoors.offsetWidth;
+    this.elDoors.classList.add('entering');
+  }
+  update(){
+    const step=Math.min(this.path.length+1,4);
+    this.elStep.textContent=step+' / 4';
+    this.elPath.textContent=this.history.length
+      ? this.history.map(h=>h.side+' ('+this.fmt(h.r)+')').join(' → ')
+      : '—';
+    this.elTotal.textContent=this.fmt(this.total);
+    this.elTotal.className='val '+(this.history.length===0?'':(this.total>=0?'pos':'neg'));
+    if(this.path.length>=4)return;
+    const rL=this.REWARDS[this.path+'L'];
+    const rR=this.REWARDS[this.path+'R'];
+    this.elPeepL.textContent=this.fmt(rL);
+    this.elPeepR.textContent=this.fmt(rR);
+    this.elPeepL.className='dg-peep-val '+(rL>=0?'pos':'neg');
+    this.elPeepR.className='dg-peep-val '+(rR>=0?'pos':'neg');
+  }
+  finish(){
+    this.elDoors.style.display='none';
+    this.elFinal.hidden=false;
+    this.elFinalNum.textContent=this.fmt(this.total);
+    this.elFinalNum.className='dg-final-num '+(this.total>=0?'pos':'neg');
+    let msg;
+    if(this.total>=this.OPTIMAL) msg='🏆 Optimal! You found the best route ('+this.fmt(this.OPTIMAL)+').';
+    else if(this.total>=10) msg='Strong run. Best possible is '+this.fmt(this.OPTIMAL)+' — could you spot it?';
+    else if(this.total>=0) msg='Survived. Best possible is '+this.fmt(this.OPTIMAL)+'. The biggest peep number isn’t always the best move.';
+    else msg='Ouch. Best possible is '+this.fmt(this.OPTIMAL)+' — greedy peeking gets you trapped.';
+    this.elFinalMsg.textContent=msg;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  new ProbabilityQuiz();
+  new CoinFreqDemo();
+  new MeanConvergeDemo();
+  new DoorsGame();
+});
+</script>
+
+</body>
+</html>

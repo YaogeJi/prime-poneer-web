@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 4 — Values &amp; the Bellman Equation</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+mjx-container[jax="SVG"]{color:var(--ink)}
+.formula mjx-container{font-size:1em!important}
+
+/* ===== MDP / value-function definition slides ===== */
+/* equation block + cartoon underneath */
+.eqn-card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.2rem;margin-top:.5rem}
+.eqn-card .eqn-label{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;color:var(--dim);display:block;margin-bottom:.3rem}
+.eqn-big{text-align:center;font-size:clamp(1rem,1.4vw,1.2rem);margin:.2rem 0}
+.cartoon-cap{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center;margin-top:.35rem}
+
+/* MDP tuple chips */
+.mdp-tuple{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;margin:.6rem 0}
+.mdp-chip{background:var(--paper);border:2px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.5rem .8rem;min-width:118px;text-align:center}
+.mdp-chip .sym{font-size:clamp(1rem,1.35vw,1.2rem);font-weight:700}
+.mdp-chip .nm{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-top:.1rem}
+.mdp-chip.c0{background:var(--lilac)}.mdp-chip.c1{background:var(--mint)}.mdp-chip.c2{background:var(--peach)}
+.mdp-chip.c3{background:var(--sun)}.mdp-chip.c4{background:var(--rose)}
+
+/* value function timeline cartoon */
+.vf-timeline{display:flex;align-items:flex-end;justify-content:center;gap:.2rem;flex-wrap:nowrap;overflow-x:auto;padding:.4rem 0 .2rem}
+.vf-step{display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:74px}
+.vf-arrow{align-self:center;font-size:1.1rem;color:var(--dim);padding-bottom:1.6rem}
+.vf-node{width:42px;height:42px;border-radius:50%;background:var(--lilac);border:2.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:.8rem;box-shadow:2px 2px 0 var(--line)}
+.vf-cost{background:var(--paper);border:2px solid var(--line);border-radius:8px;padding:.18rem .4rem;font-size:clamp(.72rem,.95vw,.85rem);box-shadow:2px 2px 0 var(--line)}
+.vf-bar{width:100%;border-radius:6px 6px 0 0;background:var(--ink);border:2px solid var(--line);border-bottom:none}
+.vf-fade{min-width:60px;color:var(--dim);font-size:1.3rem;align-self:center;padding-bottom:1.6rem}
+.vf-tag{font-family:var(--font-mono);font-size:.62rem;color:var(--dim)}
+
+/* induced-kernel cartoon: pi ∘ P → P_pi */
+.kernel-viz{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin-top:.5rem}
+.kv-panel{background:var(--bg);border:2.5px solid var(--line);border-radius:14px;padding:.8rem;box-shadow:3px 3px 0 var(--line)}
+.kv-panel h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.5rem;text-align:center}
+.kv-collapse{font-size:1.8rem;color:var(--dim);text-align:center}
+.kv-tree{display:flex;flex-direction:column;gap:.4rem}
+.kv-row{display:flex;align-items:center;gap:.45rem;font-family:var(--font-mono);font-size:clamp(.72rem,.95vw,.85rem)}
+.kv-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.kv-dot.s{background:var(--lilac)}.kv-dot.a{background:var(--sun)}.kv-dot.sp{background:var(--mint)}
+.kv-w{font-size:.66rem;color:var(--dim)}
+.kv-panel.result{background:var(--mint)}
+.kv-panel.result .big{text-align:center;font-size:clamp(.95rem,1.3vw,1.15rem);margin:.3rem 0}
+
+/* Bellman decomposition cartoon */
+.bellman-split{display:grid;grid-template-columns:1.1fr auto 1fr auto 1.2fr;gap:.7rem;align-items:center;margin-top:.6rem}
+.bw-box{border:2.5px solid var(--line);border-radius:14px;padding:.8rem;text-align:center;box-shadow:3px 3px 0 var(--line)}
+.bw-box .tt{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.bw-box .mm{font-size:clamp(.95rem,1.3vw,1.15rem)}
+.bw-box.val{background:var(--lilac)}.bw-box.now{background:var(--peach)}.bw-box.fut{background:var(--mint)}
+.bw-op{font-size:1.5rem;font-weight:700;color:var(--ink);text-align:center}
+.bw-note{font-size:clamp(.7rem,.9vw,.8rem);color:var(--dim);margin-top:.25rem;line-height:1.3}
+@media (max-width:780px){.kernel-viz{grid-template-columns:1fr}.bellman-split{grid-template-columns:1fr}.kv-collapse,.bw-op{transform:rotate(90deg)}}
+
+/* Bellman backup-tree cartoon (roll value up from the leaves) */
+.backup-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:1.2rem;align-items:center;margin-top:.55rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1.2rem}
+.backup-tree svg{width:100%;height:auto;max-height:32vh}
+.backup-text .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.15rem);margin-bottom:.4rem}
+.backup-text p{font-size:clamp(.84rem,1.08vw,.98rem);line-height:1.5;margin:0}
+.backup-text p + p{margin-top:.45rem}
+.backup-text b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.backup-wrap{grid-template-columns:1fr}}
+
+/* history / Bellman story */
+.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.2vw,1.6rem);margin-top:.5rem}
+.hist-card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.2rem}
+.hist-card h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.35vw,1.2rem);margin-bottom:.35rem}
+.hist-card p{font-size:clamp(.84rem,1.08vw,.98rem);line-height:1.5;margin:0}
+.hist-card p + p{margin-top:.45rem}
+.hist-card b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.hist-quote{background:var(--lilac);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem 1.3rem;position:relative}
+.hist-quote .qmark{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:.6;color:var(--ink);opacity:.35}
+.hist-quote blockquote{font-size:clamp(.92rem,1.25vw,1.1rem);line-height:1.5;margin:.2rem 0 .5rem;font-style:italic}
+.hist-quote cite{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);font-style:normal}
+.hist-portrait{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem}
+.hist-portrait .ph{width:54px;height:54px;border-radius:50%;background:var(--sun);border:2.5px solid var(--line);box-shadow:3px 3px 0 var(--line);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.hist-portrait .who{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);line-height:1.15}
+.hist-portrait .who span{display:block;font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:.15rem}
+@media (max-width:780px){.hist-grid{grid-template-columns:1fr}}
+/* History slide — principle-of-optimality math + tree match */
+.po-eq{background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.4rem .55rem;margin:.55rem 0 .45rem;text-align:center;font-size:clamp(.9rem,1.15vw,1.02rem)}
+.po-tree{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;font-family:var(--font-mono);font-size:clamp(.74rem,.95vw,.86rem);background:rgba(255,255,255,.6);border:1.5px dashed var(--line);border-radius:8px;padding:.42rem .55rem}
+.po-tree .po-arr{color:var(--dim)}
+.po-tree b{background:none;color:var(--good);padding:0;font-weight:700}
+.po-note{font-size:clamp(.8rem,1.02vw,.92rem);line-height:1.45;margin-top:.45rem}
+/* History slide — why-it-matters cost comparison */
+.matters-cmp{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.55rem 0 .45rem}
+.matters-cmp > div{border:2px solid var(--line);border-radius:10px;padding:.5rem .55rem;text-align:center}
+.matters-cmp .brute{background:var(--rose)}
+.matters-cmp .smart{background:var(--mint)}
+.matters-cmp .ml{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.1em;display:block;margin-bottom:.25rem}
+.matters-cmp .mv{font-size:clamp(1.05rem,1.5vw,1.3rem)}
+.matters-cmp .mt{font-size:clamp(.7rem,.88vw,.8rem);color:var(--dim);display:block;margin-top:.2rem;line-height:1.3}
+
+/* ===== Bellman slide: animated warrior tree ===== */
+.btree-stage{display:grid;grid-template-columns:1.15fr .85fr;gap:1.2rem;align-items:center;margin-top:.55rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1.1rem}
+.btree-svg{width:100%;height:auto;max-height:36vh}
+.btree-svg .bt-node{transform-box:fill-box;transform-origin:center;opacity:0}
+.btree-svg .bt-node.pop{animation:bt-pop .5s cubic-bezier(.2,1.35,.45,1) forwards}
+@keyframes bt-pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+.btree-svg .bt-node .box{transition:fill .4s,stroke-width .3s}
+.btree-svg .bt-node.leaf .box{fill:#ffd9a3;stroke-width:3}
+.btree-svg .bt-node.rolled .box{fill:#bff0d0;stroke-width:3}
+.btree-svg .bt-node.root .box{fill:#d9caff}
+.btree-svg .bt-edge{opacity:.25;transition:opacity .4s,stroke .4s,stroke-width .3s}
+.btree-svg .bt-edge.flow{opacity:1;stroke:#7a4dc2;stroke-width:3}
+.btree-side .bt-cap{min-height:5.4em;font-size:clamp(.86rem,1.12vw,1rem);line-height:1.5}
+.btree-side .bt-cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.btree-side .bt-cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);display:block;margin-bottom:.25rem}
+.btree-controls{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
+.btree-controls button{font-family:var(--font-mono);font-weight:700;font-size:clamp(.78rem,1vw,.9rem);padding:.45rem .9rem;border:2.5px solid var(--line);border-radius:99px;background:var(--bg);box-shadow:3px 3px 0 var(--line);cursor:pointer;transition:transform .1s}
+.btree-controls button:hover{transform:translate(-1px,-1px)}
+.btree-controls button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.btree-controls button.primary{background:var(--lilac)}
+.btree-controls button:disabled{opacity:.4;cursor:default;box-shadow:1px 1px 0 var(--line);transform:none}
+.bt-flag{background:var(--rose);border:2.5px solid var(--line);border-radius:14px;padding:.7rem .95rem;margin-top:.6rem;font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.bt-flag b{background:var(--paper);padding:0 .15em;border-radius:3px}
+.bt-flag .q{font-family:var(--font-display);font-weight:700}
+
+/* ===== Worked value-tree (ported from L3: V/Q on the warrior tree) ===== */
+.vt-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(.5rem,1.2vw,1rem);align-items:center;margin-top:.5rem}
+.vt-tree{background:rgba(255,255,255,0.55);border:2px solid var(--line);border-radius:12px;padding:.6rem .5rem .4rem;box-shadow:3px 3px 0 var(--line);display:flex;align-items:center;justify-content:center}
+.vt-tree svg{width:100%;height:auto;max-height:32vh}
+.vt-math{border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.7rem 1rem .8rem;display:flex;flex-direction:column;gap:.4rem}
+.vt-math.det{background:var(--mint)}
+.vt-math.stoch{background:var(--peach)}
+.vt-math .vt-tag{font-family:var(--font-mono);font-weight:700;font-size:clamp(.66rem,.85vw,.74rem);letter-spacing:.18em;color:var(--ink);text-transform:uppercase}
+.vt-math .vt-formula{font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;font-size:clamp(.92rem,1.2vw,1.08rem);text-align:center;background:rgba(255,255,255,0.7);border:1.5px solid var(--line);border-radius:10px;padding:.4rem .65rem}
+.vt-work{display:grid;grid-template-columns:1fr 1fr;gap:clamp(.5rem,1vw,.8rem);margin-top:.55rem}
+.vt-work .wk{background:var(--paper);border:2px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.55rem .8rem .65rem}
+.vt-work .wk.base{background:var(--mint)}
+.vt-work .wk.rec{background:var(--peach)}
+.vt-work .wk .wk-tag{font-family:var(--font-mono);font-weight:700;font-size:clamp(.62rem,.8vw,.7rem);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.25rem}
+.vt-work .wk .wk-line{font-size:clamp(.78rem,1.02vw,.93rem);line-height:1.5;margin:.1rem 0}
+@media(max-width:760px){.vt-grid{grid-template-columns:1fr}.vt-work{grid-template-columns:1fr}}
+
+/* ===== Gamma dial slide ===== */
+.gamma-wrap{display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(1rem,2.4vw,1.8rem);align-items:center;margin-top:.5rem}
+.gamma-panel{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem 1.3rem}
+.gamma-readout{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.5rem}
+.gamma-readout .gv{font-family:var(--font-mono);font-weight:700;font-size:clamp(1.8rem,3.4vw,2.6rem);color:var(--ink)}
+.gamma-readout .gl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.gamma-slider{width:100%;margin:.4rem 0 .2rem;accent-color:#7a4dc2;height:26px;cursor:pointer}
+.gamma-presets{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
+.gamma-presets button{font-family:var(--font-mono);font-size:clamp(.72rem,.95vw,.85rem);padding:.32rem .7rem;border:2px solid var(--line);border-radius:99px;background:var(--bg);box-shadow:2px 2px 0 var(--line);cursor:pointer}
+.gamma-presets button.on{background:var(--sun)}
+.gamma-horizon{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin-top:.6rem}
+.gamma-horizon b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.gamma-bars{display:flex;align-items:flex-end;gap:.4rem;height:clamp(150px,26vh,210px);background:var(--bg);border:2.5px solid var(--line);border-radius:16px;box-shadow:3px 3px 0 var(--line);padding:.9rem .8rem .5rem}
+.gbar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.3rem;height:100%}
+.gbar{width:100%;background:#7a4dc2;border:2px solid var(--line);border-radius:6px 6px 0 0;transition:height .35s ease}
+.gbar-col .t{font-family:var(--font-mono);font-size:.66rem;color:var(--dim)}
+.gbar-col .w{font-family:var(--font-mono);font-size:.62rem;color:var(--ink);font-weight:700}
+@media (max-width:780px){.gamma-wrap{grid-template-columns:1fr}}
+
+/* ===== Cell-reference (cycles) slide ===== */
+.cref-stage{display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2.4vw,1.6rem);align-items:center;margin-top:.5rem}
+.cref-svg{width:clamp(260px,40vh,380px);height:auto;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line)}
+.cref-svg .cr-cell{transform-box:fill-box;transform-origin:center;opacity:0}
+.cref-svg .cr-cell.pop{animation:bt-pop .42s cubic-bezier(.2,1.35,.45,1) forwards}
+.cref-svg .cr-cell .box{transition:fill .4s}
+.cref-svg .cr-cell.mutual .box{fill:#d9caff}
+.cref-svg .cr-cell.selfl .box{fill:#ffd9a3}
+.cref-svg .cr-cell.trans .box{fill:#cfe3ff}
+.cref-svg .cr-cell.goal .box{fill:#bff0d0}
+.cref-svg .cr-cell.wall .box{fill:#1f1d2b}
+.cref-svg .cr-arrow{opacity:0;transition:opacity .4s}
+.cref-svg .cr-arrow.show{opacity:1}
+.cref-side .cr-legend{display:flex;flex-direction:column;gap:.45rem;margin-bottom:.7rem}
+.cref-side .cr-legend .row{display:flex;align-items:center;gap:.5rem;font-size:clamp(.82rem,1.05vw,.95rem)}
+.cref-side .cr-legend .sw{width:20px;height:20px;border-radius:5px;border:2px solid var(--line);flex-shrink:0}
+.cref-side .cr-legend .sw.m{background:#d9caff}.cref-side .cr-legend .sw.s{background:#ffd9a3}
+.cref-side .cr-legend .sw.t{background:#cfe3ff}.cref-side .cr-legend .sw.g{background:#bff0d0}
+.cref-cap{min-height:4.6em;font-size:clamp(.86rem,1.12vw,1rem);line-height:1.5}
+.cref-cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.cref-cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);display:block;margin-bottom:.25rem}
+@media (max-width:780px){.cref-stage{grid-template-columns:1fr;justify-items:center}}
+
+/* ===== "Plug old V into new V" — problem / iterate / converge ===== */
+.trick-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(1rem,2.2vw,1.5rem);align-items:stretch;margin-top:.45rem}
+.trick-card{background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.85rem 1.05rem;display:flex;flex-direction:column}
+.trick-card .step{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem}
+.trick-card .step .n{display:inline-flex;align-items:center;justify-content:center;width:1.25em;height:1.25em;border-radius:50%;border:2px solid var(--line);margin-right:.4em;color:var(--ink);font-weight:700}
+.trick-card.prob .step .n{background:var(--rose)}
+.trick-card.solve .step .n{background:var(--mint)}
+.trick-card p{font-size:clamp(.84rem,1.08vw,.97rem);line-height:1.5;margin:0 0 .5rem}
+.trick-card p:last-child{margin-bottom:0}
+.trick-eq{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.5rem .65rem;margin:.15rem 0 .55rem;text-align:center;font-size:clamp(.86rem,1.1vw,1rem)}
+.trick-eq.hi{background:var(--mint)}
+.conv-card{grid-column:1 / -1;display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2vw,1.4rem);align-items:center;background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.75rem 1.1rem;margin-top:.2rem}
+.conv-card svg{width:clamp(280px,34vw,440px);height:auto;display:block}
+.conv-card .cap{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.55}
+.conv-card .cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.conv-card .cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.16rem);display:block;margin-bottom:.3rem}
+@media (max-width:880px){.trick-grid{grid-template-columns:1fr}.conv-card{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+/* recap two-col */
+.recap2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.5vw,2rem);margin-top:.6rem}
+.recap2-col{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem}
+.recap2-col.from{background:var(--peach)}
+.recap2-col.now{background:var(--lilac)}
+.recap2-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.6vw,1.35rem);margin-bottom:.4rem}
+.recap2-col .label{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.recap2-col ul{list-style:none;padding:0}
+.recap2-col li{font-size:clamp(.85rem,1.1vw,1rem);padding:.3rem 0 .3rem 1.4rem;position:relative;line-height:1.4}
+.recap2-col li::before{content:'';position:absolute;left:0;top:.65em;width:8px;height:8px;background:var(--ink);border-radius:50%}
+@media (max-width:780px){.recap2{grid-template-columns:1fr}}
+
+/* gridworld intro */
+.gw-intro{display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2.5vw,2rem);align-items:center;margin-top:.7rem}
+.gw-grid-static{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(190px,27vh,260px);height:clamp(190px,27vh,260px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.gw-grid-static .cell{background:var(--paper);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:clamp(1.1rem,2vw,1.5rem);position:relative}
+.gw-grid-static .cell.start{background:var(--peach)}
+.gw-grid-static .cell.goal{background:var(--mint)}
+.gw-grid-static .cell.trap{background:var(--rose)}
+.gw-grid-static .cell.wall{background:var(--ink)}
+.gw-bot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(1.2rem,2.1vw,1.6rem);z-index:2;animation:gw-pop .16s var(--ease)}
+@keyframes gw-pop{from{transform:scale(.5)}to{transform:scale(1)}}
+.gw-bot.bump{animation:gw-bump .22s var(--ease)}
+@keyframes gw-bump{0%,100%{transform:translate(0,0)}30%{transform:translate(var(--bx,0),var(--by,0))}}
+/* playable controls */
+.gw-play{display:flex;flex-direction:row;align-items:center;gap:clamp(.7rem,1.6vw,1.2rem)}
+.gw-controls{display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.gw-hud{display:flex;gap:.5rem}
+.gw-stat{background:var(--paper);border:2px solid var(--line);border-radius:10px;box-shadow:2px 2px 0 var(--line);padding:.28rem .65rem;text-align:center;min-width:78px}
+.gw-stat .num{display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(1rem,1.5vw,1.3rem);line-height:1.05}
+.gw-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+.gw-pad{display:grid;grid-template-columns:repeat(3,clamp(34px,4.6vh,42px));grid-auto-rows:clamp(34px,4.6vh,42px);gap:5px;justify-items:center;align-items:center}
+.gw-dir{font-family:var(--font-display);font-weight:800;font-size:1.15rem;background:var(--sun);border:2.5px solid var(--line);border-radius:9px;box-shadow:2px 2px 0 var(--line);cursor:pointer;width:100%;height:100%;line-height:1}
+.gw-dir:active{transform:translate(2px,2px);box-shadow:none}
+.gw-dir.up{grid-column:2;grid-row:1}
+.gw-dir.left{grid-column:1;grid-row:2}
+.gw-dir.down{grid-column:2;grid-row:2}
+.gw-dir.right{grid-column:3;grid-row:2}
+.gw-reset{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.05em;background:var(--paper);border:2px solid var(--line);border-radius:8px;box-shadow:2px 2px 0 var(--line);padding:.3rem .7rem;cursor:pointer}
+.gw-reset:active{transform:translate(2px,2px);box-shadow:none}
+.gw-msg{font-family:var(--font-mono);font-size:clamp(.74rem,.95vw,.86rem);color:var(--dim);text-align:center;max-width:240px;min-height:2.4em;line-height:1.35}
+.gw-msg.win{color:var(--good);font-weight:700}
+.gw-msg.lose{color:var(--bad);font-weight:700}
+.gw-spec{display:flex;flex-direction:column;gap:.55rem}
+.gw-spec-block{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:.55rem .85rem;box-shadow:3px 3px 0 var(--line)}
+.gw-spec-block h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.92rem,1.2vw,1.05rem);margin-bottom:.2rem}
+.gw-spec-block p{font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.45;margin:0}
+.gw-spec-block b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.gw-intro{grid-template-columns:1fr;justify-items:center}}
+
+/* gridworld — the two driving questions */
+.gw-questions{margin-top:1rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.3rem}
+.gw-questions .gwq-head{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.25rem);text-align:center;margin-bottom:.75rem}
+.gw-questions .gwq-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.gw-questions .gwq{display:flex;align-items:center;gap:.8rem;border:2.5px solid var(--line);border-radius:14px;box-shadow:3px 3px 0 var(--line);padding:.9rem 1.05rem;font-size:clamp(1.02rem,1.55vw,1.4rem);line-height:1.3}
+.gw-questions .gwq.q1{background:var(--mint)}
+.gw-questions .gwq.q2{background:var(--sun)}
+.gw-questions .gwq-num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.3rem,2.2vw,2rem);width:1.5em;height:1.5em;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--paper);border:2.5px solid var(--line);border-radius:50%}
+@media (max-width:780px){.gw-questions .gwq-row{grid-template-columns:1fr}}
+
+/* slide 4 — works on tree, breaks on grid */
+.works-breaks{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.5vw,2rem);margin-top:.6rem}
+.wb-col{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem;display:flex;flex-direction:column;gap:.4rem}
+.wb-col.works{background:var(--mint)}
+.wb-col.breaks{background:var(--rose)}
+.wb-col .wb-tag{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+.wb-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin:0;line-height:1.2}
+.wb-col .wb-ex{background:rgba(255,255,255,.7);border:1.5px solid var(--line);border-radius:10px;padding:.5rem .75rem;font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.5}
+.wb-col .wb-ex .formula{font-size:clamp(.92rem,1.2vw,1.05rem)}
+.wb-col p{font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.5;margin:0}
+.wb-col p b{background:rgba(255,255,255,.85);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.works-breaks{grid-template-columns:1fr}}
+
+/* algorithm box */
+.algo-box{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;font-family:var(--font-mono)}
+.algo-box .algo-title{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
+.algo-box .algo-title h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.05rem,1.4vw,1.25rem)}
+.algo-box .algo-title .badge{background:var(--ink);color:var(--bg);padding:.2rem .55rem;border-radius:99px;font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em}
+.algo-box pre{font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem);line-height:1.65;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.8rem 1rem;overflow-x:auto;white-space:pre-wrap}
+.algo-box pre b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.algo-box pre i{color:var(--dim);font-style:italic}
+
+/* greedy improvement viz */
+.greedy-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.greedy-q-table{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.7rem;font-family:var(--font-mono)}
+.greedy-q-table h4{font-family:var(--font-display);font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.5rem}
+.greedy-q-table .q-row{display:grid;grid-template-columns:60px 1fr auto;gap:.5rem;align-items:center;padding:.3rem .4rem;border-radius:6px;font-size:clamp(.82rem,1.05vw,.92rem)}
+.greedy-q-table .q-row.best{background:var(--mint);font-weight:700}
+.greedy-q-table .q-row .qbar{height:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:99px;overflow:hidden}
+.greedy-q-table .q-row .qfill{height:100%;background:var(--ink);border-radius:99px}
+.greedy-q-table .q-row.best .qfill{background:var(--good)}
+.greedy-q-table .q-row .qval{font-weight:700;text-align:right;min-width:55px}
+.greedy-explain h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin-bottom:.4rem}
+.greedy-explain p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.greedy-explain p + p{margin-top:.5rem}
+.greedy-explain b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.greedy-vis{grid-template-columns:1fr}}
+
+/* theorem box */
+.theorem-box{background:var(--mint);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem}
+.theorem-box .head{font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink);margin-bottom:.5rem}
+.theorem-box h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.5vw,1.3rem);margin-bottom:.4rem}
+.theorem-box .formula-mini{margin:.5rem auto;max-width:580px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:.5rem 1rem;text-align:center;box-shadow:2px 2px 0 var(--line)}
+
+/* PI loop visual */
+.pi-loop{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:1rem;align-items:center}
+.pi-step{background:var(--bg);border:2.5px solid var(--line);border-radius:14px;box-shadow:3px 3px 0 var(--line);padding:.8rem;text-align:center}
+.pi-step.eval{background:var(--lilac)}
+.pi-step.improve{background:var(--sun)}
+.pi-step.check{background:var(--mint)}
+.pi-step .ico{font-size:clamp(1.5rem,2.4vw,2rem);margin-bottom:.3rem}
+.pi-step h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.2rem}
+.pi-step p{font-size:clamp(.72rem,.95vw,.85rem);color:var(--dim);line-height:1.4}
+.pi-arrow{font-size:1.6em;color:var(--dim);font-weight:700}
+@media (max-width:900px){.pi-loop{grid-template-columns:1fr;gap:.5rem}.pi-arrow{transform:rotate(90deg)}}
+
+/* live PI demo */
+.pl-wrap{display:flex;flex-direction:column;gap:clamp(.5rem,1.2vh,.9rem);margin-top:.4rem;flex:1;min-height:0}
+.pl-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.5rem}
+.pl-header h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.1rem,2vw,1.6rem);margin:0}
+.pl-help{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim)}
+.pl-stats{display:flex;gap:.6rem;flex-wrap:wrap}
+.pl-stat{background:var(--paper);border:2.5px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.45rem 1rem;text-align:center;min-width:108px}
+.pl-stat.tinted-sun{background:var(--sun)}
+.pl-stat.tinted-mint{background:var(--mint)}
+.pl-stat.tinted-peach{background:var(--peach)}
+.pl-stat.tinted-lilac{background:var(--lilac)}
+.pl-stat.tinted-sky{background:var(--sky)}
+.pl-stat .num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.pl-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-top:.2rem}
+
+.pl-main{display:grid;grid-template-columns:auto 1fr;gap:clamp(.8rem,2vw,1.5rem);align-items:center;flex:1;min-height:0}
+.pl-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(260px,40vh,400px);height:clamp(260px,40vh,400px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pl-cell{
+  background:var(--paper);border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;font-size:clamp(1.1rem,2vw,1.5rem);
+  transition:background .25s var(--ease);
+}
+.pl-cell.start{background:var(--peach)}
+.pl-cell.goal{background:var(--mint)}
+.pl-cell.trap{background:var(--rose)}
+.pl-cell.wall{background:var(--ink)}
+.pl-cell .pl-arrow{font-size:clamp(.95rem,1.5vw,1.25rem);color:var(--ink);margin-bottom:.05rem;font-weight:700}
+.pl-cell .pl-val{font-family:var(--font-mono);font-weight:700;font-size:clamp(.65rem,.95vw,.82rem);color:var(--ink);padding:1px 4px;border-radius:4px}
+.pl-cell .pl-val.pos{color:#1a8a4a}
+.pl-cell .pl-val.neg{color:#c2331a}
+/* eval inner-loop pulse: blue tint on the value cell */
+.pl-cell.eval-pulse .pl-val{background:var(--sky);animation:pl-eval-pulse .4s var(--ease)}
+@keyframes pl-eval-pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.13)}
+  100%{transform:scale(1)}
+}
+/* improve flip: yellow on the arrow */
+.pl-cell.flipped .pl-arrow{
+  animation:pl-flip .55s var(--ease);
+  background:var(--sun);
+  border-radius:4px;
+  padding:0 2px;
+}
+@keyframes pl-flip{
+  0%{transform:scale(1) rotate(0)}
+  50%{transform:scale(1.32) rotate(15deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+
+.pl-side{display:flex;flex-direction:column;gap:.5rem;height:100%}
+.pl-controls{display:flex;flex-wrap:wrap;gap:.5rem}
+.pl-btn{
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);border-radius:99px;
+  padding:.5rem 1rem;
+  font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);
+  letter-spacing:.1em;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.pl-btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pl-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pl-btn:disabled{opacity:.5;cursor:not-allowed}
+.pl-btn.secondary{background:var(--paper);color:var(--ink)}
+.pl-explain{background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .8rem;box-shadow:2px 2px 0 var(--line);font-size:clamp(.78rem,1vw,.9rem);line-height:1.5}
+.pl-explain.t-mint{background:var(--mint)}
+.pl-explain.t-sky{background:var(--sky)}
+@media (max-width:780px){.pl-main{grid-template-columns:1fr;justify-items:center}}
+
+/* stopping condition */
+.stop-block{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;text-align:center}
+
+/* VI-as-collapse comparison */
+.vi-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.vi-card{display:flex;flex-direction:column;gap:.4rem}
+.vi-card h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.15rem);margin-bottom:.3rem}
+.vi-card p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+@media (max-width:780px){.vi-vis{grid-template-columns:1fr}}
+
+/* live VI demo (4×4) */
+.pe-wrap{display:flex;flex-direction:column;gap:clamp(.5rem,1.2vh,.9rem);margin-top:.4rem;flex:1;min-height:0}
+.pe-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.5rem}
+.pe-header h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.1rem,2vw,1.6rem);margin:0}
+.pe-help{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim)}
+.pe-stats{display:flex;gap:.6rem;flex-wrap:wrap}
+.pe-stat{background:var(--paper);border:2.5px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.45rem 1rem;text-align:center;min-width:110px}
+.pe-stat.tinted-sun{background:var(--sun)}
+.pe-stat.tinted-mint{background:var(--mint)}
+.pe-stat.tinted-peach{background:var(--peach)}
+.pe-stat .num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.pe-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-top:.2rem}
+
+.pe-main{display:grid;grid-template-columns:auto 1fr;gap:clamp(.8rem,2vw,1.5rem);align-items:center;flex:1;min-height:0}
+.pe-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(260px,40vh,400px);height:clamp(260px,40vh,400px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pe-cell{background:var(--paper);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;font-size:clamp(1.1rem,2.2vw,1.6rem);transition:background .3s var(--ease)}
+.pe-cell.start{background:var(--peach)}
+.pe-cell.goal{background:var(--mint)}
+.pe-cell.trap{background:var(--rose)}
+.pe-cell.wall{background:var(--ink)}
+.pe-cell .pe-arrow{font-size:clamp(.85rem,1.3vw,1.05rem);color:var(--dim);margin-bottom:.05rem}
+.pe-cell .pe-val{font-family:var(--font-mono);font-weight:700;font-size:clamp(.7rem,1vw,.88rem);color:var(--ink);padding:1px 4px;border-radius:4px;transition:background .25s var(--ease)}
+.pe-cell .pe-val.pos{color:#1a8a4a}
+.pe-cell .pe-val.neg{color:#c2331a}
+.pe-cell.flash .pe-val{background:var(--sun);animation:pe-flash .5s var(--ease)}
+@keyframes pe-flash{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+.pe-side{display:flex;flex-direction:column;gap:.5rem;height:100%}
+.pe-controls{display:flex;flex-wrap:wrap;gap:.5rem}
+.pe-btn{background:var(--ink);color:var(--bg);border:2.5px solid var(--line);border-radius:99px;padding:.5rem 1rem;font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.1em;cursor:pointer;box-shadow:3px 3px 0 var(--line);transition:transform .15s,box-shadow .15s}
+.pe-btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pe-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pe-btn:disabled{opacity:.5;cursor:not-allowed}
+.pe-btn.secondary{background:var(--paper);color:var(--ink)}
+.pe-explain{background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .8rem;box-shadow:2px 2px 0 var(--line);font-size:clamp(.78rem,1vw,.9rem);line-height:1.5}
+.pe-explain.tinted-mint{background:var(--mint)}
+@media (max-width:780px){.pe-main{grid-template-columns:1fr;justify-items:center}}
+
+/* convergence */
+.conv-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.6rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.conv-vis .key h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.5vw,1.2rem);margin-bottom:.4rem}
+.conv-vis .key p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.conv-vis .key b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.conv-table{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.6rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem)}
+.conv-table .row{display:grid;grid-template-columns:60px 1fr 60px;gap:.5rem;padding:.2rem 0;align-items:center}
+.conv-table .row.head{font-weight:700;color:var(--dim);letter-spacing:.1em;font-size:var(--tiny-size);text-transform:uppercase;border-bottom:1.5px solid var(--line);padding-bottom:.3rem;margin-bottom:.2rem}
+.conv-table .delta{text-align:right;font-weight:600}
+.conv-table .delta.zero{color:var(--good)}
+.conv-table .bar-cell{display:block;height:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:99px;overflow:hidden}
+.conv-table .bar-fill{display:block;height:100%;background:var(--rose);border-radius:99px}
+@media (max-width:780px){.conv-vis{grid-template-columns:1fr}}
+
+/* recap grid */
+.rs-l4{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(.6rem,1.4vw,1rem);margin-top:.7rem}
+.rs-l4 .item{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.85rem;text-align:center}
+.rs-l4 .item .ico{font-size:clamp(1.4rem,2.2vw,1.9rem);margin-bottom:.3rem}
+.rs-l4 .item h5{font-family:var(--font-display);font-weight:700;font-size:clamp(.85rem,1.1vw,1rem);margin-bottom:.2rem}
+.rs-l4 .item p{font-size:clamp(.7rem,.9vw,.82rem);color:var(--dim);line-height:1.35}
+.rs-l4 .item:nth-child(1){background:var(--mint)}
+.rs-l4 .item:nth-child(2){background:var(--peach)}
+.rs-l4 .item:nth-child(3){background:var(--lilac)}
+.rs-l4 .item:nth-child(4){background:var(--sky)}
+@media (max-width:780px){.rs-l4{grid-template-columns:repeat(2,1fr)}}
+
+/* PART chip */
+.tag .part{display:inline-block;background:var(--ink);color:var(--bg);padding:.05rem .55rem;border-radius:99px;font-size:.85em;letter-spacing:.18em;margin-right:.45em}
+
+/* ===== Ported from L3: DP / greedy-trap slides (moved into L4) ===== */
+/* Slide 19 — Warrior teaser tree (binary, 4 steps) */
+.warrior-tree{
+  margin-top:.5rem;
+  display:flex;justify-content:center;
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.6rem,1.4vw,1rem);
+  margin-top:.7rem;
+}
+.warrior-discuss .wd-q{
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss .wd-q:nth-child(1){background:var(--peach)}
+.warrior-discuss .wd-q:nth-child(2){background:var(--mint)}
+.warrior-discuss .wd-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.warrior-discuss .wd-q p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.4;
+  margin:0;
+}
+@media (max-width:780px){.warrior-discuss{grid-template-columns:1fr}}
+
+/* Slide 19 — Doors Game (peek-and-pick game before the tree) */
+.doors-game{
+  display:flex;flex-direction:column;
+  gap:clamp(.55rem,1.2vw,.85rem);
+  margin-top:.5rem;
+  flex:1;min-height:0;
+}
+.dg-status{display:flex;gap:.5rem;flex-wrap:wrap}
+.dg-status > div{
+  flex:1;min-width:120px;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .8rem;
+  display:flex;flex-direction:column;gap:.05rem;
+}
+.dg-status .lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-status .val{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.35vw,1.18rem);
+  color:var(--ink);line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dg-status .dg-total{background:var(--sun)}
+.dg-status .val.pos{color:var(--good)}
+.dg-status .val.neg{color:var(--bad)}
+
+.dg-doors{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  flex:1;min-height:0;
+}
+.dg-door{
+  position:relative;
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:14px 14px 6px 6px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:0;cursor:pointer;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font-display);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+}
+.dg-door:hover:not(:disabled){
+  transform:translate(-3px,-3px);
+  box-shadow:8px 8px 0 var(--line);
+}
+.dg-door:disabled{cursor:not-allowed;opacity:.55}
+.dg-door[data-side="L"]{background:var(--mint)}
+.dg-door[data-side="R"]{background:var(--peach)}
+.dg-door-frame{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1.1rem 1rem .9rem;
+  position:relative;
+  background:linear-gradient(180deg,rgba(0,0,0,0.06) 0%,transparent 35%);
+}
+.dg-peephole{
+  width:clamp(105px,15vw,160px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--bg);
+  border:5px solid var(--line);
+  box-shadow:inset 4px 4px 0 rgba(0,0,0,0.10), 3px 3px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.15rem;
+}
+.dg-peep-lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-peep-val{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(1.7rem,3.4vw,2.6rem);
+  line-height:1;color:var(--ink);
+}
+.dg-peep-val.pos{color:var(--good)}
+.dg-peep-val.neg{color:var(--bad)}
+.dg-door-handle{
+  position:absolute;top:50%;
+  width:10px;height:26px;
+  background:var(--line);
+  border-radius:5px;
+  transform:translateY(-50%);
+}
+.dg-door[data-side="L"] .dg-door-handle{right:14px}
+.dg-door[data-side="R"] .dg-door-handle{left:14px}
+.dg-door-side{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;text-align:center;
+  padding:.5rem 0;
+  background:rgba(0,0,0,0.06);
+  border-top:2px dashed rgba(0,0,0,0.22);
+  color:var(--ink);
+}
+.dg-doors.entering{animation:dg-enter .28s var(--ease)}
+@keyframes dg-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.dg-final{
+  flex:1;
+  background:var(--sun);
+  border:3px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1rem;gap:.4rem;
+  animation:dg-final-pop .35s var(--ease);
+}
+@keyframes dg-final-pop{
+  0%{transform:scale(.85);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.dg-final-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;color:var(--ink);
+  text-transform:uppercase;
+}
+.dg-final-num{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(2.6rem,5.5vw,4.4rem);
+  line-height:1;color:var(--ink);
+}
+.dg-final-num.pos{color:var(--good)}
+.dg-final-num.neg{color:var(--bad)}
+.dg-final-msg{
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.1vw,1rem);
+  text-align:center;color:var(--ink);
+  max-width:600px;line-height:1.45;
+}
+.dg-controls{display:flex;justify-content:center;gap:.6rem}
+.dg-btn{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  padding:.5rem 1.15rem;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.dg-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.dg-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+@media (max-width:780px){
+  .dg-doors{grid-template-columns:1fr}
+  .dg-status{flex-direction:column}
+}
+
+.recap-flow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.6vw,1.2rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.recap-stage{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.recap-stage:nth-child(1){background:var(--mint)}
+.recap-stage:nth-child(2){background:var(--peach)}
+.recap-stage:nth-child(3){background:var(--lilac)}
+.recap-stage .rs-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.recap-stage > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.recap-stage .rs-viz{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.65rem .5rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.4rem;
+  min-height:90px;
+}
+.recap-stage .rs-caption{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.85vw,.78rem);
+  color:var(--dim);
+  letter-spacing:.05em;
+  text-align:center;
+}
+.recap-stage .rs-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.3vw,1.18rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .7rem;
+  margin-top:auto;
+}
+@media (max-width:900px){.recap-flow{grid-template-columns:1fr}}
+
+.vt-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.6rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+}
+.vt-callout .vt-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 19 — When Greedy Wins: 2 stages, not 3 */
+[data-name="When Greedy Wins"] .recap-flow{
+  grid-template-columns:repeat(2,1fr);
+  max-width:920px;
+  margin-left:auto;margin-right:auto;
+}
+@media (max-width:900px){
+  [data-name="When Greedy Wins"] .recap-flow{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → / SPACE to navigate</div>
+
+<!-- SLIDE 1 — TITLE -->
+<section class="slide" data-name="Title">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-peach square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-sun pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">LECTURE 04 · VALUES &amp; OPTIMALITY</span>
+    <h1 class="title reveal">Optimality &amp; the<br><span class="hl lilac">Bellman equation.</span></h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.6vw,1.3rem);max-width:840px;margin-bottom:1.5rem">
+      We have the MDP — states, actions, rewards. But what makes one policy <b>better</b> than another, and what is the <b>best</b> one? Build the value function, play the doors and warrior-tree games to see why <b>greedy ≠ optimal</b>, and write the <b>Bellman equation</b> that pins down \(\pi^*\).
+    </p>
+    <p class="body dim reveal" style="font-style:italic;font-size:clamp(.85rem,1.1vw,1rem)">
+      Reading: Sutton &amp; Barto, Ch 3.5–3.6
+    </p>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">1 / 13</div>
+</section>
+
+<!-- SLIDE 2 — THE MDP SETUP -->
+<section class="slide" data-name="The MDP">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">FORMAL SETUP</span>
+    <h2 class="h2 reveal">A discounted <span class="hl">MDP.</span></h2>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.92rem,1.2vw,1.05rem)">
+      Everything today lives inside one object \(\mathcal{M}=(\mathcal{S},\mathcal{A},\mathbb{P},c,\gamma)\) — five pieces that fully describe the world.
+    </p>
+
+    <div class="mdp-tuple reveal">
+      <div class="mdp-chip c0"><div class="sym">\(\mathcal{S}\)</div><div class="nm">states</div></div>
+      <div class="mdp-chip c1"><div class="sym">\(\mathcal{A}\)</div><div class="nm">actions</div></div>
+      <div class="mdp-chip c2"><div class="sym">\(\mathbb{P}(\cdot\!\mid\! s,a)\)</div><div class="nm">transition kernel</div></div>
+      <div class="mdp-chip c3"><div class="sym">\(c(s,a)\)</div><div class="nm">one-stage cost</div></div>
+      <div class="mdp-chip c4"><div class="sym">\(\gamma\in(0,1)\)</div><div class="nm">discount</div></div>
+    </div>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">A POLICY DRIVES THE TRAJECTORY</span>
+      <p class="body" style="text-align:center;font-size:clamp(.92rem,1.2vw,1.05rem);margin:.2rem 0">
+        A policy \(\pi(a\!\mid\! s)\) is the probability of choosing action \(a\) at state \(s\). Fix \(\pi\), and the world rolls forward:
+      </p>
+      <div class="eqn-big">\[ a_t \sim \pi(\cdot\!\mid\! s_t), \qquad s_{t+1} \sim \mathbb{P}(\cdot\!\mid\! s_t, a_t). \]</div>
+      <p class="cartoon-cap">pick an action · pay a cost · land somewhere new · repeat</p>
+    </div>
+  </div>
+  <div class="slide-name">The MDP</div>
+  <div class="slide-num">2 / 13</div>
+</section>
+
+<!-- SLIDE 3 — THE DISCOUNT DIAL γ (right after the MDP's five elements) -->
+<section class="slide" data-name="Discount γ">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--sun)">TRY THE KNOB</span>
+    <h2 class="h2 reveal">What does <span class="hl">γ</span> change?</h2>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.92rem,1.2vw,1.05rem)">
+      γ was the <b>fifth element</b> of \(\mathcal{M}\) we just listed. It sets how much a cost <b>one step later</b> still counts: a cost \(t\) steps away is weighted \(\gamma^t\). Slide it and watch how far the agent "sees."
+    </p>
+
+    <div class="gamma-wrap reveal">
+      <div class="gamma-panel">
+        <div class="gamma-readout">
+          <span class="gv" id="gamma-val">0.90</span>
+          <span class="gl">discount&nbsp;γ</span>
+        </div>
+        <input class="gamma-slider" id="gamma-slider" type="range" min="0" max="99" value="90">
+        <div class="gamma-presets" id="gamma-presets">
+          <button data-g="0">γ=0 · myopic</button>
+          <button data-g="50">0.5</button>
+          <button data-g="90" class="on">0.9</button>
+          <button data-g="99">0.99 · far-sighted</button>
+        </div>
+        <p class="gamma-horizon" id="gamma-horizon"></p>
+      </div>
+
+      <div class="gamma-bars" id="gamma-bars">
+        <div class="gbar-col"><span class="w" id="gw-0"></span><div class="gbar" id="gbar-0"></div><span class="t">now</span></div>
+        <div class="gbar-col"><span class="w" id="gw-1"></span><div class="gbar" id="gbar-1"></div><span class="t">+1</span></div>
+        <div class="gbar-col"><span class="w" id="gw-2"></span><div class="gbar" id="gbar-2"></div><span class="t">+2</span></div>
+        <div class="gbar-col"><span class="w" id="gw-3"></span><div class="gbar" id="gbar-3"></div><span class="t">+3</span></div>
+        <div class="gbar-col"><span class="w" id="gw-4"></span><div class="gbar" id="gbar-4"></div><span class="t">+4</span></div>
+        <div class="gbar-col"><span class="w" id="gw-5"></span><div class="gbar" id="gbar-5"></div><span class="t">+5</span></div>
+        <div class="gbar-col"><span class="w" id="gw-6"></span><div class="gbar" id="gbar-6"></div><span class="t">+6</span></div>
+        <div class="gbar-col"><span class="w" id="gw-7"></span><div class="gbar" id="gbar-7"></div><span class="t">+7</span></div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.6rem;text-align:center;font-style:italic;font-size:clamp(.85rem,1.1vw,1rem)">
+      Small γ → the agent only cares about the next step or two. γ near 1 → distant costs matter almost as much as today's.
+    </p>
+  </div>
+  <div class="slide-name">Discount γ</div>
+  <div class="slide-num">3 / 13</div>
+</section>
+
+
+<!-- SLIDE 4 — VALUE FUNCTION DEFINITION -->
+<section class="slide" data-name="Value Function">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:100px;height:100px;top:7%;right:6%"></span>
+  <span class="shape s-peach square bordered anim-spin-slow" style="width:70px;height:70px;bottom:12%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">DEFINITION</span>
+    <h2 class="h2 reveal">The <span class="hl">value function.</span></h2>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.92rem,1.2vw,1.05rem)">
+      \(V^\pi(s)\) is the <b>total cost you expect to pay</b> if you start in state \(s\) and follow \(\pi\) forever — with costs further in the future discounted by \(\gamma\).
+    </p>
+
+    <div class="eqn-card reveal">
+      <div class="eqn-big">\[ V^\pi(s) \;:=\; \mathbb{E}_\pi\!\left[\, \sum_{t=0}^{\infty} \gamma^{t}\, c(s_t, a_t) \;\Bigm|\; s_0 = s \,\right] \]</div>
+
+      <!-- cartoon: accumulative discounted cost expanding into the future -->
+      <div class="vf-timeline">
+        <div class="vf-step">
+          <div class="vf-bar" style="height:46px"></div>
+          <div class="vf-cost">\(c(s_0,a_0)\)</div>
+          <div class="vf-node">\(s_0\)</div>
+          <div class="vf-tag">weight 1</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-bar" style="height:34px"></div>
+          <div class="vf-cost">\(\gamma\, c(s_1,a_1)\)</div>
+          <div class="vf-node">\(s_1\)</div>
+          <div class="vf-tag">weight γ</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-bar" style="height:24px"></div>
+          <div class="vf-cost">\(\gamma^2 c(s_2,a_2)\)</div>
+          <div class="vf-node">\(s_2\)</div>
+          <div class="vf-tag">weight γ²</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-bar" style="height:15px"></div>
+          <div class="vf-cost">\(\gamma^3 c(s_3,a_3)\)</div>
+          <div class="vf-node">\(s_3\)</div>
+          <div class="vf-tag">weight γ³</div>
+        </div>
+        <div class="vf-fade">⋯ +</div>
+      </div>
+      <p class="cartoon-cap">add up every future cost — but each step ahead counts a little less (γ &lt; 1)</p>
+    </div>
+  </div>
+  <div class="slide-name">Value Function</div>
+  <div class="slide-num">4 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — PART 2 DIVIDER · DP                 -->
+<!-- ============================================ -->
+<section class="slide" data-name="Part 2: DP">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-mint square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-rose pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag peach reveal">PART 2 OF 3</span>
+    <h1 class="title reveal">Dynamic Programming &mdash;<br>the <span class="hl">Algorithm</span>.</h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.5vw,1.25rem);max-width:1100px;margin-bottom:1.1rem;text-align:center">
+      Now, solve the problem. Walk backward from the future: compute the value of every state by reusing values you've already computed one step ahead. That's <b>dynamic programming</b>.
+    </p>
+  </div>
+  <div class="slide-name">Part 2: DP</div>
+  <div class="slide-num">5 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — DOORS GAME (play before the tree)   -->
+<!-- ============================================ -->
+<section class="slide" data-name="Doors Game" id="doors-slide">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · DOORS GAME</span>
+    <h2 class="h2 reveal">Pick a door. <span class="hl">Four rooms.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Two doors at every step. Each has a <b>peephole</b> — peek to see the reward inside. Step through to claim it; two new doors appear. <b>4 picks total. Highest score wins.</b>
+    </p>
+
+    <div class="doors-game reveal">
+      <div class="dg-status">
+        <div><span class="lbl">Step</span><span class="val" id="dg-step">1 / 4</span></div>
+        <div><span class="lbl">Path so far</span><span class="val" id="dg-path">—</span></div>
+        <div class="dg-total"><span class="lbl">Total reward</span><span class="val" id="dg-total">0</span></div>
+      </div>
+
+      <div class="dg-doors" id="dg-doors">
+        <button class="dg-door" data-side="L">
+          <div class="dg-door-frame">
+            <div class="dg-peephole">
+              <span class="dg-peep-lbl">peek</span>
+              <span class="dg-peep-val" id="dg-peep-L">—</span>
+            </div>
+            <div class="dg-door-handle"></div>
+          </div>
+          <div class="dg-door-side">⬅ LEFT</div>
+        </button>
+        <button class="dg-door" data-side="R">
+          <div class="dg-door-frame">
+            <div class="dg-peephole">
+              <span class="dg-peep-lbl">peek</span>
+              <span class="dg-peep-val" id="dg-peep-R">—</span>
+            </div>
+            <div class="dg-door-handle"></div>
+          </div>
+          <div class="dg-door-side">RIGHT ➡</div>
+        </button>
+      </div>
+
+      <div class="dg-final" id="dg-final" hidden>
+        <div class="dg-final-tag">Final score</div>
+        <div class="dg-final-num" id="dg-final-num">+0</div>
+        <div class="dg-final-msg" id="dg-final-msg"></div>
+      </div>
+
+      <div class="dg-controls">
+        <button class="dg-btn" id="dg-reset">↺ Play again</button>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.55rem;font-style:italic;text-align:center;font-size:clamp(.82rem,1.05vw,.95rem);max-width:920px;margin-left:auto;margin-right:auto">
+      The peephole shows only <i>this step's</i> reward — not what waits behind the next door. Easy to grab the big number now and lose later.
+    </p>
+  </div>
+  <div class="slide-name">Doors Game</div>
+  <div class="slide-num">6 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 20 — WARRIOR TEASER (binary tree game)   -->
+<!-- ============================================ -->
+<section class="slide" data-name="Warrior Test">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:75px;height:75px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">DP · TREE GAME</span>
+    <h2 class="h2 reveal">The warrior's <span class="hl">greedy trap.</span></h2>
+    <p class="body dim reveal" style="max-width:1000px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Take <b>4 steps</b>. At each step, go <b>left</b> or <b>right</b>. Each cell pays a reward — a 🪙 coin (<b>+5 to +10</b>) or 💀 boss (<b>−10 to −5</b>). Goal: <b>finish with the highest total</b>. There are \(2^4 = 16\) possible paths.
+    </p>
+
+    <div class="warrior-tree reveal">
+      <svg viewBox="0 0 800 295" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:46vh">
+        <!-- Edges Layer 0 → 1 -->
+        <line x1="400" y1="20" x2="200" y2="75" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="400" y1="20" x2="600" y2="75" stroke="#1f1d2b" stroke-width="1.5"/>
+        <!-- Edges Layer 1 → 2 -->
+        <line x1="200" y1="75" x2="100" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="200" y1="75" x2="300" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="600" y1="75" x2="500" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <line x1="600" y1="75" x2="700" y2="130" stroke="#1f1d2b" stroke-width="1.5"/>
+        <!-- Edges Layer 2 → 3 -->
+        <line x1="100" y1="130" x2="50"  y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="100" y1="130" x2="150" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="300" y1="130" x2="250" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="300" y1="130" x2="350" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="500" y1="130" x2="450" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="500" y1="130" x2="550" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="700" y1="130" x2="650" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <line x1="700" y1="130" x2="750" y2="185" stroke="#1f1d2b" stroke-width="1.2"/>
+        <!-- Edges Layer 3 → 4 (16) -->
+        <line x1="50"  y1="185" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="50"  y1="185" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="150" y1="185" x2="125" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="150" y1="185" x2="175" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="250" y1="185" x2="225" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="250" y1="185" x2="275" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="350" y1="185" x2="325" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="350" y1="185" x2="375" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="450" y1="185" x2="425" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="450" y1="185" x2="475" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="550" y1="185" x2="525" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="550" y1="185" x2="575" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="650" y1="185" x2="625" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="650" y1="185" x2="675" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="750" y1="185" x2="725" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+        <line x1="750" y1="185" x2="775" y2="240" stroke="#1f1d2b" stroke-width="1"/>
+
+        <!-- Greedy path (red dashed): R → RL → RLL → RLLR -->
+        <line x1="400" y1="20"  x2="600" y2="75"  stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="600" y1="75"  x2="500" y2="130" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="500" y1="130" x2="450" y2="185" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+        <line x1="450" y1="185" x2="475" y2="240" stroke="#e23e3e" stroke-width="3" stroke-dasharray="5,3"/>
+
+        <!-- Layer 0: start -->
+        <circle cx="400" cy="20" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+        <text x="400" y="20" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+
+        <!-- Layer 1 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="200" cy="75" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="200" y="75">−9</text>
+          <circle cx="600" cy="75" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="600" y="75">−6</text>
+        </g>
+
+        <!-- Layer 2 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="100" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="100" y="130">+8</text>
+          <circle cx="300" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="300" y="130">+6</text>
+          <circle cx="500" cy="130" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="500" y="130">+4</text>
+          <circle cx="700" cy="130" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+          <text x="700" y="130">−8</text>
+        </g>
+
+        <!-- Layer 3 -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="50"  cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="50"  y="185">−9</text>
+          <circle cx="150" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="150" y="185">+5</text>
+          <circle cx="250" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="250" y="185">+10</text>
+          <circle cx="350" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="350" y="185">−7</text>
+          <circle cx="450" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="450" y="185">+6</text>
+          <circle cx="550" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="550" y="185">−8</text>
+          <circle cx="650" cy="185" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="650" y="185">+7</text>
+          <circle cx="750" cy="185" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/>
+          <text x="750" y="185">−6</text>
+        </g>
+
+        <!-- Layer 4 (16 leaves) -->
+        <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <circle cx="25"  cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="25"  y="240">−7</text>
+          <circle cx="75"  cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="75"  y="240">−5</text>
+          <circle cx="125" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="125" y="240">−6</text>
+          <circle cx="175" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="175" y="240">+5</text>
+          <circle cx="225" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="225" y="240">+9</text>
+          <circle cx="275" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="275" y="240">+10</text>
+          <circle cx="325" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="325" y="240">+6</text>
+          <circle cx="375" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="375" y="240">−8</text>
+          <circle cx="425" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="425" y="240">−7</text>
+          <circle cx="475" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="475" y="240">+8</text>
+          <circle cx="525" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="525" y="240">+5</text>
+          <circle cx="575" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="575" y="240">−6</text>
+          <circle cx="625" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="625" y="240">+7</text>
+          <circle cx="675" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="675" y="240">−8</text>
+          <circle cx="725" cy="240" r="10" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="725" y="240">−7</text>
+          <circle cx="775" cy="240" r="10" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="775" y="240">+9</text>
+        </g>
+
+        <!-- Legend -->
+        <g transform="translate(20, 280)">
+          <circle cx="6" cy="0" r="5" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="16" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">🪙 coin (+5..+10)</text>
+          <circle cx="155" cy="0" r="5" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/>
+          <text x="165" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">💀 boss (−10..−5)</text>
+          <line x1="305" y1="0" x2="335" y2="0" stroke="#e23e3e" stroke-width="2.5" stroke-dasharray="4,2"/>
+          <text x="341" y="3.5" font-family="General Sans, sans-serif" font-size="10" fill="#1f1d2b">greedy path: pick the biggest reward at each step</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="warrior-discuss reveal">
+      <div class="wd-q">
+        <span class="wd-tag">Q1 · GREEDY</span>
+        <p>Sum the rewards along the red path. What total does greedy end with?</p>
+      </div>
+      <div class="wd-q">
+        <span class="wd-tag">Q2 · HOW TO AVOID GREEDY?</span>
+        <p>What information would let you make the right choice at <i>every</i> step?</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Warrior Test</div>
+  <div class="slide-num">7 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — KEY INSIGHT · PLAN, DON'T BE GREEDY -->
+<!-- ============================================ -->
+<section class="slide" data-name="Plan, Don't Be Greedy">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · KEY INSIGHT</span>
+    <h2 class="h2 reveal">Don't be greedy &mdash; <span class="hl">plan ahead.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.9rem,1.18vw,1.08rem)">
+      Greedy fails because it judges each move by <i>this step's</i> reward only. The fix in one sentence: <b>at every step, pick the move whose <i>whole future</i> looks best.</b> Today's choice is judged by where it eventually leads &mdash; all the way to the end.
+    </p>
+
+    <div class="warrior-discuss reveal">
+      <div class="wd-q" style="background:var(--peach)">
+        <span class="wd-tag">😬 GREEDY</span>
+        <p>"Take the biggest reward I can see <i>now</i>." Looks one step ahead. Walks straight into a boss two steps later.</p>
+      </div>
+      <div class="wd-q" style="background:var(--mint)">
+        <span class="wd-tag">🧭 PLANNING</span>
+        <p>"Take the move whose <b>total future reward</b> is highest." Looks all the way to the leaves before committing the first step.</p>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.8rem">
+      <span class="vt-callout-tag">🤔 THINK</span>
+      <span>Easy to <i>say</i>. But how would you actually <b>compute</b> "the total future reward of a move" on the warrior tree? Try the most direct idea you can think of &mdash; we'll try yours next.</span>
+    </div>
+  </div>
+  <div class="slide-name">Plan, Don't Be Greedy</div>
+  <div class="slide-num">8 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — VANILLA · ENUMERATE EVERY PLAN     -->
+<!-- ============================================ -->
+<section class="slide" data-name="Enumerate Every Plan">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">DP · BRUTE FORCE</span>
+    <h2 class="h2 reveal">First idea: <span class="hl">try every plan.</span></h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      A <b>plan</b> is a fixed 4-step sequence of L/R moves. There are \(2^4 = 16\) plans. For each one, sum the four rewards along its path; pick the plan with the highest total.
+    </p>
+
+    <div class="reveal" style="background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.95rem 1.2rem;margin-top:.5rem">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.5rem">A FEW OF THE 16 PLANS</span>
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:.35rem 1.1rem;font-family:var(--font-mono);font-size:clamp(.85rem,1.08vw,.98rem);line-height:1.7;align-items:center">
+        <div><b>LLLL</b></div>
+        <div>(&minus;9) + (+8) + (&minus;9) + (&minus;7)</div>
+        <div>= <b>&minus;17</b></div>
+
+        <div><b>LRLL</b></div>
+        <div>(&minus;9) + (+6) + (+10) + (+9)</div>
+        <div>= <b>+16</b></div>
+
+        <div><b>LRLR</b></div>
+        <div>(&minus;9) + (+6) + (+10) + (+10)</div>
+        <div>= <b style="background:var(--sun);padding:.05rem .4rem;border:1.5px solid var(--line);border-radius:6px">+17</b> &check;</div>
+
+        <div><b>RRRR</b></div>
+        <div>(&minus;6) + (&minus;8) + (&minus;6) + (+9)</div>
+        <div>= <b>&minus;11</b></div>
+
+        <div style="color:var(--dim)">&hellip; 12 more &hellip;</div>
+        <div style="color:var(--dim)">enumerate all 16, sum each</div>
+        <div style="color:var(--dim)">take the max</div>
+      </div>
+    </div>
+
+    <div class="warrior-discuss reveal" style="margin-top:.7rem">
+      <div class="wd-q" style="background:var(--rose)">
+        <span class="wd-tag">⚠️ Q · EFFICIENCY</span>
+        <p>4 steps gave <b>16</b> plans. What if the warrior took <b>10</b> steps? <b>20</b>? <b>50</b>? How many plans must we sum?</p>
+      </div>
+      <div class="wd-q" style="background:var(--lilac)">
+        <span class="wd-tag">📐 ANSWER</span>
+        <p>\(2^{10}{=}1{,}024\) &middot; \(2^{20}{\approx}10^6\) &middot; \(2^{50}{\approx}10^{15}\). <b>Exponential</b> &mdash; brute force is hopeless almost immediately. We need a smarter way.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Enumerate Every Plan</div>
+  <div class="slide-num">9 / 13</div>
+</section>
+
+<!-- ============================================ -->
+<!-- NEW SLIDE — WHEN DOES GREEDY WIN? (BACKWARD INSIGHT) -->
+<!-- ============================================ -->
+<section class="slide" data-name="When Greedy Wins">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:8%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">DP · WHEN GREEDY WINS</span>
+    <h2 class="h2 reveal">Greedy <span class="hl">does</span> work &mdash; on a 1-step tree.</h2>
+    <p class="body dim reveal" style="max-width:1020px;font-size:clamp(.88rem,1.15vw,1.05rem)">
+      Greedy got trapped on the big tree because each move hides a long future. Strip the future to nothing &mdash; make the problem one step &mdash; and greedy snaps back to optimal. Three observations turn that into a plan.
+    </p>
+
+    <div class="recap-flow reveal">
+      <div class="recap-stage">
+        <span class="rs-tag">&#9312; ONE STEP LEFT &mdash; DEFINE V</span>
+        <p>If the tree is just <b>one step deep</b>, the best total reward starting from \(s\) is just the larger reward. Call this best total \(V(s)\) &mdash; the <b>value</b> of state \(s\). No future, no trap.</p>
+        <div class="rs-viz">
+          <svg viewBox="0 0 220 110" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:110px">
+            <line x1="110" y1="22" x2="60"  y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <line x1="110" y1="22" x2="160" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <circle cx="110" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+            <text x="110" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">&#129335;</text>
+            <circle cx="60" cy="78" r="14" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="60" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" fill="#1f1d2b">+4</text>
+            <circle cx="160" cy="78" r="14" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="160" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" fill="#1f1d2b">+6</text>
+            <circle cx="160" cy="78" r="20" fill="none" stroke="#e23e3e" stroke-width="2.5" stroke-dasharray="4,2"/>
+          </svg>
+        </div>
+        <div class="rs-formula">\( V(s) = \max_a R(s,a) = +6 \)</div>
+      </div>
+
+      <div class="recap-stage">
+        <span class="rs-tag">&#9313; WALK BACKWARDS</span>
+        <p>What if every next state \(s'\) came tagged with its value \(V(s')\) &mdash; the best total starting from there? Then any step is again a 1-step problem: pick the action with the biggest <i>reward + value</i>.</p>
+        <div class="rs-viz">
+          <svg viewBox="0 0 220 110" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:110px">
+            <line x1="110" y1="22" x2="60"  y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <line x1="110" y1="22" x2="160" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+            <circle cx="110" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+            <text x="110" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">&#129335;</text>
+            <circle cx="60" cy="78" r="14" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="60" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="10.5" fill="#1f1d2b">&minus;9</text>
+            <text x="60" y="103" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="9" fill="#7a4dc2">+ V(s')</text>
+            <circle cx="160" cy="78" r="14" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/>
+            <text x="160" y="78" text-anchor="middle" dominant-baseline="central" font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="10.5" fill="#1f1d2b">&minus;6</text>
+            <text x="160" y="103" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="9" fill="#7a4dc2">+ V(s')</text>
+          </svg>
+        </div>
+        <div class="rs-formula">\( V(s) = \max_a \big[\, R(s,a) + V(s') \,\big] \)</div>
+      </div>
+    </div>
+
+    <div class="vt-callout reveal" style="margin-top:.8rem">
+      <span class="vt-callout-tag">&#129300; PROBE</span>
+      <span>At the leaves the future is <b>0</b> (no more steps), so depth-3 is already a 1-step problem &mdash; solve it. Now depth-2 sees depth-3’s &ldquo;future&rdquo; and is <i>also</i> 1-step. Roll up layer by layer until the root &mdash; this is <b>dynamic programming</b>. Next slide does it on the warrior tree.</span>
+    </div>
+  </div>
+  <div class="slide-name">When Greedy Wins</div>
+  <div class="slide-num">10 / 13</div>
+</section>
+
+
+<!-- SLIDE 6b — BELLMAN OPTIMALITY -->
+<section class="slide" data-name="Optimality">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:100px;height:100px;top:7%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:11%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--lilac)">BELLMAN OPTIMALITY</span>
+    <h2 class="h2 reveal">From a fixed policy to <span class="hl">the best one.</span></h2>
+
+    <p class="body reveal" style="max-width:920px;font-size:clamp(.92rem,1.2vw,1.05rem)">
+      Evaluation answered <i>"how good is this π?"</i> Now ask <i>"what's the <b>best</b> we can do?"</i> Same recursion, but instead of <b>averaging over what π would do</b>, we <b>pick the best action</b> at every state — \(\sum_a\pi(a\mid s)\) becomes \(\max_a\):
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">BELLMAN OPTIMALITY · ONE STATE \(s\) AT A TIME</span>
+      <div class="eqn-big">\[ V^*(s) \;=\; \max_a\, \underbrace{\big[\, r(s,a) \;+\; \gamma \sum_{s'} \mathbb{P}(s'\!\mid\! s,a)\, V^*(s') \,\big]}_{Q^*(s,a)} \qquad \pi^*(s) = \arg\max_a Q^*(s,a) \]</div>
+      <p class="cartoon-cap">the best value = best action's value; the best policy = the action that attains it</p>
+    </div>
+
+    <!-- worked example: last lecture's tree, V* and the optimal path -->
+    <div class="vt-grid reveal">
+      <div class="vt-tree">
+        <svg viewBox="0 0 800 270" preserveAspectRatio="xMidYMid meet">
+          <line x1="400" y1="22" x2="200" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="400" y1="22" x2="600" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="200" y1="78" x2="100" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="200" y1="78" x2="300" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="500" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="700" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="100" y1="132" x2="50"  y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="100" y1="132" x2="150" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="250" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="350" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="450" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="550" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="650" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="750" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="50"  y1="186" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="50"  y1="186" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="125" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="175" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="225" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="275" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="325" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="375" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="425" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="475" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="525" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="575" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="625" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="675" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="725" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="775" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+
+          <circle cx="400" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="400" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="200" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="200" y="78">−9</text>
+            <circle cx="600" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="600" y="78">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="100" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="100" y="132">+8</text>
+            <circle cx="300" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="300" y="132">+6</text>
+            <circle cx="500" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="500" y="132">+4</text>
+            <circle cx="700" cy="132" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/><text x="700" y="132">−8</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="50"  cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="50"  y="186">−9</text>
+            <circle cx="150" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="150" y="186">+5</text>
+            <circle cx="250" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="250" y="186">+10</text>
+            <circle cx="350" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="350" y="186">−7</text>
+            <circle cx="450" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="450" y="186">+6</text>
+            <circle cx="550" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="550" y="186">−8</text>
+            <circle cx="650" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="650" y="186">+7</text>
+            <circle cx="750" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="750" y="186">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="25"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="25"  y="240">−7</text>
+            <circle cx="75"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="75"  y="240">−5</text>
+            <circle cx="125" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="125" y="240">−6</text>
+            <circle cx="175" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="175" y="240">+5</text>
+            <circle cx="225" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="225" y="240">+9</text>
+            <circle cx="275" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="275" y="240">+10</text>
+            <circle cx="325" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="325" y="240">+6</text>
+            <circle cx="375" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="375" y="240">−8</text>
+            <circle cx="425" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="425" y="240">−7</text>
+            <circle cx="475" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="475" y="240">+8</text>
+            <circle cx="525" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="525" y="240">+5</text>
+            <circle cx="575" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="575" y="240">−6</text>
+            <circle cx="625" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="625" y="240">+7</text>
+            <circle cx="675" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="675" y="240">−8</text>
+            <circle cx="725" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="725" y="240">−7</text>
+            <circle cx="775" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="775" y="240">+9</text>
+          </g>
+
+          <!-- Optimal path overlay (L → LR → LRL → LRLR) -->
+          <g stroke="#e23e3e" stroke-width="3.5" stroke-dasharray="5,3" fill="none" stroke-linecap="round">
+            <line x1="400" y1="22"  x2="200" y2="78"/>
+            <line x1="200" y1="78"  x2="300" y2="132"/>
+            <line x1="300" y1="132" x2="250" y2="186"/>
+            <line x1="250" y1="186" x2="275" y2="240"/>
+          </g>
+
+          <!-- blank V*/Q* boxes — click to reveal (injected by TreeQuiz) -->
+          <g id="oq-cells"></g>
+
+          <g font-family="JetBrains Mono, monospace" font-size="8.5">
+            <text x="20"  y="265" fill="#1f1d2b">inside = reward</text>
+            <text x="140" y="265" fill="#7a4dc2">violet (nodes) = V*</text>
+            <text x="285" y="265" fill="#e23e3e">red (edges) = Q*</text>
+            <text x="430" y="265" fill="#6c6a7a">dashed = optimal path π* · click a box to check</text>
+          </g>
+        </svg>
+        <div class="gq-btns">
+          <button id="oq-reveal" type="button">Reveal all</button>
+          <button id="oq-reset" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="vt-math det">
+        <span class="vt-tag">SAME TREE · NOW TAKE THE MAX</span>
+        <div class="vt-formula">\( V^*(s) = \max_a Q^*(s,a),\qquad Q^*(s,a) = r(s,a) + \gamma\, V^*(s') \)</div>
+        <p style="margin:0;font-size:clamp(.82rem,1.05vw,.96rem);line-height:1.45">Roll up the <b>same way</b>, but each node now keeps the <b>better</b> of its two children instead of averaging. The greedy-looking root \(V^*=+17\) beats the random policy's \(-4.1\); reading \(\arg\max\) at each node traces the dashed optimal path \(\pi^*\).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Optimality</div>
+  <div class="slide-num">11 / 13</div>
+</section>
+
+<!-- SLIDE 6 — BELLMAN EQUATION FOR EVALUATION -->
+<section class="slide" data-name="Bellman">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:7%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:11%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">POLICY EVALUATION</span>
+    <h2 class="h2 reveal">The <span class="hl">Bellman equation.</span></h2>
+
+    <p class="body reveal" style="max-width:920px;font-size:clamp(.92rem,1.2vw,1.05rem)">
+      Split the infinite sum into <b>the cost paid now</b> plus <b>the discounted value of wherever you land next</b> — averaged over the action you pick (\(\pi\)) and the move that follows (\(\mathbb{P}\)). Written one state at a time:
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">ELEMENT-WISE · ONE STATE \(s\) AT A TIME</span>
+      <div class="eqn-big">\[ V^\pi(s) = \sum_a \pi(a\!\mid\! s)\Big[\, \underbrace{c(s,a)}_{\text{pay now}} + \gamma \underbrace{\sum_{s'}\mathbb{P}(s'\!\mid\! s,a)\,V^\pi(s')}_{\text{discounted future}} \,\Big] \]</div>
+      <p class="cartoon-cap">stack all \(|\mathcal{S}|\) rows → matrix form \(\;V^\pi = c_\pi + \gamma\,\mathbb{P}_\pi V^\pi\) (with \(c_\pi,\mathbb{P}_\pi\) the \(\pi\)-averaged cost and kernel)</p>
+    </div>
+
+    <!-- worked example: last lecture's warrior tree, random policy, V_π filled in -->
+    <div class="vt-grid reveal">
+      <div class="vt-tree">
+        <svg viewBox="0 0 800 270" preserveAspectRatio="xMidYMid meet">
+          <line x1="400" y1="22" x2="200" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="400" y1="22" x2="600" y2="78" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="200" y1="78" x2="100" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="200" y1="78" x2="300" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="500" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="600" y1="78" x2="700" y2="132" stroke="#1f1d2b" stroke-width="1.3"/>
+          <line x1="100" y1="132" x2="50"  y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="100" y1="132" x2="150" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="250" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="300" y1="132" x2="350" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="450" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="500" y1="132" x2="550" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="650" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="700" y1="132" x2="750" y2="186" stroke="#1f1d2b" stroke-width="1.1"/>
+          <line x1="50"  y1="186" x2="25"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="50"  y1="186" x2="75"  y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="125" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="150" y1="186" x2="175" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="225" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="250" y1="186" x2="275" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="325" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="350" y1="186" x2="375" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="425" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="450" y1="186" x2="475" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="525" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="550" y1="186" x2="575" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="625" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="650" y1="186" x2="675" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="725" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+          <line x1="750" y1="186" x2="775" y2="240" stroke="#1f1d2b" stroke-width="0.8"/>
+
+          <circle cx="400" cy="22" r="14" fill="white" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="400" y="22" text-anchor="middle" dominant-baseline="central" font-size="14">🤺</text>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="200" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="200" y="78">−9</text>
+            <circle cx="600" cy="78" r="15" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2"/><text x="600" y="78">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="11" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="100" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="100" y="132">+8</text>
+            <circle cx="300" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="300" y="132">+6</text>
+            <circle cx="500" cy="132" r="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.8"/><text x="500" y="132">+4</text>
+            <circle cx="700" cy="132" r="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.8"/><text x="700" y="132">−8</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="50"  cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="50"  y="186">−9</text>
+            <circle cx="150" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="150" y="186">+5</text>
+            <circle cx="250" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="250" y="186">+10</text>
+            <circle cx="350" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="350" y="186">−7</text>
+            <circle cx="450" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="450" y="186">+6</text>
+            <circle cx="550" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="550" y="186">−8</text>
+            <circle cx="650" cy="186" r="11" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.5"/><text x="650" y="186">+7</text>
+            <circle cx="750" cy="186" r="11" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.5"/><text x="750" y="186">−6</text>
+          </g>
+          <g font-family="Cabinet Grotesk, sans-serif" font-weight="700" font-size="8" text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+            <circle cx="25"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="25"  y="240">−7</text>
+            <circle cx="75"  cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="75"  y="240">−5</text>
+            <circle cx="125" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="125" y="240">−6</text>
+            <circle cx="175" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="175" y="240">+5</text>
+            <circle cx="225" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="225" y="240">+9</text>
+            <circle cx="275" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="275" y="240">+10</text>
+            <circle cx="325" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="325" y="240">+6</text>
+            <circle cx="375" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="375" y="240">−8</text>
+            <circle cx="425" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="425" y="240">−7</text>
+            <circle cx="475" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="475" y="240">+8</text>
+            <circle cx="525" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="525" y="240">+5</text>
+            <circle cx="575" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="575" y="240">−6</text>
+            <circle cx="625" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="625" y="240">+7</text>
+            <circle cx="675" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="675" y="240">−8</text>
+            <circle cx="725" cy="240" r="9" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="725" y="240">−7</text>
+            <circle cx="775" cy="240" r="9" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="775" y="240">+9</text>
+          </g>
+
+          <!-- blank V_π/Q_π boxes — click to reveal (injected by TreeQuiz) -->
+          <g id="bq-cells"></g>
+
+          <g font-family="JetBrains Mono, monospace" font-size="8.5">
+            <text x="20"  y="265" fill="#1f1d2b">inside = reward</text>
+            <text x="140" y="265" fill="#7a4dc2">violet (nodes) = V_π</text>
+            <text x="295" y="265" fill="#e23e3e">red (edges) = Q_π</text>
+            <text x="445" y="265" fill="#6c6a7a">leaves: V = 0 · click a box to check</text>
+          </g>
+        </svg>
+        <div class="gq-btns">
+          <button id="bq-reveal" type="button">Reveal all</button>
+          <button id="bq-reset" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="vt-math stoch">
+        <span class="vt-tag">FIXED π · ONE BACKWARD PASS</span>
+        <div class="vt-formula">\( V_\pi(s) = \sum_a \pi(a\mid s)\,\big[\, r(s,a) + \gamma\, V_\pi(s') \,\big] \)</div>
+        <p style="margin:0;font-size:clamp(.82rem,1.05vw,.96rem);line-height:1.45">Last lecture's tree, in <b>rewards</b> (here \(r=-c\), so maximize). Fix \(\pi=\) "go L with 0.6, R with 0.4." Start at the leaves (\(V=0\)), then fill each parent: its own reward plus the averaged value below. The root's \(V_\pi=-4.1\) is exactly the Bellman equation, solved bottom-up. The kernel here is <b>deterministic</b>, so the \(\sum_{s'}\) collapses to one term — all the randomness lives in \(\pi(a\mid s)\).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Bellman</div>
+  <div class="slide-num">12 / 13</div>
+</section>
+
+<!-- shared click-to-reveal V/Q box styling (used by Optimality & Bellman slides) -->
+<style>
+/* click-to-reveal V/Q boxes — shared by the Optimality, Bellman & V&Q Quiz slides */
+.gq-cell{cursor:pointer}
+.gq-cell rect{fill:#fff;stroke:#b9b6c8;stroke-width:1;stroke-dasharray:3 2;transition:.15s}
+.gq-cell text{fill:#9a97a8;pointer-events:none;transition:.15s}
+.gq-cell:hover rect{stroke:#1f1d2b;fill:#fef8f0}
+.gq-V.shown rect{fill:#efe7fb;stroke:#7a4dc2;stroke-dasharray:none}
+.gq-V.shown text{fill:#7a4dc2}
+.gq-Q.shown rect{fill:#ffe6e6;stroke:#e23e3e;stroke-dasharray:none}
+.gq-Q.shown text{fill:#e23e3e}
+.gq-btns{display:flex;gap:.5rem;margin-top:.7rem}
+.gq-btns button{font-family:var(--font-mono);font-size:.78rem;font-weight:700;
+  padding:.4rem .8rem;border:1.5px solid #1f1d2b;border-radius:8px;background:#fff;cursor:pointer;transition:.12s}
+.gq-btns button:hover{background:#1f1d2b;color:#fff}
+</style>
+
+<!-- SLIDE 6 — BELLMAN: A BIT OF HISTORY -->
+<section class="slide" data-name="History">
+  <span class="shape s-sun pill bordered anim-wobble" style="width:130px;height:56px;top:8%;right:7%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:11%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--sun)">A BIT OF HISTORY · 1953</span>
+    <h2 class="h2 reveal">Why is it called <span class="hl">dynamic programming?</span></h2>
+
+    <div class="hist-grid reveal">
+      <div class="hist-quote">
+        <div class="hist-portrait" style="margin-bottom:.6rem">
+          <div class="ph">👨‍🔬</div>
+          <div class="who">Richard E. Bellman<span>RAND Corporation · 1950s</span></div>
+        </div>
+        <div class="qmark">“</div>
+        <blockquote>
+          I was interested in planning… but "programming" was a respectable word. The Secretary of Defense had a <b>pathological fear of the word "research."</b> So I used "dynamic" — it's impossible to use in a pejorative sense. It was a name no one could object to.
+        </blockquote>
+        <cite>— Bellman, <i>Eye of the Hurricane</i> (paraphrased)</cite>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:clamp(.8rem,1.6vw,1.2rem)">
+        <div class="hist-card">
+          <h3>The Principle of Optimality</h3>
+          <p>Bellman's one big idea: <b>the rest of an optimal plan, from any state onward, must itself be optimal</b> — so a long problem splits into best-first-move + optimal-tail:</p>
+          <div class="po-eq">\( V^*(s)=\min_a\big[\,\underbrace{c(s,a)}_{\text{first step}}+\gamma\,\underbrace{V^*(s')}_{\text{optimal tail}}\,\big] \)</div>
+          <p class="po-note">If the best first step from 🤺 is <b>L</b>, reuse L's own value \(V^*(L)\) <i>as-is</i> — never recompute it.</p>
+        </div>
+        <div class="hist-card">
+          <h3>Why it still matters (the cool part)</h3>
+          <p>Scoring every plan <b>explodes</b>: \(2^H\) plans in a depth-\(H\) tree, \(A^{|\mathcal S|}\) policies in an MDP. Bellman never enumerates them:</p>
+          <div class="matters-cmp">
+            <div class="brute"><span class="ml">ENUMERATE PLANS</span><span class="mv">\(2^{H}\)</span><span class="mt">exponential · impossible</span></div>
+            <div class="smart"><span class="ml">SOLVE BELLMAN</span><span class="mv">\(|\mathcal S|\)</span><span class="mt">linear · one lookup / state</span></div>
+          </div>
+          <p>Each value is computed <b>once</b> and reused, so \(2^H\) collapses to \(|\mathcal S|\) lookups — the engine behind <b>every RL algorithm</b> here.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lecture-nav reveal" style="margin-top:1rem">
+      <a class="prev" href="lecture-3.html">← Lecture 3</a>
+      <a class="home" href="../index.html">Home</a>
+      <a class="next" href="lecture-5.html">Lecture 5: Model-free RL →</a>
+    </div>
+  </div>
+  <div class="slide-name">History</div>
+  <div class="slide-num">13 / 13</div>
+</section>
+
+<script src="shared.js"></script>
+
+<script>
+/* ============================================================
+   LIVE POLICY ITERATION — slide 11
+   - 5×5 gridworld with start, goal, fire, walls
+   - π starts as random arrows (deterministic seed); V starts at 0
+   - "Iterate" = (1) animated inner policy eval to convergence
+                  (2) greedy improve, yellow flip on changed arrows
+   - "Eval sweeps used" counter shows how much hidden work each click costs
+   ============================================================ */
+class PolicyIter{
+  constructor(){
+    this.size=4;
+    this.layout=[
+      ['s','.','.','.'],
+      ['.','#','t','.'],
+      ['.','.','.','#'],
+      ['.','.','.','g'],
+    ];
+    this.gamma=0.9;
+    this.theta=0.001;
+    this.dirs=['↑','→','↓','←'];
+    this.evalDelay=55;       // ms between visible inner eval sweeps
+    this.improveDelay=350;   // pause before improvement after eval converges
+    this.gridEl=document.getElementById('pl-grid');
+    if(!this.gridEl)return;
+    this.cells=[];
+    this.busy=false;
+    this.buildGrid();
+    this.bindEvents();
+    this.reset();
+  }
+  buildGrid(){
+    for(let i=0;i<this.size*this.size;i++){
+      const div=document.createElement('div');
+      div.className='pl-cell';
+      this.gridEl.appendChild(div);
+    }
+    this.cells=[...this.gridEl.querySelectorAll('.pl-cell')];
+  }
+  bindEvents(){
+    document.getElementById('pl-eval').addEventListener('click',()=>this.evalStep());
+    document.getElementById('pl-improve').addEventListener('click',()=>this.improveStep());
+    document.getElementById('pl-run').addEventListener('click',()=>this.runMany());
+    document.getElementById('pl-reset').addEventListener('click',()=>this.reset());
+  }
+  // deterministic random π via small LCG so reset is reproducible
+  seedRandomPolicy(){
+    let s=42;
+    const rng=()=>{s=(s*1664525+1013904223)>>>0;return (s>>>16)/0x10000};
+    const N=this.size;
+    const pol=Array.from({length:N},()=>Array(N).fill(null));
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        const t=this.layout[r][c];
+        if(t==='.'||t==='s')pol[r][c]=this.dirs[Math.floor(rng()*4)];
+        else pol[r][c]='-';
+      }
+    }
+    return pol;
+  }
+  reset(){
+    if(this.busy)return;
+    this.policy=this.seedRandomPolicy();
+    this.V=Array.from({length:this.size},()=>Array(this.size).fill(0));
+    this.round=0;
+    this.evalSweepsTotal=0;
+    this.lastDelta=null;
+    this.evalConverged=false;       // V_k is V_π for the *current* policy
+    this.changedCount=null;
+    this.stable=false;
+    this.lastFlipped=new Set();
+    this.lastEvalChanged=new Set();
+    this.lastPhase=null;
+    this.render();
+  }
+  isTerminal(r,c){const t=this.layout[r][c];return t==='g'||t==='t'}
+  reward(t){if(t==='g')return 1.0;if(t==='t')return -1.0;return -0.04}
+  nextCell(r,c,dir){
+    let nr=r,nc=c;
+    if(dir==='↑')nr--;else if(dir==='↓')nr++;else if(dir==='←')nc--;else if(dir==='→')nc++;
+    if(nr<0||nr>=this.size||nc<0||nc>=this.size)return [r,c];
+    if(this.layout[nr][nc]==='#')return [r,c];
+    return [nr,nc];
+  }
+  // one synchronous Bellman expectation sweep under current self.policy
+  oneEvalSweep(){
+    const N=this.size;
+    const Vnew=this.V.map(row=>row.slice());
+    let delta=0;
+    const changed=new Set();
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        if(this.isTerminal(r,c)){Vnew[r][c]=0;continue}
+        const dir=this.policy[r][c];
+        if(dir==='-'){Vnew[r][c]=0;continue}
+        const [nr,nc]=this.nextCell(r,c,dir);
+        const t_next=this.layout[nr][nc];
+        const r_next=this.reward(t_next);
+        const v_next=this.isTerminal(nr,nc)?0:this.V[nr][nc];
+        Vnew[r][c]=r_next+this.gamma*v_next;
+        const diff=Math.abs(Vnew[r][c]-this.V[r][c]);
+        if(diff>0.001)changed.add(r+','+c);
+        if(diff>delta)delta=diff;
+      }
+    }
+    this.V=Vnew;
+    return {delta,changed};
+  }
+  // greedy improvement: π'(s) = argmax_a [r(s,a) + γ V(next(s,a))]
+  // returns { flipped, allOptimal } where allOptimal is true iff the
+  // *previous* policy already had current(s) ∈ argmax-set at every state.
+  // Tie-break: keep current if it's in argmax-set (no spurious flips at ties);
+  // otherwise pick uniformly at random from argmax-set (escapes stuck regions).
+  improvePolicy(){
+    const N=this.size;
+    const newPol=this.policy.map(row=>row.slice());
+    const flipped=new Set();
+    const eps=1e-9;
+    let allOptimal=true;
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        const t=this.layout[r][c];
+        if(t!=='.'&&t!=='s')continue;
+        // compute Q(s, a) for every action
+        const qs=[];
+        for(const dir of this.dirs){
+          const [nr,nc]=this.nextCell(r,c,dir);
+          const t_next=this.layout[nr][nc];
+          const r_next=this.reward(t_next);
+          const v_next=this.isTerminal(nr,nc)?0:this.V[nr][nc];
+          qs.push({dir, q:r_next+this.gamma*v_next});
+        }
+        const maxQ=Math.max(...qs.map(x=>x.q));
+        const argmaxSet=qs.filter(x=>x.q>=maxQ-eps).map(x=>x.dir);
+        const cur=this.policy[r][c];
+        const curIsArgmax=argmaxSet.includes(cur);
+        if(!curIsArgmax)allOptimal=false;
+        // tie-break: keep current if it's optimal; else random pick from argmax set
+        const pick=curIsArgmax?cur:argmaxSet[Math.floor(Math.random()*argmaxSet.length)];
+        if(pick!==cur)flipped.add(r+','+c);
+        newPol[r][c]=pick;
+      }
+    }
+    this.policy=newPol;
+    return {flipped, allOptimal};
+  }
+  sleep(ms){return new Promise(res=>setTimeout(res,ms))}
+  // single eval sweep (one Bellman expectation update over all states)
+  evalStep(){
+    if(this.stable||this.busy)return;
+    const r=this.oneEvalSweep();
+    this.lastEvalChanged=r.changed;
+    this.lastFlipped=new Set();
+    this.lastDelta=r.delta;
+    this.evalSweepsTotal++;
+    if(r.delta<this.theta)this.evalConverged=true;
+    this.lastPhase='eval';
+    this.render();
+  }
+  // single improve step: greedy policy improvement, one pass over all states.
+  // π* certified iff (current policy was already greedy-optimal everywhere)
+  // AND (V is genuinely V_π — i.e., eval has converged under current policy).
+  improveStep(){
+    if(this.stable||this.busy)return;
+    const result=this.improvePolicy();
+    this.lastFlipped=result.flipped;
+    this.lastEvalChanged=new Set();
+    this.changedCount=result.flipped.size;
+    this.lastAllOptimal=result.allOptimal;
+    this.round++;
+    if(result.allOptimal && this.evalConverged) this.stable=true;
+    if(result.flipped.size>0) this.evalConverged=false;  // V is no longer V_π under new policy
+    this.lastPhase='improve';
+    this.render();
+  }
+  // auto-iterate: full eval to convergence, then improve, repeat — visible animation
+  async runMany(){
+    if(this.busy||this.stable)return;
+    this.busy=true;
+    let outerRounds=0;
+    while(!this.stable && outerRounds<25){
+      // animated inner eval to convergence
+      let innerSweeps=0;
+      let delta=Infinity;
+      while(delta>this.theta && innerSweeps<300){
+        const r=this.oneEvalSweep();
+        delta=r.delta;
+        this.lastEvalChanged=r.changed;
+        this.lastFlipped=new Set();
+        this.lastDelta=delta;
+        innerSweeps++;
+        this.evalSweepsTotal++;
+        this.lastPhase='eval';
+        this.render();
+        await this.sleep(this.evalDelay);
+      }
+      this.evalConverged=true;
+      // settle pause before improve
+      this.lastEvalChanged=new Set();
+      this.lastPhase='eval-done';
+      this.render();
+      await this.sleep(this.improveDelay);
+      // improve
+      const result=this.improvePolicy();
+      this.lastFlipped=result.flipped;
+      this.changedCount=result.flipped.size;
+      this.lastAllOptimal=result.allOptimal;
+      this.round++;
+      if(result.allOptimal) this.stable=true;
+      if(result.flipped.size>0) this.evalConverged=false;
+      this.lastPhase='improve';
+      this.render();
+      outerRounds++;
+      if(this.stable)break;
+      await this.sleep(this.improveDelay);
+    }
+    this.busy=false;
+  }
+  render(){
+    this.cells.forEach((cell,i)=>{
+      const r=Math.floor(i/this.size),c=i%this.size;
+      const t=this.layout[r][c];
+      cell.className='pl-cell';
+      cell.innerHTML='';
+      if(t==='s'){cell.classList.add('start');cell.innerHTML='<span style="font-size:1.2em">🤖</span>'}
+      else if(t==='g'){cell.classList.add('goal');cell.innerHTML='<span style="font-size:1.2em">💎</span>';return}
+      else if(t==='t'){cell.classList.add('trap');cell.innerHTML='<span style="font-size:1.2em">🔥</span>';return}
+      else if(t==='#'){cell.classList.add('wall');return}
+      const dir=this.policy[r][c];
+      if(dir!=='-'){
+        const a=document.createElement('span');
+        a.className='pl-arrow';
+        a.textContent=dir;
+        cell.appendChild(a);
+      }
+      const v=this.V[r][c];
+      const val=document.createElement('span');
+      val.className='pl-val '+(v>0.02?'pos':v<-0.02?'neg':'');
+      val.textContent=(v>=0?'+':'')+v.toFixed(2);
+      cell.appendChild(val);
+      if(this.lastEvalChanged && this.lastEvalChanged.has(r+','+c))cell.classList.add('eval-pulse');
+      if(this.lastFlipped.has(r+','+c))cell.classList.add('flipped');
+    });
+    document.getElementById('pl-round').textContent=this.round;
+    document.getElementById('pl-evalsweeps').textContent=this.evalSweepsTotal;
+    document.getElementById('pl-changed').textContent=this.changedCount===null?'—':this.changedCount;
+    const status=document.getElementById('pl-status');
+    if(this.stable)status.textContent='✓ π* found';
+    else if(this.lastPhase==='eval')status.textContent=this.evalConverged?'V_π converged':'Eval…';
+    else if(this.lastPhase==='eval-done')status.textContent='Improving…';
+    else if(this.lastPhase==='improve')status.textContent=this.changedCount===0?(this.evalConverged?'Stable':'No flip · V not V_π'):'Improved';
+    else status.textContent=this.evalSweepsTotal===0&&this.round===0?'Init':'Ready';
+    const exp=document.getElementById('pl-explain');
+    if(this.evalSweepsTotal===0&&this.round===0){
+      exp.innerHTML='Random arrows, V = 0 everywhere. Click <b>Eval sweep</b> to update V under the current π, or <b>Improve</b> to flip arrows greedily.';
+    } else if(this.stable){
+      exp.innerHTML=`✅ <b>Optimal policy found</b> after ${this.round} improve${this.round!==1?'s':''} and ${this.evalSweepsTotal} eval sweep${this.evalSweepsTotal!==1?'s':''}. The last Improve flipped 0 arrows — this is π*.`;
+    } else if(this.lastPhase==='eval'){
+      const conv=this.lastDelta!==null&&this.lastDelta<this.theta;
+      exp.innerHTML=`Eval sweep #${this.evalSweepsTotal}: blue pulses where \\(V\\) changed. Δ = ${this.lastDelta!==null?this.lastDelta.toFixed(3):'—'}.${conv?' <b>V_π converged</b> — try Improve.':' Keep clicking to refine V toward V_π, then <b>Improve</b>.'}`;
+    } else if(this.lastPhase==='eval-done'){
+      exp.innerHTML=`Eval converged. Now applying greedy improvement…`;
+    } else if(this.lastPhase==='improve'){
+      if(this.changedCount===0){
+        if(!this.evalConverged){
+          exp.innerHTML=`Improve flipped <b>0 arrows</b>, but V hasn't converged yet under this π — so we can't certify π*. <b>Click Eval sweep until Δ ≈ 0</b>, then Improve again.`;
+        } else if(this.lastAllOptimal){
+          exp.innerHTML=`Improve flipped <b>0 arrows</b> and V was already V_π → π is optimal at every state. <b>π* found.</b>`;
+        } else {
+          // shouldn't happen with the random tie-break, but fall through safely
+          exp.innerHTML=`Improve flipped 0 arrows, but some states are not certified optimal. Try another Eval/Improve cycle.`;
+        }
+      } else {
+        exp.innerHTML=`Improve flipped <b>${this.changedCount} arrow${this.changedCount!==1?'s':''}</b> (yellow). V is no longer V_π under the new policy — run <b>Eval sweep</b> again.`;
+      }
+    }
+    if(window.MathJax && window.MathJax.typesetPromise){
+      window.MathJax.typesetPromise([exp]);
+    }
+  }
+}
+
+/* ============================================================
+   LIVE VALUE ITERATION — slide 15
+   - 4×4 gridworld, no fixed policy
+   - Each sweep takes max over 4 actions; arg max becomes the displayed arrow
+   ============================================================ */
+class ValueIteration{
+  constructor(){
+    this.size=4;
+    this.layout=[
+      ['s','.','.','.'],
+      ['.','#','t','.'],
+      ['.','.','.','#'],
+      ['.','.','.','g'],
+    ];
+    this.gamma=0.9;
+    this.theta=0.001;
+    this.actions=['↑','↓','←','→'];
+    this.gridEl=document.getElementById('vi-grid');
+    if(!this.gridEl)return;
+    this.cells=[];
+    this.buildGrid();
+    this.reset();
+    this.bindEvents();
+  }
+  buildGrid(){
+    for(let i=0;i<this.size*this.size;i++){
+      const div=document.createElement('div');
+      div.className='pe-cell';
+      this.gridEl.appendChild(div);
+    }
+    this.cells=[...this.gridEl.querySelectorAll('.pe-cell')];
+  }
+  bindEvents(){
+    document.getElementById('vi-step').addEventListener('click',()=>this.step());
+    document.getElementById('vi-run').addEventListener('click',()=>this.runMany());
+    document.getElementById('vi-reset').addEventListener('click',()=>this.reset());
+  }
+  reset(){
+    this.V=Array.from({length:this.size},()=>Array(this.size).fill(0));
+    this.bestA=Array.from({length:this.size},()=>Array(this.size).fill(null));
+    this.sweep=0;
+    this.delta=null;
+    this.converged=false;
+    this.lastChanged=new Set();
+    this.render();
+  }
+  isTerminal(r,c){const t=this.layout[r][c];return t==='g'||t==='t'}
+  reward(t){if(t==='g')return 1.0;if(t==='t')return -1.0;return -0.04}
+  nextCell(r,c,dir){
+    let nr=r,nc=c;
+    if(dir==='↑')nr--;else if(dir==='↓')nr++;else if(dir==='←')nc--;else if(dir==='→')nc++;
+    if(nr<0||nr>=this.size||nc<0||nc>=this.size)return [r,c];
+    if(this.layout[nr][nc]==='#')return [r,c];
+    return [nr,nc];
+  }
+  step(){
+    if(this.converged)return;
+    const N=this.size;
+    const Vnew=this.V.map(row=>row.slice());
+    let delta=0;
+    const changed=new Set();
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        if(this.layout[r][c]==='#'){Vnew[r][c]=0;this.bestA[r][c]=null;continue}
+        if(this.isTerminal(r,c)){Vnew[r][c]=0;this.bestA[r][c]=null;continue}
+        let best=-Infinity,bestDir=null;
+        for(const dir of this.actions){
+          const [nr,nc]=this.nextCell(r,c,dir);
+          const t_next=this.layout[nr][nc];
+          const r_next=this.reward(t_next);
+          const v_next=this.isTerminal(nr,nc)?0:this.V[nr][nc];
+          const q=r_next+this.gamma*v_next;
+          if(q>best){best=q;bestDir=dir}
+        }
+        Vnew[r][c]=best;
+        this.bestA[r][c]=bestDir;
+        const diff=Math.abs(Vnew[r][c]-this.V[r][c]);
+        if(diff>0.001)changed.add(r+','+c);
+        if(diff>delta)delta=diff;
+      }
+    }
+    this.V=Vnew;
+    this.sweep++;
+    this.delta=delta;
+    this.lastChanged=changed;
+    if(delta<this.theta)this.converged=true;
+    this.render();
+  }
+  runMany(){
+    const interval=setInterval(()=>{
+      if(this.converged||this.sweep>=80){clearInterval(interval);return}
+      this.step();
+    },350);
+  }
+  render(){
+    this.cells.forEach((cell,i)=>{
+      const r=Math.floor(i/this.size),c=i%this.size;
+      const t=this.layout[r][c];
+      cell.className='pe-cell';
+      cell.innerHTML='';
+      if(t==='s'){cell.classList.add('start');cell.innerHTML='<span style="font-size:1.4em">🤖</span>'}
+      else if(t==='g'){cell.classList.add('goal');cell.innerHTML='<span style="font-size:1.4em">💎</span>';return}
+      else if(t==='t'){cell.classList.add('trap');cell.innerHTML='<span style="font-size:1.4em">🔥</span>';return}
+      else if(t==='#'){cell.classList.add('wall');return}
+      const dir=this.bestA[r][c];
+      if(dir){
+        const a=document.createElement('span');
+        a.className='pe-arrow';
+        a.textContent=dir;
+        cell.appendChild(a);
+      }
+      const v=this.V[r][c];
+      const val=document.createElement('span');
+      val.className='pe-val '+(v>0.02?'pos':v<-0.02?'neg':'');
+      val.textContent=(v>=0?'+':'')+v.toFixed(2);
+      cell.appendChild(val);
+      if(this.lastChanged.has(r+','+c))cell.classList.add('flash');
+    });
+    document.getElementById('vi-sweep').textContent=this.sweep;
+    document.getElementById('vi-delta').textContent=this.delta===null?'—':this.delta.toFixed(3);
+    document.getElementById('vi-status').textContent=this.converged?'✓ Done':(this.sweep===0?'Init':'Running');
+    const exp=document.getElementById('vi-explain');
+    if(this.sweep===0)exp.innerHTML='All values start at 0 — no arrows yet. After each sweep, every cell takes the <b>best</b> of its 4 actions and the arrow becomes \\(\\arg\\max_a\\) of the right-hand side.';
+    else if(this.converged)exp.innerHTML='✅ <b>Converged</b> after ' +this.sweep+ ' sweeps. Values are \\(V^*\\); arrows are the optimal policy \\(\\pi^*\\).';
+    else exp.innerHTML=`Sweep ${this.sweep}: largest change Δ = ${this.delta.toFixed(3)}. Values and arrows still updating.`;
+    if(window.MathJax && window.MathJax.typesetPromise){
+      window.MathJax.typesetPromise([exp]);
+    }
+  }
+}
+
+// ---- Bellman slide: animated warrior-tree roll-up ----
+class BellmanTree{
+  constructor(){
+    this.cap=document.getElementById('bt-cap');
+    this.next=document.getElementById('bt-next');
+    this.reset=document.getElementById('bt-reset');
+    if(!this.cap) return;
+    this.nodes=['bt-root','bt-l0','bt-l1','bt-leaf0','bt-leaf1','bt-leaf2','bt-leaf3'].map(id=>document.getElementById(id));
+    this.steps=[
+      ()=>{ // pop the whole tree
+        this.nodes.forEach((n,i)=>setTimeout(()=>n.classList.add('pop'),i*90));
+        this.say('The warrior tree.','A small decision tree. Every node pays a one-step cost; we want each node\'s <b>value</b>.');
+      },
+      ()=>{ // leaves are terminal
+        ['bt-leaf0','bt-leaf1','bt-leaf2','bt-leaf3'].forEach(id=>document.getElementById(id).classList.add('leaf'));
+        this.say('The leaves are terminal.','There is <b>no future</b> after a leaf — it is the end. So a leaf\'s value is just the cost paid right there.');
+      },
+      ()=>{ // roll up one layer
+        ['bt-e-l0a','bt-e-l0b','bt-e-l1a','bt-e-l1b'].forEach(id=>document.getElementById(id).classList.add('flow'));
+        ['bt-l0','bt-l1'].forEach(id=>document.getElementById(id).classList.add('rolled'));
+        this.say('Roll up one layer.','Each parent = <b>its own cost + γ·(value of the leaf it leads to)</b>. The leaves\' values flow upward.');
+      },
+      ()=>{ // up to the root
+        ['bt-e-root0','bt-e-root1'].forEach(id=>document.getElementById(id).classList.add('flow'));
+        document.getElementById('bt-root').classList.add('rolled');
+        this.say('Up to the root.','Same rule again: \\(V(s)=c(s)+\\gamma\\,V(\\text{next})\\). The whole tree is now valued.');
+      },
+      ()=>{ // it's a property
+        this.say('A property, not an algorithm.','Bellman doesn\'t hand you a recipe — it states the <b>condition every correct V must satisfy</b>. On a tree we can satisfy it by rolling up from the terminal leaves.',true);
+      }
+    ];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.advance());
+    this.reset.addEventListener('click',()=>this.doReset());
+  }
+  say(lead,body,done){
+    this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;
+    if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([this.cap]);
+  }
+  advance(){
+    if(this.i>=this.steps.length) return;
+    this.steps[this.i]();
+    this.i++;
+    if(this.i>=this.steps.length){ this.next.disabled=true; }
+  }
+  doReset(){
+    this.i=0; this.next.disabled=false;
+    this.nodes.forEach(n=>n.classList.remove('pop','leaf','rolled'));
+    document.querySelectorAll('#bt-stage .bt-edge').forEach(e=>e.classList.remove('flow'));
+    this.cap.innerHTML='<span class="lead">Last lecture\'s warrior tree.</span> Each node has a one-step cost; its <b>value</b> is that cost plus the discounted value of where it leads. Press <b>Roll up</b> to watch the Bellman equation fill the tree.';
+  }
+}
+
+// ---- Discount-dial γ ----
+class GammaDial{
+  constructor(){
+    this.slider=document.getElementById('gamma-slider');
+    if(!this.slider) return;
+    this.val=document.getElementById('gamma-val');
+    this.hz=document.getElementById('gamma-horizon');
+    this.presets=document.getElementById('gamma-presets');
+    this.bars=[...Array(8).keys()].map(t=>({bar:document.getElementById('gbar-'+t),w:document.getElementById('gw-'+t)}));
+    this.slider.addEventListener('input',()=>this.render());
+    this.presets.addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(!b) return;
+      this.slider.value=b.dataset.g; this.render();
+    });
+    this.render();
+  }
+  render(){
+    const g=(+this.slider.value)/100;
+    this.val.textContent=g.toFixed(2);
+    [...this.presets.children].forEach(b=>b.classList.toggle('on',+b.dataset.g===+this.slider.value));
+    this.bars.forEach((o,t)=>{
+      const w=Math.pow(g,t);
+      o.bar.style.height=(5+w*84)+'%';
+      o.w.textContent=w>=0.005||t===0?w.toFixed(2):'≈0';
+    });
+    const horizon=g<1?1/(1-g):Infinity;
+    let msg;
+    if(g===0) msg='Only the <b>cost right now</b> counts — the agent is fully myopic.';
+    else if(g<0.6) msg='Effective horizon ≈ <b>'+horizon.toFixed(1)+' steps</b>. The agent is near-sighted; far costs barely register.';
+    else if(g<0.95) msg='Effective horizon ≈ <b>'+horizon.toFixed(1)+' steps</b>. A healthy balance — the usual choice.';
+    else msg='Effective horizon ≈ <b>'+horizon.toFixed(0)+' steps</b>. Very far-sighted; the agent plans a long way ahead (and the math gets slower to converge).';
+    this.hz.innerHTML='Roughly how far it looks: '+msg;
+  }
+}
+
+// ---- Cell references: self-loops & mutual cycles ----
+class CellRefs{
+  constructor(){
+    this.cap=document.getElementById('cref-cap');
+    if(!this.cap) return;
+    this.next=document.getElementById('cref-next');
+    this.reset=document.getElementById('cref-reset');
+    this.cells=['cr-A','cr-B','cr-C','cr-D','cr-E','cr-F','cr-G','cr-H','cr-I'].map(id=>document.getElementById(id));
+    this.G=(id)=>document.getElementById(id);
+    this.policyArrows=['cr-mutual','cr-selfC','cr-selfD','cr-tF','cr-tG','cr-tH'];
+    this.steps=[
+      ()=>{
+        this.G('cr-A').classList.add('mutual');
+        this.G('cr-B').classList.add('mutual');
+        this.say('2-cycle: A ⇄ B.','π sends A→B and B→A, so \\(V(A)\\) needs \\(V(B)\\) and \\(V(B)\\) needs \\(V(A)\\). Neither can be computed first.');
+      },
+      ()=>{
+        this.G('cr-C').classList.add('selfl');
+        this.G('cr-D').classList.add('selfl');
+        this.say('1-cycles: C and D.','Here π drives C into the border and D into the wall — both <b>stay put</b>. That is a self-loop: \\(V(s)=c+\\gamma V(s)\\), a cell on its own.');
+      },
+      ()=>{
+        this.G('cr-F').classList.add('trans');
+        this.G('cr-G').classList.add('trans');
+        this.G('cr-H').classList.add('trans');
+        this.say('Transient: F, G, H.','No cycle on these — follow the arrows (G→H→💎, F→💎) and you reach the terminal and stop. Every cell is now classified by its role in \\(G_\\pi\\).');
+      },
+      ()=>{
+        this.G('cr-selfD').classList.remove('show');
+        this.G('cr-altD').classList.add('show');
+        this.G('cr-D').classList.remove('selfl');
+        this.G('cr-D').classList.add('trans');
+        this.say('It depends on π.','Re-route just one move — D ↓ instead of into the wall — and \\(G_\\pi\\) changes: D→G→H→💎, the self-loop is gone, D is now transient. Self-loop / cycle / transient are properties of \\(G_\\pi\\), not of the grid.',true);
+      },
+      ()=>{
+        this.say('So we can\'t roll up.','Our method must evaluate <b>any</b> π we hand it — and an arbitrary π generally has cycles (A⇄B here). A cycle means an infinite walk, but with \\(\\gamma<1\\) the value is still finite: \\(V=c+\\gamma c+\\gamma^2 c+\\dots=\\tfrac{c}{1-\\gamma}\\). The catch is only that with \\(V\\) on both sides and no leaf to anchor on, there is no one-pass order — we <b>guess V and iterate</b> until Bellman holds. That is the rest of this lecture.',true);
+      }
+    ];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.advance());
+    this.reset.addEventListener('click',()=>this.doReset());
+    this.say('Nine cells, one example policy.','The arrows are the moves of <b>one arbitrary π</b> — chosen just to show every case — the edges of \\(G_\\pi\\). \\(I=\\)💎 is terminal: \\(V=0\\). Press <b>Next</b> to classify every cell by its role in the graph.');
+    // Play the entrance the first time the slide scrolls into view (avoids a blank white box on load).
+    const slide=this.cap.closest('section.slide');
+    if(slide && 'IntersectionObserver' in window){
+      const io=new IntersectionObserver((es)=>{
+        es.forEach(e=>{ if(e.isIntersecting){ this.reveal(); io.disconnect(); } });
+      },{threshold:0.4});
+      io.observe(slide);
+    } else { this.reveal(); }
+  }
+  reveal(){
+    this.cells.forEach((c,i)=>setTimeout(()=>c.classList.add('pop'),i*70));
+    setTimeout(()=>this.policyArrows.forEach(id=>this.G(id).classList.add('show')),700);
+    this.G('cr-I').classList.add('goal');
+  }
+  say(lead,body){
+    this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;
+    if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([this.cap]);
+  }
+  advance(){
+    if(this.i>=this.steps.length) return;
+    this.steps[this.i](); this.i++;
+    if(this.i>=this.steps.length) this.next.disabled=true;
+  }
+  doReset(){
+    this.i=0; this.next.disabled=false;
+    this.cells.forEach(c=>c.classList.remove('mutual','selfl','trans'));
+    this.G('cr-altD').classList.remove('show');
+    this.reveal();
+    this.say('Nine cells, one example policy.','The arrows are the moves of <b>one arbitrary π</b> — chosen just to show every case — the edges of \\(G_\\pi\\). \\(I=\\)💎 is terminal: \\(V=0\\). Press <b>Next</b> to classify every cell by its role in the graph.');
+  }
+}
+
+/* ===== playable Gridworld intro ===== */
+class Gridworld{
+  constructor(){
+    this.board=document.getElementById('gw-board');
+    if(!this.board)return;
+    this.cells=[...this.board.querySelectorAll('.cell')];
+    this.section=this.board.closest('.slide');
+    this.stepsEl=document.getElementById('gw-steps');
+    this.retEl=document.getElementById('gw-return');
+    this.msgEl=document.getElementById('gw-msg');
+    this.gamma=0.9;
+    this.startIdx=0;
+    this.walls=new Set([5]);
+    this.trap=6;
+    this.goal=15;
+    this.dirs={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+    this.bot=document.createElement('span');
+    this.bot.className='gw-bot';
+    this.bot.textContent='🤖';
+    document.querySelectorAll('.gw-dir').forEach(b=>
+      b.addEventListener('click',()=>this.move(b.dataset.d)));
+    document.getElementById('gw-reset').addEventListener('click',()=>this.reset());
+    document.addEventListener('keydown',e=>{
+      if(!this.onScreen())return;
+      const tag=document.activeElement&&document.activeElement.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA')return;
+      const k={w:'up',a:'left',s:'down',d:'right'}[e.key.toLowerCase()];
+      if(k){e.preventDefault();this.move(k);}
+    });
+    this.reset();
+  }
+  onScreen(){
+    const r=this.section.getBoundingClientRect();
+    const mid=window.innerHeight/2;
+    return r.top<mid&&r.bottom>mid;
+  }
+  reset(){
+    this.pos=this.startIdx;
+    this.steps=0;
+    this.ret=0;
+    this.done=false;
+    this.cells[this.pos].appendChild(this.bot);
+    this.bot.classList.remove('bump');
+    this.msgEl.className='gw-msg';
+    this.msgEl.textContent='Steer 🤖 to 💎. Bump a wall or border and you stay put.';
+    this.render();
+  }
+  render(){
+    this.stepsEl.textContent=this.steps;
+    this.retEl.textContent=this.ret.toFixed(2);
+  }
+  move(dir){
+    if(this.done)return;
+    const [dr,dc]=this.dirs[dir];
+    const r=Math.floor(this.pos/4), c=this.pos%4;
+    const nr=r+dr, nc=c+dc;
+    const inside=nr>=0&&nr<4&&nc>=0&&nc<4;
+    const target=inside?nr*4+nc:this.pos;
+    const blocked=!inside||this.walls.has(target);
+    const next=blocked?this.pos:target;
+
+    // reward: terminal landings override the step cost
+    let reward=-0.04;
+    if(next===this.goal)reward=1;
+    else if(next===this.trap)reward=-1;
+
+    this.ret+=Math.pow(this.gamma,this.steps)*reward;
+    this.steps++;
+    this.pos=next;
+    this.cells[next].appendChild(this.bot);
+
+    if(blocked){
+      this.bot.style.setProperty('--bx',dc*7+'px');
+      this.bot.style.setProperty('--by',dr*7+'px');
+      this.bot.classList.remove('bump');void this.bot.offsetWidth;
+      this.bot.classList.add('bump');
+    }else{
+      this.bot.classList.remove('bump');
+    }
+
+    if(next===this.goal){
+      this.done=true;
+      this.msgEl.className='gw-msg win';
+      this.msgEl.textContent='Reached 💎 in '+this.steps+' steps · return '+this.ret.toFixed(2)+'. Press Reset to play again.';
+    }else if(next===this.trap){
+      this.done=true;
+      this.msgEl.className='gw-msg lose';
+      this.msgEl.textContent='Fell into 🔥 · return '+this.ret.toFixed(2)+'. Press Reset to try again.';
+    }else if(blocked){
+      this.msgEl.className='gw-msg';
+      this.msgEl.textContent='Bumped a '+(inside?'wall':'border')+' — stayed put, still −0.04.';
+    }else{
+      this.msgEl.className='gw-msg';
+      this.msgEl.textContent='Each step costs −0.04 — fewer steps means a higher return.';
+    }
+    this.render();
+  }
+}
+
+/* ===== reusable click-to-reveal V/Q overlay (warrior tree) ===== */
+/* answer key for the greedy / optimal tree (γ=1, deterministic) — shared by Optimality (slide 11) & the quiz (slide 13) */
+const OPT_V=[
+  {x:424,y:22, a:'start',s:10, v:'+17'},
+  {x:183,y:78, a:'end',  s:9.5,v:'+26'},
+  {x:617,y:78, a:'start',s:9.5,v:'+18'},
+  {x:85, y:132,a:'end',  s:9,  v:'+10'},
+  {x:315,y:132,a:'start',s:9,  v:'+20'},
+  {x:485,y:132,a:'end',  s:9,  v:'+14'},
+  {x:715,y:132,a:'start',s:9,  v:'+14'},
+  {x:37, y:186,a:'end',  s:8,  v:'−5'},
+  {x:163,y:186,a:'start',s:8,  v:'+5'},
+  {x:237,y:186,a:'end',  s:8,  v:'+10'},
+  {x:363,y:186,a:'start',s:8,  v:'+6'},
+  {x:437,y:186,a:'end',  s:8,  v:'+8'},
+  {x:563,y:186,a:'start',s:8,  v:'+5'},
+  {x:637,y:186,a:'end',  s:8,  v:'+7'},
+  {x:763,y:186,a:'start',s:8,  v:'+9'},
+];
+const OPT_Q=[
+  {x:300,y:50, a:'middle',s:9.5,v:'+17'},
+  {x:500,y:50, a:'middle',s:9.5,v:'+12'},
+  {x:150,y:105,a:'middle',s:8.5,v:'+18'},
+  {x:250,y:105,a:'middle',s:8.5,v:'+26'},
+  {x:550,y:105,a:'middle',s:8.5,v:'+18'},
+  {x:650,y:105,a:'middle',s:8.5,v:'+6'},
+  {x:75, y:159,a:'middle',s:7.5,v:'−14'},
+  {x:125,y:159,a:'middle',s:7.5,v:'+10'},
+  {x:275,y:159,a:'middle',s:7.5,v:'+20'},
+  {x:325,y:159,a:'middle',s:7.5,v:'−1'},
+  {x:475,y:159,a:'middle',s:7.5,v:'+14'},
+  {x:525,y:159,a:'middle',s:7.5,v:'−3'},
+  {x:675,y:159,a:'middle',s:7.5,v:'+14'},
+  {x:725,y:159,a:'middle',s:7.5,v:'+3'},
+];
+/* answer key for the fixed random policy π (slide 12 — Bellman evaluation, V_π / Q_π) */
+const EVAL_V=[
+  {x:424,y:22, a:'start',s:10, v:'−4.1'},
+  {x:183,y:78, a:'end',  s:9,  v:'+6.1'},
+  {x:617,y:78, a:'start',s:9,  v:'+0.1'},
+  {x:85, y:132,a:'end',  s:8.5,v:'−7.8'},
+  {x:315,y:132,a:'start',s:8.5,v:'+9.0'},
+  {x:485,y:132,a:'end',  s:8.5,v:'0.0'},
+  {x:715,y:132,a:'start',s:8.5,v:'+2.2'},
+  {x:37, y:186,a:'end',  s:7.5,v:'−6.2'},
+  {x:163,y:186,a:'start',s:7.5,v:'−1.6'},
+  {x:237,y:186,a:'end',  s:7.5,v:'+9.4'},
+  {x:363,y:186,a:'start',s:7.5,v:'+0.4'},
+  {x:437,y:186,a:'end',  s:7.5,v:'−1.0'},
+  {x:563,y:186,a:'start',s:7.5,v:'+0.6'},
+  {x:637,y:186,a:'end',  s:7.5,v:'+1.0'},
+  {x:763,y:186,a:'start',s:7.5,v:'−0.6'},
+];
+const EVAL_Q=[
+  {x:300,y:50, a:'middle',s:9.5,v:'−2.9'},
+  {x:500,y:50, a:'middle',s:9.5,v:'−5.9'},
+  {x:150,y:105,a:'middle',s:8,  v:'+0.2'},
+  {x:250,y:105,a:'middle',s:8,  v:'+15.0'},
+  {x:550,y:105,a:'middle',s:8,  v:'+4.0'},
+  {x:650,y:105,a:'middle',s:8,  v:'−5.8'},
+  {x:75, y:159,a:'middle',s:7,  v:'−15.2'},
+  {x:125,y:159,a:'middle',s:7,  v:'+3.4'},
+  {x:275,y:159,a:'middle',s:7,  v:'+19.4'},
+  {x:325,y:159,a:'middle',s:7,  v:'−6.6'},
+  {x:475,y:159,a:'middle',s:7,  v:'+5.0'},
+  {x:525,y:159,a:'middle',s:7,  v:'−7.4'},
+  {x:675,y:159,a:'middle',s:7,  v:'+8.0'},
+  {x:725,y:159,a:'middle',s:7,  v:'−6.6'},
+];
+class TreeQuiz{
+  constructor(opts){
+    this.host=document.getElementById(opts.host);
+    if(!this.host)return;
+    this.NS='http://www.w3.org/2000/svg';
+    this.data=[...opts.V.map(d=>({...d,t:'V'})),...opts.Q.map(d=>({...d,t:'Q'}))];
+    this.nodes=[];
+    this.render();
+    const rv=document.getElementById(opts.reveal);
+    const rs=document.getElementById(opts.reset);
+    if(rv)rv.addEventListener('click',()=>this.setAll(true));
+    if(rs)rs.addEventListener('click',()=>this.setAll(false));
+  }
+  render(){
+    this.data.forEach(d=>{
+      const w=d.s*0.62*d.v.length + d.s*1.1;
+      const h=d.s*1.7;
+      let rx;
+      if(d.a==='start')      rx=d.x - d.s*0.45;
+      else if(d.a==='end')   rx=d.x - w + d.s*0.45;
+      else                   rx=d.x - w/2;
+      const g=document.createElementNS(this.NS,'g');
+      g.setAttribute('class','gq-cell gq-'+d.t);
+      const rect=document.createElementNS(this.NS,'rect');
+      rect.setAttribute('x',rx); rect.setAttribute('y',d.y-h/2);
+      rect.setAttribute('width',w); rect.setAttribute('height',h); rect.setAttribute('rx',3);
+      const t=document.createElementNS(this.NS,'text');
+      t.setAttribute('x',d.x); t.setAttribute('y',d.y);
+      t.setAttribute('text-anchor',d.a);
+      t.setAttribute('dominant-baseline','central');
+      t.setAttribute('font-size',d.s);
+      t.setAttribute('font-family','JetBrains Mono, monospace');
+      t.setAttribute('font-weight','700');
+      t.textContent='?';
+      g.appendChild(rect); g.appendChild(t);
+      const node={g,t,d,shown:false};
+      g.addEventListener('click',()=>this.toggle(node));
+      this.host.appendChild(g);
+      this.nodes.push(node);
+    });
+  }
+  toggle(n){ n.shown=!n.shown; n.g.classList.toggle('shown',n.shown); n.t.textContent=n.shown?n.d.v:'?'; }
+  setAll(on){ this.nodes.forEach(n=>{ n.shown=on; n.g.classList.toggle('shown',on); n.t.textContent=on?n.d.v:'?'; }); }
+}
+
+
+/* ============================================================
+   DOORS GAME — slide 10
+   Peek-and-pick game over a 4-step binary tree.
+   Reward values are identical to the warrior tree on slide 11.
+   ============================================================ */
+class DoorsGame{
+  constructor(){
+    this.root=document.getElementById('doors-slide');
+    if(!this.root)return;
+    this.REWARDS={
+      'L':-9,'R':-6,
+      'LL':8,'LR':6,'RL':4,'RR':-8,
+      'LLL':-9,'LLR':5,'LRL':10,'LRR':-7,'RLL':6,'RLR':-8,'RRL':7,'RRR':-6,
+      'LLLL':-7,'LLLR':-5,'LLRL':-6,'LLRR':5,
+      'LRLL':9,'LRLR':10,'LRRL':6,'LRRR':-8,
+      'RLLL':-7,'RLLR':8,'RLRL':5,'RLRR':-6,
+      'RRLL':7,'RRLR':-8,'RRRL':-7,'RRRR':9
+    };
+    this.OPTIMAL=17; // L → LR → LRL → LRLR
+    this.elDoors=this.root.querySelector('#dg-doors');
+    this.elFinal=this.root.querySelector('#dg-final');
+    this.elFinalNum=this.root.querySelector('#dg-final-num');
+    this.elFinalMsg=this.root.querySelector('#dg-final-msg');
+    this.elStep=this.root.querySelector('#dg-step');
+    this.elPath=this.root.querySelector('#dg-path');
+    this.elTotal=this.root.querySelector('#dg-total');
+    this.elPeepL=this.root.querySelector('#dg-peep-L');
+    this.elPeepR=this.root.querySelector('#dg-peep-R');
+    this.btnReset=this.root.querySelector('#dg-reset');
+    this.elDoors.querySelectorAll('.dg-door').forEach(d=>{
+      d.addEventListener('click',()=>this.pick(d.dataset.side));
+    });
+    this.btnReset.addEventListener('click',()=>this.reset());
+    this.reset();
+  }
+  fmt(n){return (n>=0?'+':'')+n;}
+  reset(){
+    this.path='';this.total=0;this.history=[];
+    this.elFinal.hidden=true;
+    this.elDoors.style.display='';
+    this.update();
+  }
+  pick(side){
+    if(this.path.length>=4)return;
+    const next=this.path+side;
+    const r=this.REWARDS[next];
+    this.path=next;this.total+=r;this.history.push({side,r});
+    if(this.path.length>=4){this.update();this.finish();return;}
+    this.update();
+    this.elDoors.classList.remove('entering');
+    void this.elDoors.offsetWidth;
+    this.elDoors.classList.add('entering');
+  }
+  update(){
+    const step=Math.min(this.path.length+1,4);
+    this.elStep.textContent=step+' / 4';
+    this.elPath.textContent=this.history.length
+      ? this.history.map(h=>h.side+' ('+this.fmt(h.r)+')').join(' → ')
+      : '—';
+    this.elTotal.textContent=this.fmt(this.total);
+    this.elTotal.className='val '+(this.history.length===0?'':(this.total>=0?'pos':'neg'));
+    if(this.path.length>=4)return;
+    const rL=this.REWARDS[this.path+'L'];
+    const rR=this.REWARDS[this.path+'R'];
+    this.elPeepL.textContent=this.fmt(rL);
+    this.elPeepR.textContent=this.fmt(rR);
+    this.elPeepL.className='dg-peep-val '+(rL>=0?'pos':'neg');
+    this.elPeepR.className='dg-peep-val '+(rR>=0?'pos':'neg');
+  }
+  finish(){
+    this.elDoors.style.display='none';
+    this.elFinal.hidden=false;
+    this.elFinalNum.textContent=this.fmt(this.total);
+    this.elFinalNum.className='dg-final-num '+(this.total>=0?'pos':'neg');
+    let msg;
+    if(this.total>=this.OPTIMAL) msg='🏆 Optimal! You found the best route ('+this.fmt(this.OPTIMAL)+').';
+    else if(this.total>=10) msg='Strong run. Best possible is '+this.fmt(this.OPTIMAL)+' — could you spot it?';
+    else if(this.total>=0) msg='Survived. Best possible is '+this.fmt(this.OPTIMAL)+'. The biggest peep number isn’t always the best move.';
+    else msg='Ouch. Best possible is '+this.fmt(this.OPTIMAL)+' — greedy peeking gets you trapped.';
+    this.elFinalMsg.textContent=msg;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  new Gridworld();
+  new PolicyIter();
+  new ValueIteration();
+  new BellmanTree();
+  new GammaDial();
+  new CellRefs();
+  new TreeQuiz({host:'oq-cells',reveal:'oq-reveal',reset:'oq-reset',V:OPT_V, Q:OPT_Q});   // slide 11 — Optimality
+  new TreeQuiz({host:'bq-cells',reveal:'bq-reveal',reset:'bq-reset',V:EVAL_V,Q:EVAL_Q});  // slide 12 — Bellman eval
+  new DoorsGame();
+});
+</script>
+
+</body>
+</html>

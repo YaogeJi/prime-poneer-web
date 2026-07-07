@@ -1,0 +1,2629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 5 — Solving Small MDPs</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+mjx-container[jax="SVG"]{color:var(--ink)}
+.formula mjx-container{font-size:1em!important}
+
+/* ===== MDP / value-function definition slides ===== */
+/* equation block + cartoon underneath */
+.eqn-card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.2rem;margin-top:.5rem}
+.eqn-card .eqn-label{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;color:var(--dim);display:block;margin-bottom:.3rem}
+.eqn-big{text-align:center;font-size:clamp(1rem,1.4vw,1.2rem);margin:.2rem 0}
+.cartoon-cap{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center;margin-top:.35rem}
+
+/* ===== Definitions recap slide (V / Q / V* / Q* + optimality gap) ===== */
+.vdef-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin:.5rem 0}
+.vdef{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.55rem .85rem}
+.vdef.star{background:var(--lilac)}
+.vdef .vd-h{font-family:var(--font-mono);font-weight:700;font-size:clamp(.7rem,.92vw,.8rem);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:.2rem}
+.vdef .vd-eq{font-size:clamp(.82rem,1.08vw,.98rem);text-align:center;margin:.1rem 0}
+.vdef .vd-note{font-size:clamp(.72rem,.92vw,.82rem);color:var(--dim);line-height:1.35;margin-top:.15rem}
+.def-row{display:grid;grid-template-columns:1.25fr 1fr;gap:.7rem;align-items:stretch;margin-top:.2rem}
+.gap-box{background:var(--sun);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.6rem .9rem}
+.gap-box .gb-h{font-family:var(--font-mono);font-weight:700;font-size:clamp(.68rem,.9vw,.78rem);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:.2rem}
+.gap-box .gb-eq{text-align:center;font-size:clamp(.84rem,1.1vw,1rem);margin:.15rem 0}
+.gap-box .gb-note{font-size:clamp(.74rem,.96vw,.86rem);line-height:1.4;margin:0}
+@media (max-width:780px){.vdef-grid,.def-row{grid-template-columns:1fr}}
+
+/* ===== Backward-induction / generalize bridge SVGs ===== */
+.mini-svg{width:100%;height:auto;max-height:30vh}
+.mini-svg .nlabel{font-family:var(--font-mono);font-weight:700;font-size:11px;fill:#1f1d2b}
+.mini-svg .sca{font-family:var(--font-mono);font-size:10px;fill:#6c6a7a}
+
+/* MDP tuple chips */
+.mdp-tuple{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;margin:.6rem 0}
+.mdp-chip{background:var(--paper);border:2px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.5rem .8rem;min-width:118px;text-align:center}
+.mdp-chip .sym{font-size:clamp(1rem,1.35vw,1.2rem);font-weight:700}
+.mdp-chip .nm{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-top:.1rem}
+.mdp-chip.c0{background:var(--lilac)}.mdp-chip.c1{background:var(--mint)}.mdp-chip.c2{background:var(--peach)}
+.mdp-chip.c3{background:var(--sun)}.mdp-chip.c4{background:var(--rose)}
+
+/* value function timeline cartoon */
+.vf-timeline{display:flex;align-items:flex-end;justify-content:center;gap:.2rem;flex-wrap:nowrap;overflow-x:auto;padding:.4rem 0 .2rem}
+.vf-step{display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:74px}
+.vf-arrow{align-self:center;font-size:1.1rem;color:var(--dim);padding-bottom:1.6rem}
+.vf-node{width:42px;height:42px;border-radius:50%;background:var(--lilac);border:2.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:.8rem;box-shadow:2px 2px 0 var(--line)}
+.vf-cost{background:var(--paper);border:2px solid var(--line);border-radius:8px;padding:.18rem .4rem;font-size:clamp(.72rem,.95vw,.85rem);box-shadow:2px 2px 0 var(--line)}
+.vf-bar{width:100%;border-radius:6px 6px 0 0;background:var(--ink);border:2px solid var(--line);border-bottom:none}
+.vf-fade{min-width:60px;color:var(--dim);font-size:1.3rem;align-self:center;padding-bottom:1.6rem}
+.vf-tag{font-family:var(--font-mono);font-size:.62rem;color:var(--dim)}
+
+/* induced-kernel cartoon: pi ∘ P → P_pi */
+.kernel-viz{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin-top:.5rem}
+.kv-panel{background:var(--bg);border:2.5px solid var(--line);border-radius:14px;padding:.8rem;box-shadow:3px 3px 0 var(--line)}
+.kv-panel h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.5rem;text-align:center}
+.kv-collapse{font-size:1.8rem;color:var(--dim);text-align:center}
+.kv-tree{display:flex;flex-direction:column;gap:.4rem}
+.kv-row{display:flex;align-items:center;gap:.45rem;font-family:var(--font-mono);font-size:clamp(.72rem,.95vw,.85rem)}
+.kv-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.kv-dot.s{background:var(--lilac)}.kv-dot.a{background:var(--sun)}.kv-dot.sp{background:var(--mint)}
+.kv-w{font-size:.66rem;color:var(--dim)}
+.kv-panel.result{background:var(--mint)}
+.kv-panel.result .big{text-align:center;font-size:clamp(.95rem,1.3vw,1.15rem);margin:.3rem 0}
+
+/* Bellman decomposition cartoon */
+.bellman-split{display:grid;grid-template-columns:1.1fr auto 1fr auto 1.2fr;gap:.7rem;align-items:center;margin-top:.6rem}
+.bw-box{border:2.5px solid var(--line);border-radius:14px;padding:.8rem;text-align:center;box-shadow:3px 3px 0 var(--line)}
+.bw-box .tt{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.bw-box .mm{font-size:clamp(.95rem,1.3vw,1.15rem)}
+.bw-box.val{background:var(--lilac)}.bw-box.now{background:var(--peach)}.bw-box.fut{background:var(--mint)}
+.bw-op{font-size:1.5rem;font-weight:700;color:var(--ink);text-align:center}
+.bw-note{font-size:clamp(.7rem,.9vw,.8rem);color:var(--dim);margin-top:.25rem;line-height:1.3}
+@media (max-width:780px){.kernel-viz{grid-template-columns:1fr}.bellman-split{grid-template-columns:1fr}.kv-collapse,.bw-op{transform:rotate(90deg)}}
+
+/* Bellman backup-tree cartoon (roll value up from the leaves) */
+.backup-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:1.2rem;align-items:center;margin-top:.55rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1.2rem}
+.backup-tree svg{width:100%;height:auto;max-height:32vh}
+.backup-text .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.15rem);margin-bottom:.4rem}
+.backup-text p{font-size:clamp(.84rem,1.08vw,.98rem);line-height:1.5;margin:0}
+.backup-text p + p{margin-top:.45rem}
+.backup-text b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.backup-wrap{grid-template-columns:1fr}}
+
+/* history / Bellman story */
+.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.2vw,1.6rem);margin-top:.5rem}
+.hist-card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.2rem}
+.hist-card h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.35vw,1.2rem);margin-bottom:.35rem}
+.hist-card p{font-size:clamp(.84rem,1.08vw,.98rem);line-height:1.5;margin:0}
+.hist-card p + p{margin-top:.45rem}
+.hist-card b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.hist-quote{background:var(--lilac);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem 1.3rem;position:relative}
+.hist-quote .qmark{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:.6;color:var(--ink);opacity:.35}
+.hist-quote blockquote{font-size:clamp(.92rem,1.25vw,1.1rem);line-height:1.5;margin:.2rem 0 .5rem;font-style:italic}
+.hist-quote cite{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);font-style:normal}
+.hist-portrait{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem}
+.hist-portrait .ph{width:54px;height:54px;border-radius:50%;background:var(--sun);border:2.5px solid var(--line);box-shadow:3px 3px 0 var(--line);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.hist-portrait .who{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);line-height:1.15}
+.hist-portrait .who span{display:block;font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:.15rem}
+@media (max-width:780px){.hist-grid{grid-template-columns:1fr}}
+/* History slide — principle-of-optimality math + tree match */
+.po-eq{background:var(--mint);border:2px solid var(--line);border-radius:10px;padding:.4rem .55rem;margin:.55rem 0 .45rem;text-align:center;font-size:clamp(.9rem,1.15vw,1.02rem)}
+.po-tree{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;font-family:var(--font-mono);font-size:clamp(.74rem,.95vw,.86rem);background:rgba(255,255,255,.6);border:1.5px dashed var(--line);border-radius:8px;padding:.42rem .55rem}
+.po-tree .po-arr{color:var(--dim)}
+.po-tree b{background:none;color:var(--good);padding:0;font-weight:700}
+.po-note{font-size:clamp(.8rem,1.02vw,.92rem);line-height:1.45;margin-top:.45rem}
+/* History slide — why-it-matters cost comparison */
+.matters-cmp{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.55rem 0 .45rem}
+.matters-cmp > div{border:2px solid var(--line);border-radius:10px;padding:.5rem .55rem;text-align:center}
+.matters-cmp .brute{background:var(--rose)}
+.matters-cmp .smart{background:var(--mint)}
+.matters-cmp .ml{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.1em;display:block;margin-bottom:.25rem}
+.matters-cmp .mv{font-size:clamp(1.05rem,1.5vw,1.3rem)}
+.matters-cmp .mt{font-size:clamp(.7rem,.88vw,.8rem);color:var(--dim);display:block;margin-top:.2rem;line-height:1.3}
+
+/* ===== Bellman slide: animated warrior tree ===== */
+.btree-stage{display:grid;grid-template-columns:1.15fr .85fr;gap:1.2rem;align-items:center;margin-top:.55rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1.1rem}
+.btree-svg{width:100%;height:auto;max-height:36vh}
+.btree-svg .bt-node{transform-box:fill-box;transform-origin:center;opacity:0}
+.btree-svg .bt-node.pop{animation:bt-pop .5s cubic-bezier(.2,1.35,.45,1) forwards}
+@keyframes bt-pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+.btree-svg .bt-node .box{transition:fill .4s,stroke-width .3s}
+.btree-svg .bt-node.leaf .box{fill:#ffd9a3;stroke-width:3}
+.btree-svg .bt-node.rolled .box{fill:#bff0d0;stroke-width:3}
+.btree-svg .bt-node.root .box{fill:#d9caff}
+.btree-svg .bt-edge{opacity:.25;transition:opacity .4s,stroke .4s,stroke-width .3s}
+.btree-svg .bt-edge.flow{opacity:1;stroke:#7a4dc2;stroke-width:3}
+.btree-side .bt-cap{min-height:5.4em;font-size:clamp(.86rem,1.12vw,1rem);line-height:1.5}
+.btree-side .bt-cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.btree-side .bt-cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);display:block;margin-bottom:.25rem}
+.btree-controls{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
+.btree-controls button{font-family:var(--font-mono);font-weight:700;font-size:clamp(.78rem,1vw,.9rem);padding:.45rem .9rem;border:2.5px solid var(--line);border-radius:99px;background:var(--bg);box-shadow:3px 3px 0 var(--line);cursor:pointer;transition:transform .1s}
+.btree-controls button:hover{transform:translate(-1px,-1px)}
+.btree-controls button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.btree-controls button.primary{background:var(--lilac)}
+.btree-controls button:disabled{opacity:.4;cursor:default;box-shadow:1px 1px 0 var(--line);transform:none}
+.bt-flag{background:var(--rose);border:2.5px solid var(--line);border-radius:14px;padding:.7rem .95rem;margin-top:.6rem;font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.bt-flag b{background:var(--paper);padding:0 .15em;border-radius:3px}
+.bt-flag .q{font-family:var(--font-display);font-weight:700}
+
+/* ===== Worked value-tree (ported from L3: V/Q on the warrior tree) ===== */
+.vt-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(.5rem,1.2vw,1rem);align-items:center;margin-top:.5rem}
+.vt-tree{background:rgba(255,255,255,0.55);border:2px solid var(--line);border-radius:12px;padding:.6rem .5rem .4rem;box-shadow:3px 3px 0 var(--line);display:flex;align-items:center;justify-content:center}
+.vt-tree svg{width:100%;height:auto;max-height:32vh}
+.vt-math{border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.7rem 1rem .8rem;display:flex;flex-direction:column;gap:.4rem}
+.vt-math.det{background:var(--mint)}
+.vt-math.stoch{background:var(--peach)}
+.vt-math .vt-tag{font-family:var(--font-mono);font-weight:700;font-size:clamp(.66rem,.85vw,.74rem);letter-spacing:.18em;color:var(--ink);text-transform:uppercase}
+.vt-math .vt-formula{font-family:'Cabinet Grotesk',serif;font-style:italic;font-weight:700;font-size:clamp(.92rem,1.2vw,1.08rem);text-align:center;background:rgba(255,255,255,0.7);border:1.5px solid var(--line);border-radius:10px;padding:.4rem .65rem}
+.vt-work{display:grid;grid-template-columns:1fr 1fr;gap:clamp(.5rem,1vw,.8rem);margin-top:.55rem}
+.vt-work .wk{background:var(--paper);border:2px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.55rem .8rem .65rem}
+.vt-work .wk.base{background:var(--mint)}
+.vt-work .wk.rec{background:var(--peach)}
+.vt-work .wk .wk-tag{font-family:var(--font-mono);font-weight:700;font-size:clamp(.62rem,.8vw,.7rem);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:.25rem}
+.vt-work .wk .wk-line{font-size:clamp(.78rem,1.02vw,.93rem);line-height:1.5;margin:.1rem 0}
+@media(max-width:760px){.vt-grid{grid-template-columns:1fr}.vt-work{grid-template-columns:1fr}}
+
+/* ===== Gamma dial slide ===== */
+.gamma-wrap{display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(1rem,2.4vw,1.8rem);align-items:center;margin-top:.5rem}
+.gamma-panel{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem 1.3rem}
+.gamma-readout{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.5rem}
+.gamma-readout .gv{font-family:var(--font-mono);font-weight:700;font-size:clamp(1.8rem,3.4vw,2.6rem);color:var(--ink)}
+.gamma-readout .gl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.gamma-slider{width:100%;margin:.4rem 0 .2rem;accent-color:#7a4dc2;height:26px;cursor:pointer}
+.gamma-presets{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
+.gamma-presets button{font-family:var(--font-mono);font-size:clamp(.72rem,.95vw,.85rem);padding:.32rem .7rem;border:2px solid var(--line);border-radius:99px;background:var(--bg);box-shadow:2px 2px 0 var(--line);cursor:pointer}
+.gamma-presets button.on{background:var(--sun)}
+.gamma-horizon{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5;margin-top:.6rem}
+.gamma-horizon b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.gamma-bars{display:flex;align-items:flex-end;gap:.4rem;height:clamp(150px,26vh,210px);background:var(--bg);border:2.5px solid var(--line);border-radius:16px;box-shadow:3px 3px 0 var(--line);padding:.9rem .8rem .5rem}
+.gbar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.3rem;height:100%}
+.gbar{width:100%;background:#7a4dc2;border:2px solid var(--line);border-radius:6px 6px 0 0;transition:height .35s ease}
+.gbar-col .t{font-family:var(--font-mono);font-size:.66rem;color:var(--dim)}
+.gbar-col .w{font-family:var(--font-mono);font-size:.62rem;color:var(--ink);font-weight:700}
+@media (max-width:780px){.gamma-wrap{grid-template-columns:1fr}}
+
+/* ===== Cell-reference (cycles) slide ===== */
+.cref-stage{display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2.4vw,1.6rem);align-items:center;margin-top:.5rem}
+.cref-svg{width:clamp(260px,40vh,380px);height:auto;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line)}
+.cref-svg .cr-cell{transform-box:fill-box;transform-origin:center;opacity:0}
+.cref-svg .cr-cell.pop{animation:bt-pop .42s cubic-bezier(.2,1.35,.45,1) forwards}
+.cref-svg .cr-cell .box{transition:fill .4s}
+.cref-svg .cr-cell.mutual .box{fill:#d9caff}
+.cref-svg .cr-cell.selfl .box{fill:#ffd9a3}
+.cref-svg .cr-cell.trans .box{fill:#cfe3ff}
+.cref-svg .cr-cell.goal .box{fill:#bff0d0}
+.cref-svg .cr-cell.wall .box{fill:#1f1d2b}
+.cref-svg .cr-arrow{opacity:0;transition:opacity .4s}
+.cref-svg .cr-arrow.show{opacity:1}
+.cref-side .cr-legend{display:flex;flex-direction:column;gap:.45rem;margin-bottom:.7rem}
+.cref-side .cr-legend .row{display:flex;align-items:center;gap:.5rem;font-size:clamp(.82rem,1.05vw,.95rem)}
+.cref-side .cr-legend .sw{width:20px;height:20px;border-radius:5px;border:2px solid var(--line);flex-shrink:0}
+.cref-side .cr-legend .sw.m{background:#d9caff}.cref-side .cr-legend .sw.s{background:#ffd9a3}
+.cref-side .cr-legend .sw.t{background:#cfe3ff}.cref-side .cr-legend .sw.g{background:#bff0d0}
+.cref-cap{min-height:4.6em;font-size:clamp(.86rem,1.12vw,1rem);line-height:1.5}
+.cref-cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.cref-cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.18rem);display:block;margin-bottom:.25rem}
+@media (max-width:780px){.cref-stage{grid-template-columns:1fr;justify-items:center}}
+
+/* ===== "Plug old V into new V" — problem / iterate / converge ===== */
+.trick-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(1rem,2.2vw,1.5rem);align-items:stretch;margin-top:.45rem}
+.trick-card{background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.85rem 1.05rem;display:flex;flex-direction:column}
+.trick-card .step{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem}
+.trick-card .step .n{display:inline-flex;align-items:center;justify-content:center;width:1.25em;height:1.25em;border-radius:50%;border:2px solid var(--line);margin-right:.4em;color:var(--ink);font-weight:700}
+.trick-card.prob .step .n{background:var(--rose)}
+.trick-card.solve .step .n{background:var(--mint)}
+.trick-card p{font-size:clamp(.84rem,1.08vw,.97rem);line-height:1.5;margin:0 0 .5rem}
+.trick-card p:last-child{margin-bottom:0}
+.trick-eq{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.5rem .65rem;margin:.15rem 0 .55rem;text-align:center;font-size:clamp(.86rem,1.1vw,1rem)}
+.trick-eq.hi{background:var(--mint)}
+.conv-card{grid-column:1 / -1;display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2vw,1.4rem);align-items:center;background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.75rem 1.1rem;margin-top:.2rem}
+.conv-card svg{width:clamp(280px,34vw,440px);height:auto;display:block}
+.conv-card .cap{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.55}
+.conv-card .cap b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.conv-card .cap .lead{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.3vw,1.16rem);display:block;margin-bottom:.3rem}
+@media (max-width:880px){.trick-grid{grid-template-columns:1fr}.conv-card{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+/* recap two-col */
+.recap2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.5vw,2rem);margin-top:.6rem}
+.recap2-col{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem}
+.recap2-col.from{background:var(--peach)}
+.recap2-col.now{background:var(--lilac)}
+.recap2-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.6vw,1.35rem);margin-bottom:.4rem}
+.recap2-col .label{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.recap2-col ul{list-style:none;padding:0}
+.recap2-col li{font-size:clamp(.85rem,1.1vw,1rem);padding:.3rem 0 .3rem 1.4rem;position:relative;line-height:1.4}
+.recap2-col li::before{content:'';position:absolute;left:0;top:.65em;width:8px;height:8px;background:var(--ink);border-radius:50%}
+@media (max-width:780px){.recap2{grid-template-columns:1fr}}
+
+/* gridworld intro */
+.gw-intro{display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2.5vw,2rem);align-items:center;margin-top:.7rem}
+.gw-grid-static{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(190px,27vh,260px);height:clamp(190px,27vh,260px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.gw-grid-static .cell{background:var(--paper);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:clamp(1.1rem,2vw,1.5rem);position:relative}
+.gw-grid-static .cell.start{background:var(--peach)}
+.gw-grid-static .cell.goal{background:var(--mint)}
+.gw-grid-static .cell.trap{background:var(--rose)}
+.gw-grid-static .cell.wall{background:var(--ink)}
+.gw-bot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(1.2rem,2.1vw,1.6rem);z-index:2;animation:gw-pop .16s var(--ease)}
+@keyframes gw-pop{from{transform:scale(.5)}to{transform:scale(1)}}
+.gw-bot.bump{animation:gw-bump .22s var(--ease)}
+@keyframes gw-bump{0%,100%{transform:translate(0,0)}30%{transform:translate(var(--bx,0),var(--by,0))}}
+/* playable controls */
+.gw-play{display:flex;flex-direction:row;align-items:center;gap:clamp(.7rem,1.6vw,1.2rem)}
+.gw-controls{display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.gw-hud{display:flex;gap:.5rem}
+.gw-stat{background:var(--paper);border:2px solid var(--line);border-radius:10px;box-shadow:2px 2px 0 var(--line);padding:.28rem .65rem;text-align:center;min-width:78px}
+.gw-stat .num{display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(1rem,1.5vw,1.3rem);line-height:1.05}
+.gw-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+.gw-pad{display:grid;grid-template-columns:repeat(3,clamp(34px,4.6vh,42px));grid-auto-rows:clamp(34px,4.6vh,42px);gap:5px;justify-items:center;align-items:center}
+.gw-dir{font-family:var(--font-display);font-weight:800;font-size:1.15rem;background:var(--sun);border:2.5px solid var(--line);border-radius:9px;box-shadow:2px 2px 0 var(--line);cursor:pointer;width:100%;height:100%;line-height:1}
+.gw-dir:active{transform:translate(2px,2px);box-shadow:none}
+.gw-dir.up{grid-column:2;grid-row:1}
+.gw-dir.left{grid-column:1;grid-row:2}
+.gw-dir.down{grid-column:2;grid-row:2}
+.gw-dir.right{grid-column:3;grid-row:2}
+.gw-reset{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.05em;background:var(--paper);border:2px solid var(--line);border-radius:8px;box-shadow:2px 2px 0 var(--line);padding:.3rem .7rem;cursor:pointer}
+.gw-reset:active{transform:translate(2px,2px);box-shadow:none}
+.gw-msg{font-family:var(--font-mono);font-size:clamp(.74rem,.95vw,.86rem);color:var(--dim);text-align:center;max-width:240px;min-height:2.4em;line-height:1.35}
+.gw-msg.win{color:var(--good);font-weight:700}
+.gw-msg.lose{color:var(--bad);font-weight:700}
+.gw-left{display:flex;flex-direction:column;gap:.6rem;min-width:0;max-width:480px}
+.gw-formula{background:var(--paper);border:2px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.5rem .8rem}
+.gw-formula .gwf-label{display:block;font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.gw-formula .gwf-eq{font-family:var(--font-mono);font-size:clamp(.76rem,.98vw,.9rem);line-height:1.75;color:var(--ink);word-break:break-word;max-height:5.4em;overflow-y:auto}
+.gwf-term{display:inline-block;white-space:nowrap;animation:gwf-pop .2s var(--ease)}
+@keyframes gwf-pop{from{transform:scale(.6);opacity:.2}to{transform:scale(1);opacity:1}}
+.gwf-term.goal{color:var(--good);font-weight:800}
+.gwf-term.trap{color:var(--bad);font-weight:800}
+.gwf-total{font-weight:800;color:var(--ink)}
+.gwf-hint{display:block;font-family:var(--font-mono);font-size:var(--tiny-size);color:var(--dim);margin-top:.3rem;line-height:1.35}
+.gw-spec{display:flex;flex-direction:column;gap:.55rem;min-width:240px}
+.gw-spec-block{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:.55rem .85rem;box-shadow:3px 3px 0 var(--line)}
+.gw-spec-block h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.92rem,1.2vw,1.05rem);margin-bottom:.2rem}
+.gw-spec-block p{font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.45;margin:0}
+.gw-spec-block b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.gw-intro{grid-template-columns:1fr;justify-items:center}}
+
+/* gridworld — the two driving questions */
+.gw-questions{margin-top:1rem;background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.3rem}
+.gw-questions .gwq-head{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.25rem);text-align:center;margin-bottom:.75rem}
+.gw-questions .gwq-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.gw-questions .gwq{display:flex;align-items:center;gap:.8rem;border:2.5px solid var(--line);border-radius:14px;box-shadow:3px 3px 0 var(--line);padding:.9rem 1.05rem;font-size:clamp(1.02rem,1.55vw,1.4rem);line-height:1.3}
+.gw-questions .gwq.q1{background:var(--mint)}
+.gw-questions .gwq.q2{background:var(--sun)}
+.gw-questions .gwq-num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.3rem,2.2vw,2rem);width:1.5em;height:1.5em;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--paper);border:2.5px solid var(--line);border-radius:50%}
+@media (max-width:780px){.gw-questions .gwq-row{grid-template-columns:1fr}}
+
+/* slide 4 — works on tree, breaks on grid */
+.works-breaks{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2.5vw,2rem);margin-top:.6rem}
+.wb-col{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.1rem;display:flex;flex-direction:column;gap:.4rem}
+.wb-col.works{background:var(--mint)}
+.wb-col.breaks{background:var(--rose)}
+.wb-col .wb-tag{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+.wb-col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin:0;line-height:1.2}
+.wb-col .wb-ex{background:rgba(255,255,255,.7);border:1.5px solid var(--line);border-radius:10px;padding:.5rem .75rem;font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.5}
+.wb-col .wb-ex .formula{font-size:clamp(.92rem,1.2vw,1.05rem)}
+.wb-col p{font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.5;margin:0}
+.wb-col p b{background:rgba(255,255,255,.85);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.works-breaks{grid-template-columns:1fr}}
+
+/* algorithm box */
+.algo-box{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;font-family:var(--font-mono)}
+.algo-box .algo-title{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
+.algo-box .algo-title h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.05rem,1.4vw,1.25rem)}
+.algo-box .algo-title .badge{background:var(--ink);color:var(--bg);padding:.2rem .55rem;border-radius:99px;font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em}
+.algo-box pre{font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem);line-height:1.65;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.8rem 1rem;overflow-x:auto;white-space:pre-wrap}
+.algo-box pre b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.algo-box pre i{color:var(--dim);font-style:italic}
+
+/* greedy improvement viz */
+.greedy-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.greedy-q-table{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.7rem;font-family:var(--font-mono)}
+.greedy-q-table h4{font-family:var(--font-display);font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.5rem}
+.greedy-q-table .q-row{display:grid;grid-template-columns:60px 1fr auto;gap:.5rem;align-items:center;padding:.3rem .4rem;border-radius:6px;font-size:clamp(.82rem,1.05vw,.92rem)}
+.greedy-q-table .q-row.best{background:var(--mint);font-weight:700}
+.greedy-q-table .q-row .qbar{height:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:99px;overflow:hidden}
+.greedy-q-table .q-row .qfill{height:100%;background:var(--ink);border-radius:99px}
+.greedy-q-table .q-row.best .qfill{background:var(--good)}
+.greedy-q-table .q-row .qval{font-weight:700;text-align:right;min-width:55px}
+.greedy-explain h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.2rem);margin-bottom:.4rem}
+.greedy-explain p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.greedy-explain p + p{margin-top:.5rem}
+.greedy-explain b{background:var(--sun);padding:0 .15em;border-radius:3px}
+@media (max-width:780px){.greedy-vis{grid-template-columns:1fr}}
+
+/* theorem box */
+.theorem-box{background:var(--mint);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem}
+.theorem-box .head{font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.18em;text-transform:uppercase;color:var(--ink);margin-bottom:.5rem}
+.theorem-box h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1.1rem,1.5vw,1.3rem);margin-bottom:.4rem}
+.theorem-box .formula-mini{margin:.5rem auto;max-width:580px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:.5rem 1rem;text-align:center;box-shadow:2px 2px 0 var(--line)}
+
+/* PI loop visual */
+.pi-loop{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:1rem;align-items:center}
+.pi-step{background:var(--bg);border:2.5px solid var(--line);border-radius:14px;box-shadow:3px 3px 0 var(--line);padding:.8rem;text-align:center}
+.pi-step.eval{background:var(--lilac)}
+.pi-step.improve{background:var(--sun)}
+.pi-step.check{background:var(--mint)}
+.pi-step .ico{font-size:clamp(1.5rem,2.4vw,2rem);margin-bottom:.3rem}
+.pi-step h4{font-family:var(--font-display);font-weight:700;font-size:clamp(.9rem,1.2vw,1.05rem);margin-bottom:.2rem}
+.pi-step p{font-size:clamp(.72rem,.95vw,.85rem);color:var(--dim);line-height:1.4}
+.pi-arrow{font-size:1.6em;color:var(--dim);font-weight:700}
+@media (max-width:900px){.pi-loop{grid-template-columns:1fr;gap:.5rem}.pi-arrow{transform:rotate(90deg)}}
+
+/* live PI demo */
+.pl-wrap{display:flex;flex-direction:column;gap:clamp(.5rem,1.2vh,.9rem);margin-top:.4rem;flex:1;min-height:0}
+.pl-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.5rem}
+.pl-header h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.1rem,2vw,1.6rem);margin:0}
+.pl-help{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim)}
+.pl-stats{display:flex;gap:.6rem;flex-wrap:wrap}
+.pl-stat{background:var(--paper);border:2.5px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.45rem 1rem;text-align:center;min-width:108px}
+.pl-stat.tinted-sun{background:var(--sun)}
+.pl-stat.tinted-mint{background:var(--mint)}
+.pl-stat.tinted-peach{background:var(--peach)}
+.pl-stat.tinted-lilac{background:var(--lilac)}
+.pl-stat.tinted-sky{background:var(--sky)}
+.pl-stat .num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.pl-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-top:.2rem}
+
+.pl-main{display:grid;grid-template-columns:auto 1fr;gap:clamp(.8rem,2vw,1.5rem);align-items:center;flex:1;min-height:0}
+.pl-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(260px,40vh,400px);height:clamp(260px,40vh,400px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pl-cell{
+  background:var(--paper);border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;font-size:clamp(1.1rem,2vw,1.5rem);
+  transition:background .25s var(--ease);
+}
+.pl-cell.start{background:var(--peach)}
+.pl-cell.goal{background:var(--mint)}
+.pl-cell.trap{background:var(--rose)}
+.pl-cell.wall{background:var(--ink)}
+.pl-cell .pl-arrow{font-size:clamp(.95rem,1.5vw,1.25rem);color:var(--ink);margin-bottom:.05rem;font-weight:700}
+.pl-cell .pl-val{font-family:var(--font-mono);font-weight:700;font-size:clamp(.65rem,.95vw,.82rem);color:var(--ink);padding:1px 4px;border-radius:4px}
+.pl-cell .pl-val.pos{color:#1a8a4a}
+.pl-cell .pl-val.neg{color:#c2331a}
+/* eval inner-loop pulse: blue tint on the value cell */
+.pl-cell.eval-pulse .pl-val{background:var(--sky);animation:pl-eval-pulse .4s var(--ease)}
+@keyframes pl-eval-pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.13)}
+  100%{transform:scale(1)}
+}
+/* improve flip: yellow on the arrow */
+.pl-cell.flipped .pl-arrow{
+  animation:pl-flip .55s var(--ease);
+  background:var(--sun);
+  border-radius:4px;
+  padding:0 2px;
+}
+@keyframes pl-flip{
+  0%{transform:scale(1) rotate(0)}
+  50%{transform:scale(1.32) rotate(15deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+
+.pl-side{display:flex;flex-direction:column;gap:.5rem;height:100%}
+.pl-controls{display:flex;flex-wrap:wrap;gap:.5rem}
+.pl-btn{
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);border-radius:99px;
+  padding:.5rem 1rem;
+  font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);
+  letter-spacing:.1em;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.pl-btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pl-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pl-btn:disabled{opacity:.5;cursor:not-allowed}
+.pl-btn.secondary{background:var(--paper);color:var(--ink)}
+.pl-explain{background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .8rem;box-shadow:2px 2px 0 var(--line);font-size:clamp(.78rem,1vw,.9rem);line-height:1.5}
+.pl-explain.t-mint{background:var(--mint)}
+.pl-explain.t-sky{background:var(--sky)}
+@media (max-width:780px){.pl-main{grid-template-columns:1fr;justify-items:center}}
+
+/* stopping condition */
+.stop-block{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;text-align:center}
+
+/* VI-as-collapse comparison */
+.vi-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.5rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.vi-card{display:flex;flex-direction:column;gap:.4rem}
+.vi-card h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.15rem);margin-bottom:.3rem}
+.vi-card p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+@media (max-width:780px){.vi-vis{grid-template-columns:1fr}}
+
+/* live VI demo (4×4) */
+.pe-wrap{display:flex;flex-direction:column;gap:clamp(.5rem,1.2vh,.9rem);margin-top:.4rem;flex:1;min-height:0}
+.pe-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.5rem}
+.pe-header h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.1rem,2vw,1.6rem);margin:0}
+.pe-help{font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim)}
+.pe-stats{display:flex;gap:.6rem;flex-wrap:wrap}
+.pe-stat{background:var(--paper);border:2.5px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.45rem 1rem;text-align:center;min-width:110px}
+.pe-stat.tinted-sun{background:var(--sun)}
+.pe-stat.tinted-mint{background:var(--mint)}
+.pe-stat.tinted-peach{background:var(--peach)}
+.pe-stat .num{font-family:var(--font-display);font-weight:800;font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1}
+.pe-stat .lbl{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-top:.2rem}
+
+.pe-main{display:grid;grid-template-columns:auto 1fr;gap:clamp(.8rem,2vw,1.5rem);align-items:center;flex:1;min-height:0}
+.pe-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+  gap:3px;background:var(--line);border:3px solid var(--line);border-radius:12px;padding:3px;
+  width:clamp(260px,40vh,400px);height:clamp(260px,40vh,400px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.pe-cell{background:var(--paper);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;font-size:clamp(1.1rem,2.2vw,1.6rem);transition:background .3s var(--ease)}
+.pe-cell.start{background:var(--peach)}
+.pe-cell.goal{background:var(--mint)}
+.pe-cell.trap{background:var(--rose)}
+.pe-cell.wall{background:var(--ink)}
+.pe-cell .pe-arrow{font-size:clamp(.85rem,1.3vw,1.05rem);color:var(--dim);margin-bottom:.05rem}
+.pe-cell .pe-val{font-family:var(--font-mono);font-weight:700;font-size:clamp(.7rem,1vw,.88rem);color:var(--ink);padding:1px 4px;border-radius:4px;transition:background .25s var(--ease)}
+.pe-cell .pe-val.pos{color:#1a8a4a}
+.pe-cell .pe-val.neg{color:#c2331a}
+.pe-cell.flash .pe-val{background:var(--sun);animation:pe-flash .5s var(--ease)}
+@keyframes pe-flash{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+.pe-side{display:flex;flex-direction:column;gap:.5rem;height:100%}
+.pe-controls{display:flex;flex-wrap:wrap;gap:.5rem}
+.pe-btn{background:var(--ink);color:var(--bg);border:2.5px solid var(--line);border-radius:99px;padding:.5rem 1rem;font-family:var(--font-mono);font-weight:700;font-size:var(--small-size);letter-spacing:.1em;cursor:pointer;box-shadow:3px 3px 0 var(--line);transition:transform .15s,box-shadow .15s}
+.pe-btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.pe-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.pe-btn:disabled{opacity:.5;cursor:not-allowed}
+.pe-btn.secondary{background:var(--paper);color:var(--ink)}
+.pe-explain{background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:.55rem .8rem;box-shadow:2px 2px 0 var(--line);font-size:clamp(.78rem,1vw,.9rem);line-height:1.5}
+.pe-explain.tinted-mint{background:var(--mint)}
+@media (max-width:780px){.pe-main{grid-template-columns:1fr;justify-items:center}}
+
+/* convergence */
+.conv-vis{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1.2rem;margin-top:.6rem;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:center}
+.conv-vis .key h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.5vw,1.2rem);margin-bottom:.4rem}
+.conv-vis .key p{font-size:clamp(.85rem,1.1vw,1rem);line-height:1.5}
+.conv-vis .key b{background:var(--sun);padding:0 .15em;border-radius:3px}
+.conv-table{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:.6rem;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem)}
+.conv-table .row{display:grid;grid-template-columns:60px 1fr 60px;gap:.5rem;padding:.2rem 0;align-items:center}
+.conv-table .row.head{font-weight:700;color:var(--dim);letter-spacing:.1em;font-size:var(--tiny-size);text-transform:uppercase;border-bottom:1.5px solid var(--line);padding-bottom:.3rem;margin-bottom:.2rem}
+.conv-table .delta{text-align:right;font-weight:600}
+.conv-table .delta.zero{color:var(--good)}
+.conv-table .bar-cell{display:block;height:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:99px;overflow:hidden}
+.conv-table .bar-fill{display:block;height:100%;background:var(--rose);border-radius:99px}
+@media (max-width:780px){.conv-vis{grid-template-columns:1fr}}
+
+/* recap grid */
+.rs-l4{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(.6rem,1.4vw,1rem);margin-top:.7rem}
+.rs-l4 .item{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.85rem;text-align:center}
+.rs-l4 .item .ico{font-size:clamp(1.4rem,2.2vw,1.9rem);margin-bottom:.3rem}
+.rs-l4 .item h5{font-family:var(--font-display);font-weight:700;font-size:clamp(.85rem,1.1vw,1rem);margin-bottom:.2rem}
+.rs-l4 .item p{font-size:clamp(.7rem,.9vw,.82rem);color:var(--dim);line-height:1.35}
+.rs-l4 .item:nth-child(1){background:var(--mint)}
+.rs-l4 .item:nth-child(2){background:var(--peach)}
+.rs-l4 .item:nth-child(3){background:var(--lilac)}
+.rs-l4 .item:nth-child(4){background:var(--sky)}
+@media (max-width:780px){.rs-l4{grid-template-columns:repeat(2,1fr)}}
+
+/* PART chip */
+.tag .part{display:inline-block;background:var(--ink);color:var(--bg);padding:.05rem .55rem;border-radius:99px;font-size:.85em;letter-spacing:.18em;margin-right:.45em}
+
+/* ===== Ported from L3: DP / greedy-trap slides (moved into L4) ===== */
+/* Slide 19 — Warrior teaser tree (binary, 4 steps) */
+.warrior-tree{
+  margin-top:.5rem;
+  display:flex;justify-content:center;
+  background:rgba(255,255,255,0.55);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:.6rem .5rem .4rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(.6rem,1.4vw,1rem);
+  margin-top:.7rem;
+}
+.warrior-discuss .wd-q{
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.65rem .85rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.warrior-discuss .wd-q:nth-child(1){background:var(--peach)}
+.warrior-discuss .wd-q:nth-child(2){background:var(--mint)}
+.warrior-discuss .wd-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:.25rem;
+}
+.warrior-discuss .wd-q p{
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.4;
+  margin:0;
+}
+@media (max-width:780px){.warrior-discuss{grid-template-columns:1fr}}
+
+/* Slide 19 — Doors Game (peek-and-pick game before the tree) */
+.doors-game{
+  display:flex;flex-direction:column;
+  gap:clamp(.55rem,1.2vw,.85rem);
+  margin-top:.5rem;
+  flex:1;min-height:0;
+}
+.dg-status{display:flex;gap:.5rem;flex-wrap:wrap}
+.dg-status > div{
+  flex:1;min-width:120px;
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  box-shadow:3px 3px 0 var(--line);
+  padding:.45rem .8rem;
+  display:flex;flex-direction:column;gap:.05rem;
+}
+.dg-status .lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-status .val{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:clamp(.95rem,1.35vw,1.18rem);
+  color:var(--ink);line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dg-status .dg-total{background:var(--sun)}
+.dg-status .val.pos{color:var(--good)}
+.dg-status .val.neg{color:var(--bad)}
+
+.dg-doors{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(.7rem,1.8vw,1.3rem);
+  flex:1;min-height:0;
+}
+.dg-door{
+  position:relative;
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:14px 14px 6px 6px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:0;cursor:pointer;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font-display);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+}
+.dg-door:hover:not(:disabled){
+  transform:translate(-3px,-3px);
+  box-shadow:8px 8px 0 var(--line);
+}
+.dg-door:disabled{cursor:not-allowed;opacity:.55}
+.dg-door[data-side="L"]{background:var(--mint)}
+.dg-door[data-side="R"]{background:var(--peach)}
+.dg-door-frame{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1.1rem 1rem .9rem;
+  position:relative;
+  background:linear-gradient(180deg,rgba(0,0,0,0.06) 0%,transparent 35%);
+}
+.dg-peephole{
+  width:clamp(105px,15vw,160px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--bg);
+  border:5px solid var(--line);
+  box-shadow:inset 4px 4px 0 rgba(0,0,0,0.10), 3px 3px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.15rem;
+}
+.dg-peep-lbl{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;
+}
+.dg-peep-val{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(1.7rem,3.4vw,2.6rem);
+  line-height:1;color:var(--ink);
+}
+.dg-peep-val.pos{color:var(--good)}
+.dg-peep-val.neg{color:var(--bad)}
+.dg-door-handle{
+  position:absolute;top:50%;
+  width:10px;height:26px;
+  background:var(--line);
+  border-radius:5px;
+  transform:translateY(-50%);
+}
+.dg-door[data-side="L"] .dg-door-handle{right:14px}
+.dg-door[data-side="R"] .dg-door-handle{left:14px}
+.dg-door-side{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;text-align:center;
+  padding:.5rem 0;
+  background:rgba(0,0,0,0.06);
+  border-top:2px dashed rgba(0,0,0,0.22);
+  color:var(--ink);
+}
+.dg-doors.entering{animation:dg-enter .28s var(--ease)}
+@keyframes dg-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.dg-final{
+  flex:1;
+  background:var(--sun);
+  border:3px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:1rem;gap:.4rem;
+  animation:dg-final-pop .35s var(--ease);
+}
+@keyframes dg-final-pop{
+  0%{transform:scale(.85);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.dg-final-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.22em;color:var(--ink);
+  text-transform:uppercase;
+}
+.dg-final-num{
+  font-family:'Cabinet Grotesk',serif;
+  font-weight:800;
+  font-size:clamp(2.6rem,5.5vw,4.4rem);
+  line-height:1;color:var(--ink);
+}
+.dg-final-num.pos{color:var(--good)}
+.dg-final-num.neg{color:var(--bad)}
+.dg-final-msg{
+  font-family:var(--font-mono);
+  font-size:clamp(.85rem,1.1vw,1rem);
+  text-align:center;color:var(--ink);
+  max-width:600px;line-height:1.45;
+}
+.dg-controls{display:flex;justify-content:center;gap:.6rem}
+.dg-btn{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--small-size);
+  letter-spacing:.1em;
+  background:var(--ink);color:var(--bg);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  padding:.5rem 1.15rem;cursor:pointer;
+  box-shadow:3px 3px 0 var(--line);
+  transition:transform .15s,box-shadow .15s;
+}
+.dg-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.dg-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+@media (max-width:780px){
+  .dg-doors{grid-template-columns:1fr}
+  .dg-status{flex-direction:column}
+}
+
+.recap-flow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:clamp(.7rem,1.6vw,1.2rem);
+  margin-top:.6rem;
+  align-items:stretch;
+}
+.recap-stage{
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:5px 5px 0 var(--line);
+  padding:.95rem 1.05rem 1rem;
+  display:flex;flex-direction:column;
+  gap:.5rem;
+}
+.recap-stage:nth-child(1){background:var(--mint)}
+.recap-stage:nth-child(2){background:var(--peach)}
+.recap-stage:nth-child(3){background:var(--lilac)}
+.recap-stage .rs-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+}
+.recap-stage > p{
+  font-size:clamp(.85rem,1.1vw,1rem);
+  line-height:1.45;
+  margin:0;
+}
+.recap-stage .rs-viz{
+  background:rgba(255,255,255,0.55);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.65rem .5rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.4rem;
+  min-height:90px;
+}
+.recap-stage .rs-caption{
+  font-family:var(--font-mono);
+  font-size:clamp(.7rem,.85vw,.78rem);
+  color:var(--dim);
+  letter-spacing:.05em;
+  text-align:center;
+}
+.recap-stage .rs-formula{
+  font-family:'Cabinet Grotesk',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:clamp(1rem,1.3vw,1.18rem);
+  text-align:center;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  padding:.4rem .7rem;
+  margin-top:auto;
+}
+@media (max-width:900px){.recap-flow{grid-template-columns:1fr}}
+
+.vt-callout{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.65rem 1rem;
+  margin-top:.6rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.8rem;
+  box-shadow:4px 4px 0 var(--line);
+  font-size:clamp(.88rem,1.1vw,1rem);
+  line-height:1.5;
+}
+.vt-callout .vt-callout-tag{
+  font-family:var(--font-mono);font-weight:700;
+  font-size:var(--tiny-size);
+  letter-spacing:.18em;
+  color:var(--ink);
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:.15em;
+}
+
+/* Slide 19 — When Greedy Wins: 2 stages, not 3 */
+[data-name="When Greedy Wins"] .recap-flow{
+  grid-template-columns:repeat(2,1fr);
+  max-width:920px;
+  margin-left:auto;margin-right:auto;
+}
+@media (max-width:900px){
+  [data-name="When Greedy Wins"] .recap-flow{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → / SPACE to navigate</div>
+
+<!-- SLIDE 1 — TITLE -->
+<section class="slide" data-name="Title">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-peach square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-sun pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">LECTURE 05 · SOLVING SMALL MDPS</span>
+    <h1 class="title reveal">Policy iteration<br>&amp; <span class="hl lilac">value iteration.</span></h1>
+    <p class="body reveal" style="font-size:clamp(1rem,1.6vw,1.3rem);max-width:860px;margin-bottom:1.5rem">
+      A new slippery game shows where randomness lives in an MDP: the <b>transition kernel</b> \(P(s'\!\mid\! s,a)\). That randomness puts an <b>expectation</b> in the Bellman backup — which gives <b>policy evaluation</b>, then <b>policy iteration</b>, and finally the one-line shortcut, <b>value iteration.</b>
+    </p>
+    <p class="body dim reveal" style="font-style:italic;font-size:clamp(.85rem,1.1vw,1rem)">
+      Reading: Sutton &amp; Barto, Ch 4.1–4.4
+    </p>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">1 / 19</div>
+</section>
+
+<!-- ============ PART 1 — NEW GAME & RANDOM KERNEL ============ -->
+
+<!-- SLIDE 2 — MEET GRIDWORLD (PLAYABLE) -->
+<section class="slide" data-name="Gridworld">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal"><span class="part">PART 1</span>TODAY'S RUNNING EXAMPLE</span>
+    <h2 class="h2 reveal">Meet <span class="hl">Gridworld.</span></h2>
+
+    <p class="body reveal" style="max-width:880px;font-size:clamp(.9rem,1.15vw,1.02rem)">
+      The robot 🤖 picks a direction each step, but the <b>floor is slippery</b>: it moves the way you chose <b>80%</b> of the time and veers <b>90° to a side</b> the other 20%. <b>Try it</b> — click the arrows (or <b>W A S D</b>) and steer to 💎 while dodging 🔥. Because you can slip, the answer we want is a <b>policy</b> (a move for every cell), not one fixed path.
+    </p>
+
+    <div class="gw-intro reveal">
+      <div class="gw-left">
+      <div class="gw-play">
+        <div class="gw-grid-static" id="gw-board">
+          <div class="cell start" data-i="0"></div>
+          <div class="cell" data-i="1"></div>
+          <div class="cell" data-i="2"></div>
+          <div class="cell" data-i="3"></div>
+          <div class="cell" data-i="4"></div>
+          <div class="cell wall" data-i="5"></div>
+          <div class="cell trap" data-i="6"><span>🔥</span></div>
+          <div class="cell" data-i="7"></div>
+          <div class="cell" data-i="8"></div>
+          <div class="cell" data-i="9"></div>
+          <div class="cell" data-i="10"></div>
+          <div class="cell" data-i="11"></div>
+          <div class="cell" data-i="12"></div>
+          <div class="cell" data-i="13"></div>
+          <div class="cell" data-i="14"></div>
+          <div class="cell goal" data-i="15"><span>💎</span></div>
+        </div>
+        <div class="gw-controls">
+          <div class="gw-hud">
+            <div class="gw-stat"><span class="num" id="gw-steps">0</span><span class="lbl">Steps</span></div>
+            <div class="gw-stat"><span class="num" id="gw-return">0.00</span><span class="lbl">Return γ=.9</span></div>
+          </div>
+          <div class="gw-pad">
+            <button class="gw-dir up" data-d="up" aria-label="up">↑</button>
+            <button class="gw-dir left" data-d="left" aria-label="left">←</button>
+            <button class="gw-dir down" data-d="down" aria-label="down">↓</button>
+            <button class="gw-dir right" data-d="right" aria-label="right">→</button>
+          </div>
+          <button class="gw-reset" id="gw-reset">↻ Reset</button>
+          <div class="gw-msg" id="gw-msg">Steer 🤖 to 💎 — but the floor is slippery, so moves don't always go where you aim.</div>
+        </div>
+      </div>
+      <div class="gw-formula">
+        <span class="gwf-label">Your return, built live &nbsp;·&nbsp; \(G=\sum_t \gamma^t\, r_t\)</span>
+        <div class="gwf-eq">G = <span id="gw-fx-terms">0</span><span class="gwf-total" id="gw-fx-total"></span></div>
+        <span class="gwf-hint" id="gw-fx-hint">Each move adds the reward times γ<sup>t</sup> (1, 0.9, 0.81 …) — the discount at work. <b>This is G, not V:</b> the return of <i>this one</i> slippery run. The value \(V^\pi(s)=\mathbb{E}[G]\) averages G over every possible slip — by playing, you just sampled it once.</span>
+      </div>
+      </div>
+      <div class="gw-spec">
+        <div class="gw-spec-block">
+          <h4>States · Actions · Slip</h4>
+          <p>One cell = one state. Actions <b>↑ ↓ ← →</b>, but moves are <b>noisy</b>: <b>0.8</b> intended, <b>0.1</b> each 90° side. The <b>black cell is a wall</b>; wall and outer <b>border share one rule</b> — step (or slip) into either and you <b>stay put</b>.</p>
+        </div>
+        <div class="gw-spec-block">
+          <h4>Rewards</h4>
+          <p><b>−0.04</b> per step (a gentle nudge to be efficient). <b>+1</b> for landing on 💎. <b>−1</b> for landing on 🔥.</p>
+        </div>
+        <div class="gw-spec-block">
+          <h4>Terminals · Discount</h4>
+          <p>💎 and 🔥 end the episode. <b>γ = 0.9</b> — far-off rewards count a little less than near ones.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="body reveal" style="transition-delay:.6s;margin-top:.7rem;text-align:center;font-size:clamp(.86rem,1.1vw,1rem)">
+      Two questions drive the lecture: &nbsp;<b>①</b> given a fixed policy π, what is <b>\(V^\pi\)</b> at every cell? &nbsp;<b>②</b> what is <b>\(\pi^*\)</b>, the best policy?
+    </p>
+  </div>
+  <div class="slide-name">Gridworld</div>
+  <div class="slide-num">2 / 19</div>
+</section>
+
+<!-- SLIDE 3 — SLIP IS A RANDOM KERNEL (SHORT) -->
+<section class="slide" data-name="Stochastic Kernel">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">WHAT "SLIP" MEANS, FORMALLY</span>
+    <h2 class="h2 reveal">Slip is a <span class="hl">random kernel.</span></h2>
+
+    <p class="body reveal" style="max-width:950px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      The slippery floor <i>is</i> the world's <b>transition kernel</b> \(P(s'\!\mid\! s,a)\) — the probability of landing in cell \(s'\) when you take action \(a\) in cell \(s\). A deterministic world puts <b>all the mass on one cell</b>; slip <b>spreads it</b>:
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">THE KERNEL · WHERE "↑" ACTUALLY TAKES YOU</span>
+      <div class="eqn-big">\[ P(s'\!\mid\! s,\uparrow)=\begin{cases}0.8 & s'=\text{the cell above}\\[2pt] 0.1 & s'=\text{the cell left}\\[2pt] 0.1 & s'=\text{the cell right}\\[2pt] 0 & \text{any other cell}\end{cases} \]</div>
+      <p class="cartoon-cap">Aim into a wall or border and that 0.8 (or 0.1) mass <b>stays on \(s\)</b> — a self-loop. Same shape for ↓ ← →, just rotated. The numbers in each row sum to 1: it's a probability distribution over next cells.</p>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.86rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      That's the whole point of the kernel for us: where you land is <b>random</b>, so a cell's value can't be read off one move — it must be an <b>average</b> over where the floor sends you. That expectation is exactly what the Bellman backup carries. <b>Part 2 makes it precise →</b>
+    </p>
+  </div>
+  <div class="slide-name">Stochastic Kernel</div>
+  <div class="slide-num">3 / 19</div>
+</section>
+
+<!-- SLIDE 3.5 — RECALL FROM L4: V^π, Q^π, BELLMAN -->
+<section class="slide" data-name="Recall L4">
+  <span class="shape s-sun circle bordered anim-wobble" style="width:90px;height:90px;top:6%;right:6%"></span>
+  <span class="shape s-lilac blob bordered anim-wobble-r" style="width:100px;height:100px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--peach)">RECALL FROM L4</span>
+    <h2 class="h2 reveal">Two values, <span class="hl">one Bellman equation.</span></h2>
+
+    <p class="body reveal" style="max-width:940px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      For a <b>fixed policy</b> π, last lecture defined two values: the value of a <b>state</b>, \(V^\pi\), and the value of a <b>state–action pair</b>, \(Q^\pi\). Each is an <b>expectation</b> — over the action π picks and over where the kernel \(P\) sends you.
+    </p>
+
+    <div class="vdef-grid reveal">
+      <div class="vdef">
+        <div class="vd-h">V<sup>π</sup> — value of a state</div>
+        <div class="vd-eq">\( V^\pi(s)=\mathbb{E}_\pi\big[\textstyle\sum_{t\ge0}\gamma^t\, r_t\mid s_0=s\big] \)</div>
+        <div class="vd-note">Expected discounted return if you start at \(s\) and follow π forever.</div>
+      </div>
+      <div class="vdef">
+        <div class="vd-h">Q<sup>π</sup> — value of a state–action</div>
+        <div class="vd-eq">\( Q^\pi(s,a)=\textstyle\sum_{s'} P(s'\!\mid\! s,a)\big[\,r(s,a,s')+\gamma\,V^\pi(s')\,\big] \)</div>
+        <div class="vd-note">Take \(a\) <i>now</i>, then follow π. And \(V^\pi(s)=\sum_a\pi(a\!\mid\! s)\,Q^\pi(s,a)\).</div>
+      </div>
+    </div>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">BELLMAN EXPECTATION EQUATION</span>
+      <div class="eqn-big">\[ V^\pi(s)=\sum_a \pi(a\!\mid\! s)\sum_{s'} P(s'\!\mid\! s,a)\big[\,r(s,a,s')+\gamma\,V^\pi(s')\,\big] \]</div>
+      <p class="cartoon-cap">\(V^\pi\) sits on <b>both sides</b> — a one-step consistency condition, not a formula you can read off directly. Part 2 turns it into an algorithm.</p>
+    </div>
+  </div>
+  <div class="slide-name">Recall L4</div>
+  <div class="slide-num">4 / 19</div>
+</section>
+
+<!-- ============ PART 2 — BELLMAN EXPECTATION BACKUP & POLICY EVALUATION ============ -->
+
+<!-- SLIDE 4 — FIXED POLICY π AND ITS VALUE V^π -->
+<section class="slide" data-name="Policy & Value">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-sun pill bordered anim-wobble-r" style="width:120px;height:50px;bottom:9%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal"><span class="part">PART 2</span>EVALUATE A POLICY</span>
+    <h2 class="h2 reveal">Fix a policy. <span class="hl">How good is it?</span></h2>
+
+    <p class="body reveal" style="max-width:940px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      A <b>policy</b> π is a fixed rule for acting: in state \(s\) it picks action \(a\) with probability \(\pi(a\!\mid\! s)\). (A deterministic policy just puts all its weight on one action.) Fix π and ask: starting at \(s\) and following π forever, what total discounted reward do we <b>expect</b>?
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">\(V^\pi\) — VALUE OF A STATE UNDER π</span>
+      <div class="eqn-big">\[ V^\pi(s)=\mathbb{E}_\pi\Big[\textstyle\sum_{t\ge0}\gamma^t\, r_t \,\Big|\, s_0=s\Big] \]</div>
+      <p class="cartoon-cap">The <b>expected discounted return</b> from \(s\) when every action is drawn from π and every transition from the kernel \(P\). It's "expected" because <i>both</i> the policy and the floor are random.</p>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.86rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      One number per cell — this is the answer to <b>Question 1</b> from the game. Computing \(V^\pi\) for every cell is called <b>policy evaluation</b>. Next: the one-step equation it must satisfy.
+    </p>
+  </div>
+  <div class="slide-name">Policy & Value</div>
+  <div class="slide-num">5 / 19</div>
+</section>
+
+<!-- SLIDE 5 — BELLMAN EXPECTATION BACKUP: TWO AVERAGES -->
+<section class="slide" data-name="Bellman Backup">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-peach circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">THE BACKUP</span>
+    <h2 class="h2 reveal">Bellman expectation backup: <span class="hl mint">avg over slip.</span></h2>
+
+    <p class="body reveal" style="max-width:950px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      \(V^\pi\) satisfies a <b>one-step</b> equation: the value of \(s\) is the immediate reward plus the discounted value of wherever you go next. Turn it into an <b>update</b> by plugging the current guess \(V_k\) on the right-hand side:
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">ONE SWEEP OF THE BELLMAN EXPECTATION BACKUP</span>
+      <div class="eqn-big">\[ V_{k+1}(s)=\sum_a \underbrace{\pi(a\!\mid\! s)}_{\text{avg over }\pi}\;\sum_{s'} \underbrace{P(s'\!\mid\! s,a)}_{\text{avg over slip}}\big[\,r(s,a,s')+\gamma\, V_k(s')\,\big] \]</div>
+      <p class="cartoon-cap">Two averages stacked. The outer \(\sum_a\pi(a\!\mid\! s)\) averages over the action <b>π</b> would pick; the inner \(\sum_{s'}P(s'\!\mid\! s,a)\) averages over where the <b>floor</b> sends you. That inner sum <b>is the expectation</b> — it exists only because the kernel is stochastic. Turn slip off and \(P\) keeps one term, collapsing it to \(r+\gamma V_k(\text{next})\).</p>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.86rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      Apply this to every cell = <b>one sweep</b>. Repeat sweeps and \(V_k\to V^\pi\). But why repeat at all — why not solve it in one pass like last lecture's tree?
+    </p>
+  </div>
+  <div class="slide-name">Bellman Backup</div>
+  <div class="slide-num">6 / 19</div>
+</section>
+
+<!-- SLIDE 6 — WHY ITERATE: NO BOTTOM, CYCLES -->
+<section class="slide" data-name="No Bottom">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:5%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--rose)">WHY WE ITERATE</span>
+    <h2 class="h2 reveal">Why repeat? <span class="hl">No bottom to start from.</span></h2>
+
+    <p class="body reveal" style="max-width:960px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      Last lecture's tree backup worked because the <b>leaves gave known values</b> (\(V=0\), no future left) — so a single bottom-up sweep filled everything above. General MDPs aren't so kind: the process can run <b>forever</b>, and states <b>loop</b> — you can leave \(s\), wander, and come back.
+    </p>
+
+    <div class="backup-wrap reveal">
+      <div class="backup-tree">
+        <svg class="mini-svg" viewBox="0 0 360 210" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <marker id="cy-arr" markerWidth="8" markerHeight="8" refX="5.5" refY="3.4" orient="auto">
+              <path d="M0 0 L6.5 3.4 L0 6.8 z" fill="#7a4dc2"/>
+            </marker>
+          </defs>
+          <!-- two states that point at each other -->
+          <circle cx="90"  cy="105" r="34" fill="#d9caff" stroke="#1f1d2b" stroke-width="2.4"/>
+          <circle cx="270" cy="105" r="34" fill="#bff0d0" stroke="#1f1d2b" stroke-width="2.4"/>
+          <text x="90"  y="105" class="nlabel" text-anchor="middle" dominant-baseline="central" font-size="18">s</text>
+          <text x="270" y="105" class="nlabel" text-anchor="middle" dominant-baseline="central" font-size="18">s′</text>
+          <!-- s -> s' (top) and s' -> s (bottom) -->
+          <g stroke="#7a4dc2" stroke-width="2.6" fill="none" marker-end="url(#cy-arr)">
+            <path d="M118 86 C160 60, 200 60, 242 86"/>
+            <path d="M242 124 C200 150, 160 150, 118 124"/>
+          </g>
+          <text x="180" y="46"  class="sca" text-anchor="middle" fill="#7a4dc2">V(s) needs V(s′)</text>
+          <text x="180" y="172" class="sca" text-anchor="middle" fill="#7a4dc2">V(s′) needs V(s)</text>
+          <text x="180" y="200" class="sca" text-anchor="middle">…so which do you compute first?</text>
+        </svg>
+      </div>
+      <div class="backup-text">
+        <span class="lead">No leaf → no one-pass order.</span>
+        <p>With a loop, \(V(s)=\dots+\gamma V(s')\) <i>and</i> \(V(s')=\dots+\gamma V(s)\). Each needs the other first — a <b>circular dependency</b>. No bottom-up order exists, so <b>no single sweep can solve it.</b></p>
+        <p>The fix: <b>initialize \(V_0(s)=0\)</b> everywhere, then <b>repeatedly apply the Bellman backup</b>. With \(\gamma<1\) each sweep shrinks the error, and \(V_k\to V^\pi\). <b>That iteration is policy evaluation →</b></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">No Bottom</div>
+  <div class="slide-num">7 / 19</div>
+</section>
+
+<!-- SLIDE 7 — ITERATIVE POLICY EVALUATION (PSEUDOCODE) -->
+<section class="slide" data-name="Algorithm">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">THE ALGORITHM</span>
+    <h2 class="h2 reveal">Iterative Policy Evaluation.</h2>
+
+    <div class="algo-box reveal">
+      <div class="algo-title">
+        <h3>Iterative Policy Evaluation</h3>
+        <span class="badge">S&amp;B Ch 4.1</span>
+      </div>
+      <pre><b>Input:</b> a policy π, MDP (S, A, P, R, γ), small θ &gt; 0
+<b>Output:</b> V_π(s) for every s
+
+Initialize V(s) = 0 for all s in S
+<i>(loop until values stop changing)</i>
+<b>Loop:</b>
+    Δ = 0
+    <b>For each state</b> s in S:
+        v_old = V(s)
+        V(s) = Σₐ π(a|s) [ R(s,a) + γ Σ_{s'} P(s'|s,a) · V(s') ]
+        Δ = max(Δ, |v_old − V(s)|)
+    <b>Until</b> Δ &lt; θ
+<b>Return</b> V</pre>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.8rem;text-align:center;font-style:italic;font-size:clamp(.82rem,1.05vw,.95rem);max-width:780px;margin-left:auto;margin-right:auto">
+      Δ is the largest change in any cell during the sweep. When Δ shrinks below θ (e.g. 0.001), V is "close enough" to \(V_\pi\) and we stop. <b>Now we know how good π is. Can we do better?</b>
+    </p>
+  </div>
+  <div class="slide-name">Algorithm</div>
+  <div class="slide-num">8 / 19</div>
+</section>
+
+<!-- SLIDE 8 — TABULAR LINEAR-SYSTEM VIEW -->
+<section class="slide" data-name="Linear System">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--peach)">TABULAR VIEW</span>
+    <h2 class="h2 reveal">Policy evaluation is a <span class="hl peach">linear system.</span></h2>
+
+    <p class="body reveal" style="max-width:960px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      When the states fit in a table, stack the values into a vector \(V^\pi\), the expected one-step rewards into a vector \(r_\pi\), and the policy-induced transitions into a matrix \(P_\pi\) (row \(s\) is the distribution over next states under π). The Bellman expectation equation becomes one matrix equation:
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">THE BELLMAN EQUATION, IN MATRIX FORM</span>
+      <div class="eqn-big">\[ V^\pi = r_\pi + \gamma\, P_\pi V^\pi \qquad\Longleftrightarrow\qquad (I-\gamma P_\pi)\,V^\pi = r_\pi \]</div>
+      <p class="cartoon-cap">A <b>linear fixed-point</b>: \(V^\pi\) sits on both sides. With \(\gamma<1\) the matrix \(I-\gamma P_\pi\) is invertible, so a unique \(V^\pi\) exists.</p>
+    </div>
+
+    <div class="def-row reveal" style="margin-top:.7rem">
+      <div class="eqn-card" style="margin-top:0;background:var(--mint)">
+        <span class="eqn-label">SOLVER 1 · DIRECT SOLVE</span>
+        <div class="eqn-big" style="font-size:clamp(.9rem,1.25vw,1.1rem)">\[ V^\pi = (I-\gamma P_\pi)^{-1} r_\pi \]</div>
+        <p class="cartoon-cap">Invert the matrix once — <b>exact</b>, but costs \(\mathcal{O}(n^3)\) in the number of states.</p>
+      </div>
+      <div class="eqn-card" style="margin-top:0;background:var(--lilac)">
+        <span class="eqn-label">SOLVER 2 · BELLMAN ITERATION</span>
+        <div class="eqn-big" style="font-size:clamp(.9rem,1.25vw,1.1rem)">\[ V_{k+1} = r_\pi + \gamma\, P_\pi V_k \]</div>
+        <p class="cartoon-cap">The repeated sweep from the previous slide — <b>cheap</b> per step, converges to the same \(V^\pi\).</p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.86rem,1.1vw,1rem);max-width:920px;margin-left:auto;margin-right:auto">
+      Same equation, two solvers. Direct solve inverts once; Bellman iteration reaches the same answer by sweeps. Iteration wins when the state space is large or \(P_\pi\) isn't known as a clean matrix.
+    </p>
+  </div>
+  <div class="slide-name">Linear System</div>
+  <div class="slide-num">9 / 19</div>
+</section>
+
+<!-- ============ PART 3 — POLICY UPDATE ============ -->
+
+<!-- SLIDE 9 — Q^π AND THE GREEDY UPDATE -->
+<section class="slide" data-name="Greedy">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal"><span class="part">PART 3</span>POLICY UPDATE</span>
+    <h2 class="h2 reveal">Greedy: pick the <span class="hl mint">best Q.</span></h2>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.9rem,1.18vw,1.05rem)">
+      Once we have \(V^\pi\), define the <b>action-value</b> \(Q^\pi(s,a)\) — the value of taking \(a\) now, then following π:
+    </p>
+
+    <div class="formula-box reveal" style="padding:.7rem 1.3rem;margin-top:.3rem">
+      <div class="formula" style="font-size:clamp(.95rem,1.4vw,1.2rem)">
+        \[ Q^\pi(s,a) \;=\; \sum_{s'} P(s'\!\mid\! s,a)\,\big[\,r(s,a,s')+\gamma\, V^\pi(s')\,\big] \]
+      </div>
+    </div>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.88rem,1.15vw,1rem);margin-top:.5rem">
+      The natural next step: at every state, switch to the action with the highest \(Q^\pi\).
+    </p>
+
+    <div class="formula-box reveal" style="padding:.8rem 1.5rem;margin-top:.2rem">
+      <div class="formula" style="font-size:clamp(1.05rem,1.6vw,1.4rem)">
+        \[ \pi_{\text{new}}(s) \;=\; \arg\max_a\, Q^\pi(s, a) \]
+      </div>
+      <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.4rem;letter-spacing:.05em">
+        One action per state, so \(\pi_{\text{new}}\) is <b>deterministic</b>. Even with a slippery (stochastic) kernel, a finite MDP always has a deterministic optimal policy — the randomness is in the world, not in π*.
+      </div>
+    </div>
+
+    <div class="greedy-vis reveal" style="grid-template-columns:1fr">
+      <div class="greedy-explain">
+        <h3>What greedy says</h3>
+        <p>At a state, look at all the actions' Q-values and pick the action with the <b>biggest</b> one.</p>
+        <p>That single action becomes the new policy there: <b>π<sub>new</sub>(s) = the argmax action</b>. Done.</p>
+        <p style="font-style:italic;color:var(--dim)">Repeat at every state in S. That's the entire update step.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Greedy</div>
+  <div class="slide-num">10 / 19</div>
+</section>
+
+<!-- SLIDE 11 — THE UPDATE AS OPTIMIZATION -->
+<section class="slide" data-name="Update as Optimization">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">ZOOM OUT · THE UPDATE IS OPTIMIZATION</span>
+    <h2 class="h2 reveal">Greedy is <span class="hl">one way</span> to update.</h2>
+
+    <p class="body reveal" style="max-width:950px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      Picking the single best action is the simplest choice. But step back: the update is really solving an <b>optimization problem</b> — at each state, find the policy that scores best under \(Q\).
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">THE UPDATE, IN GENERAL</span>
+      <div class="eqn-big">\[ \pi_{\text{new}}(\cdot\!\mid\! s)\;=\;\arg\max_{\pi}\;\sum_a \pi(a\!\mid\! s)\,Q^{\pi_k}(s,a) \]</div>
+      <p class="cartoon-cap">Greedy is the answer when you optimize with no restrictions: put all the weight on the highest-\(Q\) action. Other methods solve the <i>same</i> problem with extra conditions — for example, taking a smaller, safer step. We'll meet those later.</p>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.86rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      The takeaway: greedy is the simplest solution to a general optimization problem. Many RL algorithms are just different ways of solving it.
+    </p>
+  </div>
+  <div class="slide-name">Update as Optimization</div>
+  <div class="slide-num">11 / 19</div>
+</section>
+
+<!-- ============ PART 4 — POLICY ITERATION ============ -->
+
+<!-- SLIDE 12 — POLICY ITERATION LOOP -->
+<section class="slide" data-name="Policy Iteration">
+  <span class="shape s-rose pill bordered anim-wobble" style="width:130px;height:55px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal"><span class="part">PART 4</span>POLICY ITERATION</span>
+    <h2 class="h2 reveal">Alternate <span class="hl rose">eval ↔ update.</span></h2>
+
+    <p class="body reveal" style="max-width:900px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      Policy iteration is just evaluation and the greedy update, chained:
+      \(\;\pi_k \;\to\; V^{\pi_k} \;\to\; Q^{\pi_k} \;\to\; \pi_{k+1}\).
+    </p>
+
+    <div class="pi-loop reveal">
+      <div class="pi-step eval">
+        <div class="ico">📊</div>
+        <h4>1. Evaluate</h4>
+        <p>Compute \(V^{\pi_k}\) by iterative policy evaluation (Part 2).</p>
+      </div>
+      <div class="pi-arrow">→</div>
+      <div class="pi-step improve">
+        <div class="ico">🔧</div>
+        <h4>2. Update</h4>
+        <p>\(\pi_{k+1}(s) = \arg\max_a Q^{\pi_k}(s,a)\) at every state.</p>
+      </div>
+      <div class="pi-arrow">→</div>
+      <div class="pi-step check">
+        <div class="ico">✓</div>
+        <h4>3. Stable?</h4>
+        <p>If \(\pi_{k+1} = \pi_k\) → done, π = π*. Else loop back to 1.</p>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:1rem;text-align:center;font-style:italic;font-size:clamp(.85rem,1.1vw,1rem);max-width:780px;margin-left:auto;margin-right:auto">
+      Each round: V values get more accurate, the policy gets better. Surprisingly, this converges in just <b>3–10 outer rounds</b> for most small MDPs. (Each outer round runs Part 2's inner loop to convergence.)
+    </p>
+  </div>
+  <div class="slide-name">Policy Iteration</div>
+  <div class="slide-num">12 / 19</div>
+</section>
+
+<!-- SLIDE 13 — INTERACTIVE POLICY ITERATION -->
+<section class="slide" data-name="Live PI" id="pl-slide">
+  <div class="slide-inner pl-wrap">
+    <div class="pl-header">
+      <h2>🔄 Watch random π become π*</h2>
+      <span class="pl-help"><b>Slippery floor</b> (0.8 intended / 0.1 each side), so each V is an expectation. Click <b>Iterate</b> for one outer round. Blue pulses = inner eval sweeps. Yellow flash = arrow flipped (update).</span>
+    </div>
+
+    <div class="pl-stats">
+      <div class="pl-stat tinted-sun">
+        <div class="num" id="pl-round">0</div>
+        <div class="lbl">Outer round</div>
+      </div>
+      <div class="pl-stat tinted-sky">
+        <div class="num" id="pl-evalsweeps">0</div>
+        <div class="lbl">Eval sweeps used</div>
+      </div>
+      <div class="pl-stat tinted-mint">
+        <div class="num" id="pl-changed">—</div>
+        <div class="lbl">Cells flipped</div>
+      </div>
+      <div class="pl-stat tinted-lilac">
+        <div class="num" id="pl-status">Init</div>
+        <div class="lbl">Status</div>
+      </div>
+    </div>
+
+    <div class="pl-main">
+      <div class="pl-grid" id="pl-grid"></div>
+      <div class="pl-side">
+        <div class="pl-controls">
+          <button class="pl-btn" id="pl-eval">📊 Eval sweep</button>
+          <button class="pl-btn" id="pl-improve">🔧 Update</button>
+          <button class="pl-btn secondary" id="pl-run">▶▶ Run to π*</button>
+          <button class="pl-btn secondary" id="pl-reset">Random π</button>
+        </div>
+        <div class="pl-explain" id="pl-explain">
+          Random arrows everywhere. \(V\) values are 0 until we evaluate. Click <b>Eval sweep</b> to update V under the current π, or <b>Update</b> to flip arrows greedily.
+        </div>
+        <div class="pl-explain t-sky" style="font-size:.92em">
+          <b>Drive it manually:</b> click <b>Eval sweep</b> several times (blue pulses, V settles), then <b>Update</b> once (yellow flips). Or hit <b>Run to π*</b> to auto-iterate.
+        </div>
+        <div class="pl-explain t-mint" style="font-size:.92em">
+          γ = 0.9, step = −0.04, goal = +1, fire = −1, slip 0.8/0.1/0.1.<br>
+          Stops when an Update flips no arrows → optimal π*.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Live PI</div>
+  <div class="slide-num">13 / 19</div>
+</section>
+
+<!-- ============ PART 5 — VALUE ITERATION ============ -->
+
+<!-- SLIDE 14 — VALUE ITERATION: AGGRESSIVE / COLLAPSED GPI -->
+<section class="slide" data-name="Value Iteration">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal"><span class="part">PART 5</span>VALUE ITERATION</span>
+    <h2 class="h2 reveal">One backup that <span class="hl">improves as it evaluates.</span></h2>
+
+    <p class="body reveal" style="max-width:940px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      Policy evaluation averages over a <b>fixed</b> π. Value iteration drops the fixed policy: at each cell it takes the <b>max over actions</b> instead of the policy-average. That single change turns the expectation backup into the Bellman <b>optimality</b> backup.
+    </p>
+
+    <div class="vi-vis reveal">
+      <div class="vi-card">
+        <h3>Eval backup — averages under fixed π:</h3>
+        <p style="font-family:var(--font-mono);font-size:.92em;background:var(--lilac);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .8rem">
+          V<sub>k+1</sub>(s) = <b>Σₐ π(a|s)</b> Σ<sub>s'</sub> P(s'|s,a)[ r + γ V<sub>k</sub>(s') ]
+        </p>
+        <h3 style="margin-top:.7rem">Value-iteration backup — maximizes over actions:</h3>
+        <p style="font-family:var(--font-mono);font-size:.92em;background:var(--mint);border:1.5px solid var(--line);border-radius:8px;padding:.5rem .8rem">
+          <b>maxₐ</b> replaces Σₐ π(a|s) — keep the single best action
+        </p>
+      </div>
+      <div>
+        <div class="formula-box" style="padding:.9rem 1.2rem;margin:0">
+          <div class="formula" style="font-size:clamp(1rem,1.4vw,1.2rem)">
+            \[ V_{k+1}(s) \;\leftarrow\; \max_a\Big[\, \sum_{s'} P(s'\!\mid\! s,a)\,\big(r(s,a,s') + \gamma\, V_k(s')\big)\,\Big] \]
+          </div>
+          <div style="font-family:var(--font-mono);font-size:var(--small-size);color:var(--dim);margin-top:.4rem;letter-spacing:.05em">
+            The <b>Bellman optimality backup</b>. After convergence \(V_k \to V^*\).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.85rem,1.1vw,1rem);max-width:900px;margin-left:auto;margin-right:auto">
+      Value iteration is an <b>aggressive, collapsed form of generalized policy iteration</b>: value propagation and greedy improvement are combined in <b>one</b> Bellman optimality backup — instead of evaluating π all the way to convergence before each improvement.
+    </p>
+  </div>
+  <div class="slide-name">Value Iteration</div>
+  <div class="slide-num">14 / 19</div>
+</section>
+
+<!-- SLIDE 15 — VI ALGORITHM + POLICY EXTRACTION -->
+<section class="slide" data-name="VI Algorithm">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag" style="background:var(--peach)">THE ALGORITHM · PART 5</span>
+    <h2 class="h2 reveal">Value Iteration.</h2>
+
+    <div class="algo-box reveal">
+      <div class="algo-title">
+        <h3>Value Iteration</h3>
+        <span class="badge">S&amp;B Ch 4.4</span>
+      </div>
+      <pre><b>Input:</b> MDP (S, A, P, R, γ), small θ &gt; 0
+<b>Output:</b> V*(s) for every s, and a greedy policy π*
+
+Initialize V(s) = 0 for all s in S
+<i>(loop until values stop changing)</i>
+<b>Loop:</b>
+    Δ = 0
+    <b>For each state</b> s in S:
+        v_old = V(s)
+        V(s) = <b>max</b><sub>a</sub> [ R(s,a) + γ Σ_{s'} P(s'|s,a) · V(s') ]
+        Δ = max(Δ, |v_old − V(s)|)
+    <b>Until</b> Δ &lt; θ
+
+<i>(extract π* from V*)</i>
+<b>For each state</b> s in S:
+    π*(s) = <b>argmax</b><sub>a</sub> [ R(s,a) + γ Σ_{s'} P(s'|s,a) · V(s') ]
+<b>Return</b> V, π*</pre>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.82rem,1.05vw,.95rem);max-width:840px;margin-left:auto;margin-right:auto">
+      Spot the difference from Part 2's eval: <b>Σₐ π(a|s)</b> became <b>maxₐ</b>. Outer loop, convergence test, initialization — all unchanged. One greedy pass at the end reads off π*.
+    </p>
+  </div>
+  <div class="slide-name">VI Algorithm</div>
+  <div class="slide-num">15 / 19</div>
+</section>
+
+<!-- SLIDE 16 — INTERACTIVE VALUE ITERATION -->
+<section class="slide" data-name="Live VI" id="vi-slide">
+  <div class="slide-inner pe-wrap">
+    <div class="pe-header">
+      <h2>⚡ Watch V* and π* emerge</h2>
+      <span class="pe-help">Same gridworld, <b>slippery floor</b> (0.8 intended / 0.1 each side), so V is an expectation. <b>No fixed policy</b>: each sweep takes the max over 4 actions; arrows show the current arg max.</span>
+    </div>
+
+    <div class="pe-stats">
+      <div class="pe-stat tinted-sun">
+        <div class="num" id="vi-sweep">0</div>
+        <div class="lbl">Sweep #</div>
+      </div>
+      <div class="pe-stat tinted-mint">
+        <div class="num" id="vi-delta">—</div>
+        <div class="lbl">Δ (max change)</div>
+      </div>
+      <div class="pe-stat tinted-peach">
+        <div class="num" id="vi-status">Init</div>
+        <div class="lbl">Status</div>
+      </div>
+    </div>
+
+    <div class="pe-main">
+      <div class="pe-grid" id="vi-grid"></div>
+      <div class="pe-side">
+        <div class="pe-controls">
+          <button class="pe-btn" id="vi-step">▶ Step</button>
+          <button class="pe-btn secondary" id="vi-run">▶▶ Run</button>
+          <button class="pe-btn secondary" id="vi-reset">Reset</button>
+        </div>
+        <div class="pe-explain" id="vi-explain">
+          All values start at 0. After each sweep, every cell takes the <b>best</b> of its 4 actions. Arrows update too — they're \(\arg\max_a\) of the right-hand side.
+        </div>
+        <div class="pe-explain tinted-mint" style="font-size:.95em">
+          γ = 0.9, step = −0.04, 💎 = +1, 🔥 = −1, walls bounce.<br>
+          <b>Compare to the PI demo:</b> many cheap clicks here, few expensive clicks there. Same π* either way.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Live VI</div>
+  <div class="slide-num">16 / 19</div>
+</section>
+
+<!-- SLIDE 19 — RECAP & NEXT -->
+<section class="slide" data-name="Recap">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:70px;height:70px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">TODAY'S TOOLKIT</span>
+    <h2 class="h2 reveal">Four ideas, <span class="hl mint">one map.</span></h2>
+
+    <style>
+      .map-svg{width:100%;height:auto;max-height:53vh;display:block;margin:.35rem auto 0}
+      .map-svg .ttl{font-family:'Cabinet Grotesk',sans-serif;font-weight:800;fill:#1f1d2b}
+      .map-svg .sub{font-family:'JetBrains Mono',monospace;fill:#6c6a7a}
+      .map-svg .elbl{font-family:'JetBrains Mono',monospace;font-weight:700;fill:#7a4dc2}
+    </style>
+
+    <svg class="map-svg reveal" viewBox="0 0 980 440" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="map-arr" markerWidth="9" markerHeight="9" refX="6" refY="3.2" orient="auto">
+          <path d="M0,0 L6.5,3.2 L0,6.4 Z" fill="#1f1d2b"/>
+        </marker>
+        <marker id="map-arrv" markerWidth="9" markerHeight="9" refX="6" refY="3.2" orient="auto">
+          <path d="M0,0 L6.5,3.2 L0,6.4 Z" fill="#7a4dc2"/>
+        </marker>
+      </defs>
+
+      <!-- split + vertical edges -->
+      <g fill="none" stroke="#1f1d2b" stroke-width="2.4" marker-end="url(#map-arr)">
+        <path d="M470,70 C440,110 248,108 226,143"/>
+        <path d="M500,70 C530,110 714,108 736,143"/>
+        <line x1="226" y1="204" x2="226" y2="249"/>
+        <line x1="736" y1="204" x2="736" y2="249"/>
+        <line x1="226" y1="310" x2="226" y2="355"/>
+        <line x1="736" y1="310" x2="736" y2="355"/>
+      </g>
+      <!-- collapse the loop into value iteration -->
+      <path d="M588,44 L711,44" fill="none" stroke="#7a4dc2" stroke-width="2.4" stroke-dasharray="7 5" marker-end="url(#map-arrv)"/>
+
+      <text class="elbl" x="318" y="106" text-anchor="middle" font-size="11">evaluate</text>
+      <text class="elbl" x="650" y="106" text-anchor="middle" font-size="11">improve</text>
+      <text class="elbl" x="650" y="33" text-anchor="middle" font-size="10.5">collapse the loop</text>
+
+      <!-- Policy Iteration -->
+      <g>
+        <rect x="389" y="22" width="200" height="52" rx="13" fill="#1f1d2b"/>
+        <rect x="385" y="18" width="200" height="52" rx="13" fill="#d9caff" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="485" y="40" text-anchor="middle" font-size="16">Policy Iteration</text>
+        <text class="sub" x="485" y="57" text-anchor="middle" font-size="10">alternate eval ⇄ update</text>
+      </g>
+      <!-- Value Iteration -->
+      <g>
+        <rect x="719" y="22" width="226" height="52" rx="13" fill="#1f1d2b"/>
+        <rect x="715" y="18" width="226" height="52" rx="13" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="828" y="40" text-anchor="middle" font-size="16">Value Iteration</text>
+        <text class="sub" x="828" y="57" text-anchor="middle" font-size="10">one combined backup</text>
+      </g>
+
+      <!-- Policy Evaluation -->
+      <g>
+        <rect x="124" y="150" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="120" y="146" width="212" height="58" rx="13" fill="#bff0d0" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="226" y="171" text-anchor="middle" font-size="16">Policy Evaluation</text>
+        <text class="sub" x="226" y="189" text-anchor="middle" font-size="10">how good is π?  →  Vπ</text>
+      </g>
+      <!-- Policy Update -->
+      <g>
+        <rect x="634" y="150" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="630" y="146" width="212" height="58" rx="13" fill="#ffe08a" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="736" y="171" text-anchor="middle" font-size="16">Policy Update</text>
+        <text class="sub" x="736" y="189" text-anchor="middle" font-size="10">can we do better?  →  π′</text>
+      </g>
+
+      <!-- Iterative Bellman expectation backup -->
+      <g>
+        <rect x="124" y="256" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="120" y="252" width="212" height="58" rx="13" fill="#fbf7ef" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="226" y="277" text-anchor="middle" font-size="14">Iterative Bellman</text>
+        <text class="ttl" x="226" y="296" text-anchor="middle" font-size="14">expectation backup</text>
+      </g>
+      <!-- Optimization problem -->
+      <g>
+        <rect x="634" y="256" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="630" y="252" width="212" height="58" rx="13" fill="#fbf7ef" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="736" y="277" text-anchor="middle" font-size="14">Solve an</text>
+        <text class="ttl" x="736" y="296" text-anchor="middle" font-size="14">optimization problem</text>
+      </g>
+
+      <!-- Linear system -->
+      <g>
+        <rect x="124" y="362" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="120" y="358" width="212" height="58" rx="13" fill="#fbf7ef" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="226" y="382" text-anchor="middle" font-size="14.5">Solve a linear system</text>
+        <text class="sub" x="226" y="401" text-anchor="middle" font-size="11">(I − γP)V = r</text>
+      </g>
+      <!-- Greedy -->
+      <g>
+        <rect x="634" y="362" width="212" height="58" rx="13" fill="#1f1d2b"/>
+        <rect x="630" y="358" width="212" height="58" rx="13" fill="#fbf7ef" stroke="#1f1d2b" stroke-width="2.4"/>
+        <text class="ttl" x="736" y="382" text-anchor="middle" font-size="14.5">Greedy</text>
+        <text class="sub" x="736" y="401" text-anchor="middle" font-size="11">argmaxₐ Q · a special case</text>
+      </g>
+    </svg>
+
+    <p class="body reveal" style="margin-top:1rem;text-align:center;max-width:760px;margin-left:auto;margin-right:auto;font-size:clamp(.92rem,1.18vw,1.05rem)">
+      You can now solve any small, fully-known MDP. If the <b>evaluate ↔ improve</b> loop went by fast, <b>L6 rebuilds it slowly on the warrior tree.</b> Then the real catch: we used \(P(s'\!\mid\! s,a)\) and \(R(s,a)\) directly — <b>L7 throws away the model</b> and learns from experience.
+    </p>
+
+    <div class="lecture-nav reveal" style="margin-top:1rem">
+      <a class="prev" href="lecture-4.html">← Lecture 4</a>
+      <a class="home" href="../index.html">Home</a>
+      <a class="next" href="lecture-6.html">Lecture 6: Policy Iteration →</a>
+    </div>
+  </div>
+  <div class="slide-name">Recap</div>
+  <div class="slide-num">17 / 19</div>
+</section>
+
+<!-- ============ APPENDIX (OPTIONAL) ============ -->
+
+<!-- SLIDE 20 — APPENDIX: OPTIMAL POLICY CAN BE DETERMINISTIC -->
+<section class="slide" data-name="Deterministic Optimal">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">APPENDIX · WHY π* NEEDS NO COIN</span>
+    <h2 class="h2 reveal">The optimal policy can be <span class="hl">deterministic.</span></h2>
+
+    <p class="body reveal" style="max-width:960px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      For a standard finite MDP — a grid world included — the optimal value obeys the <b>Bellman optimality equation</b>, and the optimal policy is just the action that attains the max:
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(.9rem,2vw,1.5rem);align-items:stretch;margin-top:.4rem">
+      <div class="eqn-card reveal" style="margin:0">
+        <span class="eqn-label">OPTIMAL VALUE, THEN OPTIMAL ACTION</span>
+        <div class="eqn-big" style="font-size:clamp(.82rem,1.2vw,1rem)">\[ V^*(s)=\max_{a\in A(s)}\Big\{ r(s,a)+\gamma\!\sum_{s'}P(s'\!\mid\! s,a)\,V^*(s') \Big\} \]\[ \pi^*(s)\in\arg\max_{a\in A(s)}\Big\{ r(s,a)+\gamma\!\sum_{s'}P(s'\!\mid\! s,a)\,V^*(s') \Big\} \]</div>
+        <p class="cartoon-cap">At each state \(s\) it selects <b>one</b> best action — a deterministic map, no probabilities. (The braced quantity is \(Q^*(s,a)\): the value of taking \(a\), then acting optimally.)</p>
+      </div>
+      <div class="eqn-card reveal" style="margin:0">
+        <span class="eqn-label">WHY RANDOMIZING CAN'T HELP</span>
+        <div class="eqn-big" style="font-size:clamp(.86rem,1.3vw,1.08rem)">\[ \sum_{a\in A(s)}\pi(a\!\mid\! s)\,Q^*(s,a)\;\le\;\max_{a\in A(s)} Q^*(s,a) \]</div>
+        <p class="cartoon-cap">A weighted average of numbers is <b>at most their maximum</b>. So for <i>any</i> stochastic policy \(\pi(\cdot\!\mid\! s)\), spreading probability over actions can never beat putting all of it on the single best one.</p>
+      </div>
+    </div>
+
+    <div class="theorem-box reveal" style="margin-top:.9rem">
+      <div class="head">📌 KEY POINT</div>
+      <h3>A grid world may have <b>stochastic transitions</b> (slipping) — yet the optimal policy itself can still be <b>deterministic</b>. The randomness lives in the world, not in π*.</h3>
+    </div>
+  </div>
+  <div class="slide-name">Deterministic Optimal</div>
+  <div class="slide-num">18 / 19</div>
+</section>
+
+<!-- SLIDE 21 — APPENDIX: A STOCHASTIC POLICY, EVALUATED -->
+<section class="slide" data-name="Stochastic Policy">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:100px;height:100px;top:6%;right:6%"></span>
+  <span class="shape s-sun pill bordered anim-wobble-r" style="width:120px;height:50px;bottom:9%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">APPENDIX · EVALUATING A RANDOM π</span>
+    <h2 class="h2 reveal">A <span class="hl">coin-flip policy</span>, evaluated.</h2>
+
+    <p class="body reveal" style="max-width:960px;font-size:clamp(.9rem,1.18vw,1.02rem)">
+      You'd never <i>choose</i> to play randomly — but policy evaluation works on <b>any</b> π. Give cell \(s\) a stochastic policy: flip a fair coin, <b>½ go ↑ / ½ go →</b>. Suppose we already know the neighbours' values. Then \(V^\pi(s)\) is a <b>double average</b> — over the coin <i>and</i> over the slip.
+    </p>
+
+    <div class="reveal" style="display:grid;grid-template-columns:auto 1fr;gap:clamp(1rem,2.4vw,1.8rem);align-items:center;margin-top:.5rem">
+      <svg viewBox="0 0 230 230" style="width:clamp(165px,21vh,210px);height:auto" preserveAspectRatio="xMidYMid meet" font-family="Cabinet Grotesk, sans-serif">
+        <defs><marker id="sp-ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7a4dc2"/></marker></defs>
+        <g stroke="#1f1d2b" stroke-width="2">
+          <rect x="85" y="10"  width="60" height="60" rx="9" fill="#bff0d0"/>
+          <rect x="85" y="160" width="60" height="60" rx="9" fill="#ffb4b4"/>
+          <rect x="10" y="85"  width="60" height="60" rx="9" fill="#f1efe6"/>
+          <rect x="160" y="85" width="60" height="60" rx="9" fill="#bff0d0"/>
+          <rect x="85" y="85"  width="60" height="60" rx="9" fill="#fbf7ef"/>
+        </g>
+        <g text-anchor="middle" dominant-baseline="central" fill="#1f1d2b">
+          <text x="115" y="33" font-size="10" font-family="JetBrains Mono, monospace">up</text>
+          <text x="115" y="50" font-size="13" font-weight="800">0.6</text>
+          <text x="115" y="183" font-size="10" font-family="JetBrains Mono, monospace">down</text>
+          <text x="115" y="200" font-size="13" font-weight="800">−0.5</text>
+          <text x="40" y="108" font-size="10" font-family="JetBrains Mono, monospace">left</text>
+          <text x="40" y="125" font-size="13" font-weight="800">0.2</text>
+          <text x="190" y="108" font-size="10" font-family="JetBrains Mono, monospace">right</text>
+          <text x="190" y="125" font-size="13" font-weight="800">0.8</text>
+          <text x="115" y="118" font-size="17" font-weight="800">s</text>
+        </g>
+        <g stroke="#7a4dc2" stroke-width="2.5" fill="none">
+          <line x1="115" y1="92" x2="115" y2="73" marker-end="url(#sp-ah)"/>
+          <line x1="148" y1="115" x2="157" y2="115" marker-end="url(#sp-ah)"/>
+        </g>
+        <g fill="#7a4dc2" font-size="11" font-weight="800" font-family="JetBrains Mono, monospace">
+          <text x="126" y="85">½</text>
+          <text x="150" y="106">½</text>
+        </g>
+      </svg>
+
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div class="eqn-card" style="margin:0">
+          <span class="eqn-label">STEP 1 · BACK UP EACH ACTION (AVERAGE OVER SLIP, γ = 0.9)</span>
+          <div class="eqn-big" style="font-size:clamp(.82rem,1.25vw,1.02rem)">\[ Q(s,\uparrow)=\underbrace{-0.04}_{\text{step}}+\gamma\big[\,0.8(0.6)+0.1(0.2)+0.1(0.8)\,\big]=0.482 \]\[ Q(s,\rightarrow)=-0.04+\gamma\big[\,0.8(0.8)+0.1(0.6)+0.1(-0.5)\,\big]=0.545 \]</div>
+          <p class="cartoon-cap">Each \(Q\) already hides one expectation — the <b>slip kernel</b> 0.8 / 0.1 / 0.1 over where that action lands.</p>
+        </div>
+        <div class="eqn-card" style="margin:0">
+          <span class="eqn-label">STEP 2 · AVERAGE OVER THE COIN (THE POLICY)</span>
+          <div class="eqn-big" style="font-size:clamp(.9rem,1.4vw,1.15rem)">\[ V^\pi(s)=\tfrac12\,Q(s,\uparrow)+\tfrac12\,Q(s,\rightarrow)=\tfrac12(0.482)+\tfrac12(0.545)=0.5135 \]</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body dim reveal" style="margin-top:.7rem;text-align:center;font-style:italic;font-size:clamp(.84rem,1.08vw,.98rem);max-width:920px;margin-left:auto;margin-right:auto">
+      Two averages stacked: slip <i>inside</i> each \(Q\), the coin <i>across</i> them. A deterministic policy that always took → would score <b>0.545</b> — beating the coin's <b>0.5135</b>. Averaging two actions can't beat committing to the better one — <b>that's why π* never needs a coin.</b>
+    </p>
+  </div>
+  <div class="slide-name">Stochastic Policy</div>
+  <div class="slide-num">19 / 19</div>
+</section>
+
+<script src="shared.js"></script>
+
+<script>
+/* ============================================================
+   LIVE POLICY ITERATION — slide 11
+   - 5×5 gridworld with start, goal, fire, walls
+   - π starts as random arrows (deterministic seed); V starts at 0
+   - "Iterate" = (1) animated inner policy eval to convergence
+                  (2) greedy improve, yellow flip on changed arrows
+   - "Eval sweeps used" counter shows how much hidden work each click costs
+   ============================================================ */
+class PolicyIter{
+  constructor(){
+    this.size=4;
+    this.layout=[
+      ['s','.','.','.'],
+      ['.','#','t','.'],
+      ['.','.','.','#'],
+      ['.','.','.','g'],
+    ];
+    this.gamma=0.9;
+    this.theta=0.001;
+    this.dirs=['↑','→','↓','←'];
+    this.evalDelay=55;       // ms between visible inner eval sweeps
+    this.improveDelay=350;   // pause before improvement after eval converges
+    this.gridEl=document.getElementById('pl-grid');
+    if(!this.gridEl)return;
+    this.cells=[];
+    this.busy=false;
+    this.buildGrid();
+    this.bindEvents();
+    this.reset();
+  }
+  buildGrid(){
+    for(let i=0;i<this.size*this.size;i++){
+      const div=document.createElement('div');
+      div.className='pl-cell';
+      this.gridEl.appendChild(div);
+    }
+    this.cells=[...this.gridEl.querySelectorAll('.pl-cell')];
+  }
+  bindEvents(){
+    document.getElementById('pl-eval').addEventListener('click',()=>this.evalStep());
+    document.getElementById('pl-improve').addEventListener('click',()=>this.improveStep());
+    document.getElementById('pl-run').addEventListener('click',()=>this.runMany());
+    document.getElementById('pl-reset').addEventListener('click',()=>this.reset());
+  }
+  // deterministic random π via small LCG so reset is reproducible
+  seedRandomPolicy(){
+    let s=42;
+    const rng=()=>{s=(s*1664525+1013904223)>>>0;return (s>>>16)/0x10000};
+    const N=this.size;
+    const pol=Array.from({length:N},()=>Array(N).fill(null));
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        const t=this.layout[r][c];
+        if(t==='.'||t==='s')pol[r][c]=this.dirs[Math.floor(rng()*4)];
+        else pol[r][c]='-';
+      }
+    }
+    return pol;
+  }
+  reset(){
+    if(this.busy)return;
+    this.policy=this.seedRandomPolicy();
+    this.V=Array.from({length:this.size},()=>Array(this.size).fill(0));
+    this.round=0;
+    this.evalSweepsTotal=0;
+    this.lastDelta=null;
+    this.evalConverged=false;       // V_k is V_π for the *current* policy
+    this.changedCount=null;
+    this.stable=false;
+    this.lastFlipped=new Set();
+    this.lastEvalChanged=new Set();
+    this.lastPhase=null;
+    this.render();
+  }
+  isTerminal(r,c){const t=this.layout[r][c];return t==='g'||t==='t'}
+  reward(t){if(t==='g')return 1.0;if(t==='t')return -1.0;return -0.04}
+  nextCell(r,c,dir){
+    let nr=r,nc=c;
+    if(dir==='↑')nr--;else if(dir==='↓')nr++;else if(dir==='←')nc--;else if(dir==='→')nc++;
+    if(nr<0||nr>=this.size||nc<0||nc>=this.size)return [r,c];
+    if(this.layout[nr][nc]==='#')return [r,c];
+    return [nr,nc];
+  }
+  // slippery kernel: 0.8 intended, 0.1 each 90° side
+  slipOutcomes(dir){
+    const perp=(dir==='↑'||dir==='↓')?['←','→']:['↑','↓'];
+    return [[0.8,dir],[0.1,perp[0]],[0.1,perp[1]]];
+  }
+  // expected one-step value of taking `dir` in (r,c): Σ P·[reward + γ·V(next)]
+  qValue(r,c,dir){
+    let q=0;
+    for(const [p,d] of this.slipOutcomes(dir)){
+      const [nr,nc]=this.nextCell(r,c,d);
+      const r_next=this.reward(this.layout[nr][nc]);
+      const v_next=this.isTerminal(nr,nc)?0:this.V[nr][nc];
+      q+=p*(r_next+this.gamma*v_next);
+    }
+    return q;
+  }
+  // one synchronous Bellman expectation sweep under current self.policy
+  oneEvalSweep(){
+    const N=this.size;
+    const Vnew=this.V.map(row=>row.slice());
+    let delta=0;
+    const changed=new Set();
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        if(this.isTerminal(r,c)){Vnew[r][c]=0;continue}
+        const dir=this.policy[r][c];
+        if(dir==='-'){Vnew[r][c]=0;continue}
+        Vnew[r][c]=this.qValue(r,c,dir);
+        const diff=Math.abs(Vnew[r][c]-this.V[r][c]);
+        if(diff>0.001)changed.add(r+','+c);
+        if(diff>delta)delta=diff;
+      }
+    }
+    this.V=Vnew;
+    return {delta,changed};
+  }
+  // greedy improvement: π'(s) = argmax_a [r(s,a) + γ V(next(s,a))]
+  // returns { flipped, allOptimal } where allOptimal is true iff the
+  // *previous* policy already had current(s) ∈ argmax-set at every state.
+  // Tie-break: keep current if it's in argmax-set (no spurious flips at ties);
+  // otherwise pick uniformly at random from argmax-set (escapes stuck regions).
+  improvePolicy(){
+    const N=this.size;
+    const newPol=this.policy.map(row=>row.slice());
+    const flipped=new Set();
+    const eps=1e-9;
+    let allOptimal=true;
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        const t=this.layout[r][c];
+        if(t!=='.'&&t!=='s')continue;
+        // compute Q(s, a) for every action (expected over slip)
+        const qs=[];
+        for(const dir of this.dirs){
+          qs.push({dir, q:this.qValue(r,c,dir)});
+        }
+        const maxQ=Math.max(...qs.map(x=>x.q));
+        const argmaxSet=qs.filter(x=>x.q>=maxQ-eps).map(x=>x.dir);
+        const cur=this.policy[r][c];
+        const curIsArgmax=argmaxSet.includes(cur);
+        if(!curIsArgmax)allOptimal=false;
+        // tie-break: keep current if it's optimal; else random pick from argmax set
+        const pick=curIsArgmax?cur:argmaxSet[Math.floor(Math.random()*argmaxSet.length)];
+        if(pick!==cur)flipped.add(r+','+c);
+        newPol[r][c]=pick;
+      }
+    }
+    this.policy=newPol;
+    return {flipped, allOptimal};
+  }
+  sleep(ms){return new Promise(res=>setTimeout(res,ms))}
+  // single eval sweep (one Bellman expectation update over all states)
+  evalStep(){
+    if(this.stable||this.busy)return;
+    const r=this.oneEvalSweep();
+    this.lastEvalChanged=r.changed;
+    this.lastFlipped=new Set();
+    this.lastDelta=r.delta;
+    this.evalSweepsTotal++;
+    if(r.delta<this.theta)this.evalConverged=true;
+    this.lastPhase='eval';
+    this.render();
+  }
+  // single improve step: greedy policy improvement, one pass over all states.
+  // π* certified iff (current policy was already greedy-optimal everywhere)
+  // AND (V is genuinely V_π — i.e., eval has converged under current policy).
+  improveStep(){
+    if(this.stable||this.busy)return;
+    const result=this.improvePolicy();
+    this.lastFlipped=result.flipped;
+    this.lastEvalChanged=new Set();
+    this.changedCount=result.flipped.size;
+    this.lastAllOptimal=result.allOptimal;
+    this.round++;
+    if(result.allOptimal && this.evalConverged) this.stable=true;
+    if(result.flipped.size>0) this.evalConverged=false;  // V is no longer V_π under new policy
+    this.lastPhase='improve';
+    this.render();
+  }
+  // auto-iterate: full eval to convergence, then improve, repeat — visible animation
+  async runMany(){
+    if(this.busy||this.stable)return;
+    this.busy=true;
+    let outerRounds=0;
+    while(!this.stable && outerRounds<25){
+      // animated inner eval to convergence
+      let innerSweeps=0;
+      let delta=Infinity;
+      while(delta>this.theta && innerSweeps<300){
+        const r=this.oneEvalSweep();
+        delta=r.delta;
+        this.lastEvalChanged=r.changed;
+        this.lastFlipped=new Set();
+        this.lastDelta=delta;
+        innerSweeps++;
+        this.evalSweepsTotal++;
+        this.lastPhase='eval';
+        this.render();
+        await this.sleep(this.evalDelay);
+      }
+      this.evalConverged=true;
+      // settle pause before improve
+      this.lastEvalChanged=new Set();
+      this.lastPhase='eval-done';
+      this.render();
+      await this.sleep(this.improveDelay);
+      // improve
+      const result=this.improvePolicy();
+      this.lastFlipped=result.flipped;
+      this.changedCount=result.flipped.size;
+      this.lastAllOptimal=result.allOptimal;
+      this.round++;
+      if(result.allOptimal) this.stable=true;
+      if(result.flipped.size>0) this.evalConverged=false;
+      this.lastPhase='improve';
+      this.render();
+      outerRounds++;
+      if(this.stable)break;
+      await this.sleep(this.improveDelay);
+    }
+    this.busy=false;
+  }
+  render(){
+    this.cells.forEach((cell,i)=>{
+      const r=Math.floor(i/this.size),c=i%this.size;
+      const t=this.layout[r][c];
+      cell.className='pl-cell';
+      cell.innerHTML='';
+      if(t==='s'){cell.classList.add('start');cell.innerHTML='<span style="font-size:1.2em">🤖</span>'}
+      else if(t==='g'){cell.classList.add('goal');cell.innerHTML='<span style="font-size:1.2em">💎</span>';return}
+      else if(t==='t'){cell.classList.add('trap');cell.innerHTML='<span style="font-size:1.2em">🔥</span>';return}
+      else if(t==='#'){cell.classList.add('wall');return}
+      const dir=this.policy[r][c];
+      if(dir!=='-'){
+        const a=document.createElement('span');
+        a.className='pl-arrow';
+        a.textContent=dir;
+        cell.appendChild(a);
+      }
+      const v=this.V[r][c];
+      const val=document.createElement('span');
+      val.className='pl-val '+(v>0.02?'pos':v<-0.02?'neg':'');
+      val.textContent=(v>=0?'+':'')+v.toFixed(2);
+      cell.appendChild(val);
+      if(this.lastEvalChanged && this.lastEvalChanged.has(r+','+c))cell.classList.add('eval-pulse');
+      if(this.lastFlipped.has(r+','+c))cell.classList.add('flipped');
+    });
+    document.getElementById('pl-round').textContent=this.round;
+    document.getElementById('pl-evalsweeps').textContent=this.evalSweepsTotal;
+    document.getElementById('pl-changed').textContent=this.changedCount===null?'—':this.changedCount;
+    const status=document.getElementById('pl-status');
+    if(this.stable)status.textContent='✓ π* found';
+    else if(this.lastPhase==='eval')status.textContent=this.evalConverged?'V_π converged':'Eval…';
+    else if(this.lastPhase==='eval-done')status.textContent='Improving…';
+    else if(this.lastPhase==='improve')status.textContent=this.changedCount===0?(this.evalConverged?'Stable':'No flip · V not V_π'):'Improved';
+    else status.textContent=this.evalSweepsTotal===0&&this.round===0?'Init':'Ready';
+    const exp=document.getElementById('pl-explain');
+    if(this.evalSweepsTotal===0&&this.round===0){
+      exp.innerHTML='Random arrows, V = 0 everywhere. Click <b>Eval sweep</b> to update V under the current π, or <b>Improve</b> to flip arrows greedily.';
+    } else if(this.stable){
+      exp.innerHTML=`✅ <b>Optimal policy found</b> after ${this.round} improve${this.round!==1?'s':''} and ${this.evalSweepsTotal} eval sweep${this.evalSweepsTotal!==1?'s':''}. The last Improve flipped 0 arrows — this is π*.`;
+    } else if(this.lastPhase==='eval'){
+      const conv=this.lastDelta!==null&&this.lastDelta<this.theta;
+      exp.innerHTML=`Eval sweep #${this.evalSweepsTotal}: blue pulses where \\(V\\) changed. Δ = ${this.lastDelta!==null?this.lastDelta.toFixed(3):'—'}.${conv?' <b>V_π converged</b> — try Improve.':' Keep clicking to refine V toward V_π, then <b>Improve</b>.'}`;
+    } else if(this.lastPhase==='eval-done'){
+      exp.innerHTML=`Eval converged. Now applying greedy improvement…`;
+    } else if(this.lastPhase==='improve'){
+      if(this.changedCount===0){
+        if(!this.evalConverged){
+          exp.innerHTML=`Improve flipped <b>0 arrows</b>, but V hasn't converged yet under this π — so we can't certify π*. <b>Click Eval sweep until Δ ≈ 0</b>, then Improve again.`;
+        } else if(this.lastAllOptimal){
+          exp.innerHTML=`Improve flipped <b>0 arrows</b> and V was already V_π → π is optimal at every state. <b>π* found.</b>`;
+        } else {
+          // shouldn't happen with the random tie-break, but fall through safely
+          exp.innerHTML=`Improve flipped 0 arrows, but some states are not certified optimal. Try another Eval/Improve cycle.`;
+        }
+      } else {
+        exp.innerHTML=`Improve flipped <b>${this.changedCount} arrow${this.changedCount!==1?'s':''}</b> (yellow). V is no longer V_π under the new policy — run <b>Eval sweep</b> again.`;
+      }
+    }
+    if(window.MathJax && window.MathJax.typesetPromise){
+      window.MathJax.typesetPromise([exp]);
+    }
+  }
+}
+
+/* ============================================================
+   LIVE VALUE ITERATION — slide 15
+   - 4×4 gridworld, no fixed policy
+   - Each sweep takes max over 4 actions; arg max becomes the displayed arrow
+   ============================================================ */
+class ValueIteration{
+  constructor(){
+    this.size=4;
+    this.layout=[
+      ['s','.','.','.'],
+      ['.','#','t','.'],
+      ['.','.','.','#'],
+      ['.','.','.','g'],
+    ];
+    this.gamma=0.9;
+    this.theta=0.001;
+    this.actions=['↑','↓','←','→'];
+    this.gridEl=document.getElementById('vi-grid');
+    if(!this.gridEl)return;
+    this.cells=[];
+    this.buildGrid();
+    this.reset();
+    this.bindEvents();
+  }
+  buildGrid(){
+    for(let i=0;i<this.size*this.size;i++){
+      const div=document.createElement('div');
+      div.className='pe-cell';
+      this.gridEl.appendChild(div);
+    }
+    this.cells=[...this.gridEl.querySelectorAll('.pe-cell')];
+  }
+  bindEvents(){
+    document.getElementById('vi-step').addEventListener('click',()=>this.step());
+    document.getElementById('vi-run').addEventListener('click',()=>this.runMany());
+    document.getElementById('vi-reset').addEventListener('click',()=>this.reset());
+  }
+  reset(){
+    this.V=Array.from({length:this.size},()=>Array(this.size).fill(0));
+    this.bestA=Array.from({length:this.size},()=>Array(this.size).fill(null));
+    this.sweep=0;
+    this.delta=null;
+    this.converged=false;
+    this.lastChanged=new Set();
+    this.render();
+  }
+  isTerminal(r,c){const t=this.layout[r][c];return t==='g'||t==='t'}
+  reward(t){if(t==='g')return 1.0;if(t==='t')return -1.0;return -0.04}
+  nextCell(r,c,dir){
+    let nr=r,nc=c;
+    if(dir==='↑')nr--;else if(dir==='↓')nr++;else if(dir==='←')nc--;else if(dir==='→')nc++;
+    if(nr<0||nr>=this.size||nc<0||nc>=this.size)return [r,c];
+    if(this.layout[nr][nc]==='#')return [r,c];
+    return [nr,nc];
+  }
+  // slippery kernel: 0.8 intended, 0.1 each 90° side
+  slipOutcomes(dir){
+    const perp=(dir==='↑'||dir==='↓')?['←','→']:['↑','↓'];
+    return [[0.8,dir],[0.1,perp[0]],[0.1,perp[1]]];
+  }
+  // expected one-step value of taking `dir` in (r,c): Σ P·[reward + γ·V(next)]
+  qValue(r,c,dir){
+    let q=0;
+    for(const [p,d] of this.slipOutcomes(dir)){
+      const [nr,nc]=this.nextCell(r,c,d);
+      const r_next=this.reward(this.layout[nr][nc]);
+      const v_next=this.isTerminal(nr,nc)?0:this.V[nr][nc];
+      q+=p*(r_next+this.gamma*v_next);
+    }
+    return q;
+  }
+  step(){
+    if(this.converged)return;
+    const N=this.size;
+    const Vnew=this.V.map(row=>row.slice());
+    let delta=0;
+    const changed=new Set();
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        if(this.layout[r][c]==='#'){Vnew[r][c]=0;this.bestA[r][c]=null;continue}
+        if(this.isTerminal(r,c)){Vnew[r][c]=0;this.bestA[r][c]=null;continue}
+        let best=-Infinity,bestDir=null;
+        for(const dir of this.actions){
+          const q=this.qValue(r,c,dir);
+          if(q>best){best=q;bestDir=dir}
+        }
+        Vnew[r][c]=best;
+        this.bestA[r][c]=bestDir;
+        const diff=Math.abs(Vnew[r][c]-this.V[r][c]);
+        if(diff>0.001)changed.add(r+','+c);
+        if(diff>delta)delta=diff;
+      }
+    }
+    this.V=Vnew;
+    this.sweep++;
+    this.delta=delta;
+    this.lastChanged=changed;
+    if(delta<this.theta)this.converged=true;
+    this.render();
+  }
+  runMany(){
+    const interval=setInterval(()=>{
+      if(this.converged||this.sweep>=80){clearInterval(interval);return}
+      this.step();
+    },350);
+  }
+  render(){
+    this.cells.forEach((cell,i)=>{
+      const r=Math.floor(i/this.size),c=i%this.size;
+      const t=this.layout[r][c];
+      cell.className='pe-cell';
+      cell.innerHTML='';
+      if(t==='s'){cell.classList.add('start');cell.innerHTML='<span style="font-size:1.4em">🤖</span>'}
+      else if(t==='g'){cell.classList.add('goal');cell.innerHTML='<span style="font-size:1.4em">💎</span>';return}
+      else if(t==='t'){cell.classList.add('trap');cell.innerHTML='<span style="font-size:1.4em">🔥</span>';return}
+      else if(t==='#'){cell.classList.add('wall');return}
+      const dir=this.bestA[r][c];
+      if(dir){
+        const a=document.createElement('span');
+        a.className='pe-arrow';
+        a.textContent=dir;
+        cell.appendChild(a);
+      }
+      const v=this.V[r][c];
+      const val=document.createElement('span');
+      val.className='pe-val '+(v>0.02?'pos':v<-0.02?'neg':'');
+      val.textContent=(v>=0?'+':'')+v.toFixed(2);
+      cell.appendChild(val);
+      if(this.lastChanged.has(r+','+c))cell.classList.add('flash');
+    });
+    document.getElementById('vi-sweep').textContent=this.sweep;
+    document.getElementById('vi-delta').textContent=this.delta===null?'—':this.delta.toFixed(3);
+    document.getElementById('vi-status').textContent=this.converged?'✓ Done':(this.sweep===0?'Init':'Running');
+    const exp=document.getElementById('vi-explain');
+    if(this.sweep===0)exp.innerHTML='All values start at 0 — no arrows yet. After each sweep, every cell takes the <b>best</b> of its 4 actions and the arrow becomes \\(\\arg\\max_a\\) of the right-hand side.';
+    else if(this.converged)exp.innerHTML='✅ <b>Converged</b> after ' +this.sweep+ ' sweeps. Values are \\(V^*\\); arrows are the optimal policy \\(\\pi^*\\).';
+    else exp.innerHTML=`Sweep ${this.sweep}: largest change Δ = ${this.delta.toFixed(3)}. Values and arrows still updating.`;
+    if(window.MathJax && window.MathJax.typesetPromise){
+      window.MathJax.typesetPromise([exp]);
+    }
+  }
+}
+
+// ---- Bellman slide: animated warrior-tree roll-up ----
+class BellmanTree{
+  constructor(){
+    this.cap=document.getElementById('bt-cap');
+    this.next=document.getElementById('bt-next');
+    this.reset=document.getElementById('bt-reset');
+    if(!this.cap) return;
+    this.nodes=['bt-root','bt-l0','bt-l1','bt-leaf0','bt-leaf1','bt-leaf2','bt-leaf3'].map(id=>document.getElementById(id));
+    this.steps=[
+      ()=>{ // pop the whole tree
+        this.nodes.forEach((n,i)=>setTimeout(()=>n.classList.add('pop'),i*90));
+        this.say('The warrior tree.','A small decision tree. Every node pays a one-step cost; we want each node\'s <b>value</b>.');
+      },
+      ()=>{ // leaves are terminal
+        ['bt-leaf0','bt-leaf1','bt-leaf2','bt-leaf3'].forEach(id=>document.getElementById(id).classList.add('leaf'));
+        this.say('The leaves are terminal.','There is <b>no future</b> after a leaf — it is the end. So a leaf\'s value is just the cost paid right there.');
+      },
+      ()=>{ // roll up one layer
+        ['bt-e-l0a','bt-e-l0b','bt-e-l1a','bt-e-l1b'].forEach(id=>document.getElementById(id).classList.add('flow'));
+        ['bt-l0','bt-l1'].forEach(id=>document.getElementById(id).classList.add('rolled'));
+        this.say('Roll up one layer.','Each parent = <b>its own cost + γ·(value of the leaf it leads to)</b>. The leaves\' values flow upward.');
+      },
+      ()=>{ // up to the root
+        ['bt-e-root0','bt-e-root1'].forEach(id=>document.getElementById(id).classList.add('flow'));
+        document.getElementById('bt-root').classList.add('rolled');
+        this.say('Up to the root.','Same rule again: \\(V(s)=c(s)+\\gamma\\,V(\\text{next})\\). The whole tree is now valued.');
+      },
+      ()=>{ // it's a property
+        this.say('A property, not an algorithm.','Bellman doesn\'t hand you a recipe — it states the <b>condition every correct V must satisfy</b>. On a tree we can satisfy it by rolling up from the terminal leaves.',true);
+      }
+    ];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.advance());
+    this.reset.addEventListener('click',()=>this.doReset());
+  }
+  say(lead,body,done){
+    this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;
+    if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([this.cap]);
+  }
+  advance(){
+    if(this.i>=this.steps.length) return;
+    this.steps[this.i]();
+    this.i++;
+    if(this.i>=this.steps.length){ this.next.disabled=true; }
+  }
+  doReset(){
+    this.i=0; this.next.disabled=false;
+    this.nodes.forEach(n=>n.classList.remove('pop','leaf','rolled'));
+    document.querySelectorAll('#bt-stage .bt-edge').forEach(e=>e.classList.remove('flow'));
+    this.cap.innerHTML='<span class="lead">Last lecture\'s warrior tree.</span> Each node has a one-step cost; its <b>value</b> is that cost plus the discounted value of where it leads. Press <b>Roll up</b> to watch the Bellman equation fill the tree.';
+  }
+}
+
+// ---- Discount-dial γ ----
+class GammaDial{
+  constructor(){
+    this.slider=document.getElementById('gamma-slider');
+    if(!this.slider) return;
+    this.val=document.getElementById('gamma-val');
+    this.hz=document.getElementById('gamma-horizon');
+    this.presets=document.getElementById('gamma-presets');
+    this.bars=[...Array(8).keys()].map(t=>({bar:document.getElementById('gbar-'+t),w:document.getElementById('gw-'+t)}));
+    this.slider.addEventListener('input',()=>this.render());
+    this.presets.addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(!b) return;
+      this.slider.value=b.dataset.g; this.render();
+    });
+    this.render();
+  }
+  render(){
+    const g=(+this.slider.value)/100;
+    this.val.textContent=g.toFixed(2);
+    [...this.presets.children].forEach(b=>b.classList.toggle('on',+b.dataset.g===+this.slider.value));
+    this.bars.forEach((o,t)=>{
+      const w=Math.pow(g,t);
+      o.bar.style.height=(5+w*84)+'%';
+      o.w.textContent=w>=0.005||t===0?w.toFixed(2):'≈0';
+    });
+    const horizon=g<1?1/(1-g):Infinity;
+    let msg;
+    if(g===0) msg='Only the <b>cost right now</b> counts — the agent is fully myopic.';
+    else if(g<0.6) msg='Effective horizon ≈ <b>'+horizon.toFixed(1)+' steps</b>. The agent is near-sighted; far costs barely register.';
+    else if(g<0.95) msg='Effective horizon ≈ <b>'+horizon.toFixed(1)+' steps</b>. A healthy balance — the usual choice.';
+    else msg='Effective horizon ≈ <b>'+horizon.toFixed(0)+' steps</b>. Very far-sighted; the agent plans a long way ahead (and the math gets slower to converge).';
+    this.hz.innerHTML='Roughly how far it looks: '+msg;
+  }
+}
+
+// ---- Cell references: self-loops & mutual cycles ----
+class CellRefs{
+  constructor(){
+    this.cap=document.getElementById('cref-cap');
+    if(!this.cap) return;
+    this.next=document.getElementById('cref-next');
+    this.reset=document.getElementById('cref-reset');
+    this.cells=['cr-A','cr-B','cr-C','cr-D','cr-E','cr-F','cr-G','cr-H','cr-I'].map(id=>document.getElementById(id));
+    this.G=(id)=>document.getElementById(id);
+    this.policyArrows=['cr-mutual','cr-selfC','cr-selfD','cr-tF','cr-tG','cr-tH'];
+    this.steps=[
+      ()=>{
+        this.G('cr-A').classList.add('mutual');
+        this.G('cr-B').classList.add('mutual');
+        this.say('2-cycle: A ⇄ B.','π sends A→B and B→A, so \\(V(A)\\) needs \\(V(B)\\) and \\(V(B)\\) needs \\(V(A)\\). Neither can be computed first.');
+      },
+      ()=>{
+        this.G('cr-C').classList.add('selfl');
+        this.G('cr-D').classList.add('selfl');
+        this.say('1-cycles: C and D.','Here π drives C into the border and D into the wall — both <b>stay put</b>. That is a self-loop: \\(V(s)=c+\\gamma V(s)\\), a cell on its own.');
+      },
+      ()=>{
+        this.G('cr-F').classList.add('trans');
+        this.G('cr-G').classList.add('trans');
+        this.G('cr-H').classList.add('trans');
+        this.say('Transient: F, G, H.','No cycle on these — follow the arrows (G→H→💎, F→💎) and you reach the terminal and stop. Every cell is now classified by its role in \\(G_\\pi\\).');
+      },
+      ()=>{
+        this.G('cr-selfD').classList.remove('show');
+        this.G('cr-altD').classList.add('show');
+        this.G('cr-D').classList.remove('selfl');
+        this.G('cr-D').classList.add('trans');
+        this.say('It depends on π.','Re-route just one move — D ↓ instead of into the wall — and \\(G_\\pi\\) changes: D→G→H→💎, the self-loop is gone, D is now transient. Self-loop / cycle / transient are properties of \\(G_\\pi\\), not of the grid.',true);
+      },
+      ()=>{
+        this.say('So we can\'t roll up.','Our method must evaluate <b>any</b> π we hand it — and an arbitrary π generally has cycles (A⇄B here). A cycle means an infinite walk, but with \\(\\gamma<1\\) the value is still finite: \\(V=c+\\gamma c+\\gamma^2 c+\\dots=\\tfrac{c}{1-\\gamma}\\). The catch is only that with \\(V\\) on both sides and no leaf to anchor on, there is no one-pass order — we <b>guess V and iterate</b> until Bellman holds. That is the rest of this lecture.',true);
+      }
+    ];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.advance());
+    this.reset.addEventListener('click',()=>this.doReset());
+    this.say('Nine cells, one example policy.','The arrows are the moves of <b>one arbitrary π</b> — chosen just to show every case — the edges of \\(G_\\pi\\). \\(I=\\)💎 is terminal: \\(V=0\\). Press <b>Next</b> to classify every cell by its role in the graph.');
+    // Play the entrance the first time the slide scrolls into view (avoids a blank white box on load).
+    const slide=this.cap.closest('section.slide');
+    if(slide && 'IntersectionObserver' in window){
+      const io=new IntersectionObserver((es)=>{
+        es.forEach(e=>{ if(e.isIntersecting){ this.reveal(); io.disconnect(); } });
+      },{threshold:0.4});
+      io.observe(slide);
+    } else { this.reveal(); }
+  }
+  reveal(){
+    this.cells.forEach((c,i)=>setTimeout(()=>c.classList.add('pop'),i*70));
+    setTimeout(()=>this.policyArrows.forEach(id=>this.G(id).classList.add('show')),700);
+    this.G('cr-I').classList.add('goal');
+  }
+  say(lead,body){
+    this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;
+    if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([this.cap]);
+  }
+  advance(){
+    if(this.i>=this.steps.length) return;
+    this.steps[this.i](); this.i++;
+    if(this.i>=this.steps.length) this.next.disabled=true;
+  }
+  doReset(){
+    this.i=0; this.next.disabled=false;
+    this.cells.forEach(c=>c.classList.remove('mutual','selfl','trans'));
+    this.G('cr-altD').classList.remove('show');
+    this.reveal();
+    this.say('Nine cells, one example policy.','The arrows are the moves of <b>one arbitrary π</b> — chosen just to show every case — the edges of \\(G_\\pi\\). \\(I=\\)💎 is terminal: \\(V=0\\). Press <b>Next</b> to classify every cell by its role in the graph.');
+  }
+}
+
+/* ===== playable Gridworld intro ===== */
+class Gridworld{
+  constructor(){
+    this.board=document.getElementById('gw-board');
+    if(!this.board)return;
+    this.cells=[...this.board.querySelectorAll('.cell')];
+    this.section=this.board.closest('.slide');
+    this.stepsEl=document.getElementById('gw-steps');
+    this.retEl=document.getElementById('gw-return');
+    this.msgEl=document.getElementById('gw-msg');
+    this.fxTermsEl=document.getElementById('gw-fx-terms');
+    this.fxTotalEl=document.getElementById('gw-fx-total');
+    this.terms=[];
+    this.gamma=0.9;
+    this.startIdx=0;
+    this.walls=new Set([5]);
+    this.trap=6;
+    this.goal=15;
+    this.dirs={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+    this.bot=document.createElement('span');
+    this.bot.className='gw-bot';
+    this.bot.textContent='🤖';
+    document.querySelectorAll('.gw-dir').forEach(b=>
+      b.addEventListener('click',()=>this.move(b.dataset.d)));
+    document.getElementById('gw-reset').addEventListener('click',()=>this.reset());
+    document.addEventListener('keydown',e=>{
+      if(!this.onScreen())return;
+      const tag=document.activeElement&&document.activeElement.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA')return;
+      const k={w:'up',a:'left',s:'down',d:'right'}[e.key.toLowerCase()];
+      if(k){e.preventDefault();this.move(k);}
+    });
+    this.reset();
+  }
+  onScreen(){
+    const r=this.section.getBoundingClientRect();
+    const mid=window.innerHeight/2;
+    return r.top<mid&&r.bottom>mid;
+  }
+  reset(){
+    this.pos=this.startIdx;
+    this.steps=0;
+    this.ret=0;
+    this.terms=[];
+    this.done=false;
+    this.cells[this.pos].appendChild(this.bot);
+    this.bot.classList.remove('bump');
+    this.msgEl.className='gw-msg';
+    this.msgEl.textContent='Steer 🤖 to 💎 — but the floor is slippery, so moves don’t always go where you aim.';
+    this.render();
+  }
+  render(){
+    this.stepsEl.textContent=this.steps;
+    this.retEl.textContent=this.ret.toFixed(2);
+    this.renderFormula();
+  }
+  renderFormula(){
+    if(!this.fxTermsEl)return;
+    if(this.terms.length===0){
+      this.fxTermsEl.innerHTML='0';
+      this.fxTotalEl.innerHTML='';
+      return;
+    }
+    const html=this.terms.map((tm,i)=>{
+      const absr=Math.abs(tm.r).toFixed(2);
+      const g=parseFloat(Math.pow(this.gamma,tm.t).toFixed(3)); // γ^t evaluated: 1, 0.9, 0.81, 0.729…
+      const coef=tm.t===0?'':g+'·';
+      const lead=i===0?(tm.r<0?'−':''):(tm.r<0?' − ':' + ');
+      return '<span class="gwf-term '+tm.kind+'">'+lead+coef+absr+'</span>';
+    }).join('');
+    this.fxTermsEl.innerHTML=html;
+    this.fxTotalEl.innerHTML=' = '+this.ret.toFixed(3);
+  }
+  move(dir){
+    if(this.done)return;
+    // slippery floor: 80% the intended way, 10% each 90° side
+    const perp=(dir==='up'||dir==='down')?['left','right']:['up','down'];
+    const roll=Math.random();
+    const actual=roll<0.8?dir:(roll<0.9?perp[0]:perp[1]);
+    const slipped=actual!==dir;
+    const arrow={up:'↑',down:'↓',left:'←',right:'→'};
+    const [dr,dc]=this.dirs[actual];
+    const r=Math.floor(this.pos/4), c=this.pos%4;
+    const nr=r+dr, nc=c+dc;
+    const inside=nr>=0&&nr<4&&nc>=0&&nc<4;
+    const target=inside?nr*4+nc:this.pos;
+    const blocked=!inside||this.walls.has(target);
+    const next=blocked?this.pos:target;
+
+    // reward: terminal landings override the step cost
+    let reward=-0.04;
+    if(next===this.goal)reward=1;
+    else if(next===this.trap)reward=-1;
+
+    this.ret+=Math.pow(this.gamma,this.steps)*reward;
+    this.terms.push({t:this.steps, r:reward, kind:(next===this.goal?'goal':(next===this.trap?'trap':''))});
+    this.steps++;
+    this.pos=next;
+    this.cells[next].appendChild(this.bot);
+
+    if(blocked){
+      this.bot.style.setProperty('--bx',dc*7+'px');
+      this.bot.style.setProperty('--by',dr*7+'px');
+      this.bot.classList.remove('bump');void this.bot.offsetWidth;
+      this.bot.classList.add('bump');
+    }else{
+      this.bot.classList.remove('bump');
+    }
+
+    if(next===this.goal){
+      this.done=true;
+      this.msgEl.className='gw-msg win';
+      this.msgEl.textContent='Reached 💎 in '+this.steps+' steps · return '+this.ret.toFixed(2)+'. Press Reset to play again.';
+    }else if(next===this.trap){
+      this.done=true;
+      this.msgEl.className='gw-msg lose';
+      this.msgEl.textContent='Fell into 🔥 · return '+this.ret.toFixed(2)+'. Press Reset to try again.';
+    }else if(blocked){
+      this.msgEl.className='gw-msg';
+      this.msgEl.textContent=(slipped?'Slipped '+arrow[actual]+' and ':'')+'bumped a '+(inside?'wall':'border')+' — stayed put, still −0.04.';
+    }else if(slipped){
+      this.msgEl.className='gw-msg';
+      this.msgEl.textContent='Slipped! Tried '+arrow[dir]+' but the floor sent you '+arrow[actual]+'.';
+    }else{
+      this.msgEl.className='gw-msg';
+      this.msgEl.textContent='Each step costs −0.04 — fewer steps means a higher return.';
+    }
+    this.render();
+  }
+}
+
+/* ===== reusable click-to-reveal V/Q overlay (warrior tree) ===== */
+/* answer key for the greedy / optimal tree (γ=1, deterministic) — shared by Optimality (slide 11) & the quiz (slide 13) */
+const OPT_V=[
+  {x:424,y:22, a:'start',s:10, v:'+17'},
+  {x:183,y:78, a:'end',  s:9.5,v:'+26'},
+  {x:617,y:78, a:'start',s:9.5,v:'+18'},
+  {x:85, y:132,a:'end',  s:9,  v:'+10'},
+  {x:315,y:132,a:'start',s:9,  v:'+20'},
+  {x:485,y:132,a:'end',  s:9,  v:'+14'},
+  {x:715,y:132,a:'start',s:9,  v:'+14'},
+  {x:37, y:186,a:'end',  s:8,  v:'−5'},
+  {x:163,y:186,a:'start',s:8,  v:'+5'},
+  {x:237,y:186,a:'end',  s:8,  v:'+10'},
+  {x:363,y:186,a:'start',s:8,  v:'+6'},
+  {x:437,y:186,a:'end',  s:8,  v:'+8'},
+  {x:563,y:186,a:'start',s:8,  v:'+5'},
+  {x:637,y:186,a:'end',  s:8,  v:'+7'},
+  {x:763,y:186,a:'start',s:8,  v:'+9'},
+];
+const OPT_Q=[
+  {x:300,y:50, a:'middle',s:9.5,v:'+17'},
+  {x:500,y:50, a:'middle',s:9.5,v:'+12'},
+  {x:150,y:105,a:'middle',s:8.5,v:'+18'},
+  {x:250,y:105,a:'middle',s:8.5,v:'+26'},
+  {x:550,y:105,a:'middle',s:8.5,v:'+18'},
+  {x:650,y:105,a:'middle',s:8.5,v:'+6'},
+  {x:75, y:159,a:'middle',s:7.5,v:'−14'},
+  {x:125,y:159,a:'middle',s:7.5,v:'+10'},
+  {x:275,y:159,a:'middle',s:7.5,v:'+20'},
+  {x:325,y:159,a:'middle',s:7.5,v:'−1'},
+  {x:475,y:159,a:'middle',s:7.5,v:'+14'},
+  {x:525,y:159,a:'middle',s:7.5,v:'−3'},
+  {x:675,y:159,a:'middle',s:7.5,v:'+14'},
+  {x:725,y:159,a:'middle',s:7.5,v:'+3'},
+];
+/* answer key for the fixed random policy π (slide 12 — Bellman evaluation, V_π / Q_π) */
+const EVAL_V=[
+  {x:424,y:22, a:'start',s:10, v:'−4.1'},
+  {x:183,y:78, a:'end',  s:9,  v:'+6.1'},
+  {x:617,y:78, a:'start',s:9,  v:'+0.1'},
+  {x:85, y:132,a:'end',  s:8.5,v:'−7.8'},
+  {x:315,y:132,a:'start',s:8.5,v:'+9.0'},
+  {x:485,y:132,a:'end',  s:8.5,v:'0.0'},
+  {x:715,y:132,a:'start',s:8.5,v:'+2.2'},
+  {x:37, y:186,a:'end',  s:7.5,v:'−6.2'},
+  {x:163,y:186,a:'start',s:7.5,v:'−1.6'},
+  {x:237,y:186,a:'end',  s:7.5,v:'+9.4'},
+  {x:363,y:186,a:'start',s:7.5,v:'+0.4'},
+  {x:437,y:186,a:'end',  s:7.5,v:'−1.0'},
+  {x:563,y:186,a:'start',s:7.5,v:'+0.6'},
+  {x:637,y:186,a:'end',  s:7.5,v:'+1.0'},
+  {x:763,y:186,a:'start',s:7.5,v:'−0.6'},
+];
+const EVAL_Q=[
+  {x:300,y:50, a:'middle',s:9.5,v:'−2.9'},
+  {x:500,y:50, a:'middle',s:9.5,v:'−5.9'},
+  {x:150,y:105,a:'middle',s:8,  v:'+0.2'},
+  {x:250,y:105,a:'middle',s:8,  v:'+15.0'},
+  {x:550,y:105,a:'middle',s:8,  v:'+4.0'},
+  {x:650,y:105,a:'middle',s:8,  v:'−5.8'},
+  {x:75, y:159,a:'middle',s:7,  v:'−15.2'},
+  {x:125,y:159,a:'middle',s:7,  v:'+3.4'},
+  {x:275,y:159,a:'middle',s:7,  v:'+19.4'},
+  {x:325,y:159,a:'middle',s:7,  v:'−6.6'},
+  {x:475,y:159,a:'middle',s:7,  v:'+5.0'},
+  {x:525,y:159,a:'middle',s:7,  v:'−7.4'},
+  {x:675,y:159,a:'middle',s:7,  v:'+8.0'},
+  {x:725,y:159,a:'middle',s:7,  v:'−6.6'},
+];
+class TreeQuiz{
+  constructor(opts){
+    this.host=document.getElementById(opts.host);
+    if(!this.host)return;
+    this.NS='http://www.w3.org/2000/svg';
+    this.data=[...opts.V.map(d=>({...d,t:'V'})),...opts.Q.map(d=>({...d,t:'Q'}))];
+    this.nodes=[];
+    this.render();
+    const rv=document.getElementById(opts.reveal);
+    const rs=document.getElementById(opts.reset);
+    if(rv)rv.addEventListener('click',()=>this.setAll(true));
+    if(rs)rs.addEventListener('click',()=>this.setAll(false));
+  }
+  render(){
+    this.data.forEach(d=>{
+      const w=d.s*0.62*d.v.length + d.s*1.1;
+      const h=d.s*1.7;
+      let rx;
+      if(d.a==='start')      rx=d.x - d.s*0.45;
+      else if(d.a==='end')   rx=d.x - w + d.s*0.45;
+      else                   rx=d.x - w/2;
+      const g=document.createElementNS(this.NS,'g');
+      g.setAttribute('class','gq-cell gq-'+d.t);
+      const rect=document.createElementNS(this.NS,'rect');
+      rect.setAttribute('x',rx); rect.setAttribute('y',d.y-h/2);
+      rect.setAttribute('width',w); rect.setAttribute('height',h); rect.setAttribute('rx',3);
+      const t=document.createElementNS(this.NS,'text');
+      t.setAttribute('x',d.x); t.setAttribute('y',d.y);
+      t.setAttribute('text-anchor',d.a);
+      t.setAttribute('dominant-baseline','central');
+      t.setAttribute('font-size',d.s);
+      t.setAttribute('font-family','JetBrains Mono, monospace');
+      t.setAttribute('font-weight','700');
+      t.textContent='?';
+      g.appendChild(rect); g.appendChild(t);
+      const node={g,t,d,shown:false};
+      g.addEventListener('click',()=>this.toggle(node));
+      this.host.appendChild(g);
+      this.nodes.push(node);
+    });
+  }
+  toggle(n){ n.shown=!n.shown; n.g.classList.toggle('shown',n.shown); n.t.textContent=n.shown?n.d.v:'?'; }
+  setAll(on){ this.nodes.forEach(n=>{ n.shown=on; n.g.classList.toggle('shown',on); n.t.textContent=on?n.d.v:'?'; }); }
+}
+
+
+/* ============================================================
+   DOORS GAME — slide 10
+   Peek-and-pick game over a 4-step binary tree.
+   Reward values are identical to the warrior tree on slide 11.
+   ============================================================ */
+class DoorsGame{
+  constructor(){
+    this.root=document.getElementById('doors-slide');
+    if(!this.root)return;
+    this.REWARDS={
+      'L':-9,'R':-6,
+      'LL':8,'LR':6,'RL':4,'RR':-8,
+      'LLL':-9,'LLR':5,'LRL':10,'LRR':-7,'RLL':6,'RLR':-8,'RRL':7,'RRR':-6,
+      'LLLL':-7,'LLLR':-5,'LLRL':-6,'LLRR':5,
+      'LRLL':9,'LRLR':10,'LRRL':6,'LRRR':-8,
+      'RLLL':-7,'RLLR':8,'RLRL':5,'RLRR':-6,
+      'RRLL':7,'RRLR':-8,'RRRL':-7,'RRRR':9
+    };
+    this.OPTIMAL=17; // L → LR → LRL → LRLR
+    this.elDoors=this.root.querySelector('#dg-doors');
+    this.elFinal=this.root.querySelector('#dg-final');
+    this.elFinalNum=this.root.querySelector('#dg-final-num');
+    this.elFinalMsg=this.root.querySelector('#dg-final-msg');
+    this.elStep=this.root.querySelector('#dg-step');
+    this.elPath=this.root.querySelector('#dg-path');
+    this.elTotal=this.root.querySelector('#dg-total');
+    this.elPeepL=this.root.querySelector('#dg-peep-L');
+    this.elPeepR=this.root.querySelector('#dg-peep-R');
+    this.btnReset=this.root.querySelector('#dg-reset');
+    this.elDoors.querySelectorAll('.dg-door').forEach(d=>{
+      d.addEventListener('click',()=>this.pick(d.dataset.side));
+    });
+    this.btnReset.addEventListener('click',()=>this.reset());
+    this.reset();
+  }
+  fmt(n){return (n>=0?'+':'')+n;}
+  reset(){
+    this.path='';this.total=0;this.history=[];
+    this.elFinal.hidden=true;
+    this.elDoors.style.display='';
+    this.update();
+  }
+  pick(side){
+    if(this.path.length>=4)return;
+    const next=this.path+side;
+    const r=this.REWARDS[next];
+    this.path=next;this.total+=r;this.history.push({side,r});
+    if(this.path.length>=4){this.update();this.finish();return;}
+    this.update();
+    this.elDoors.classList.remove('entering');
+    void this.elDoors.offsetWidth;
+    this.elDoors.classList.add('entering');
+  }
+  update(){
+    const step=Math.min(this.path.length+1,4);
+    this.elStep.textContent=step+' / 4';
+    this.elPath.textContent=this.history.length
+      ? this.history.map(h=>h.side+' ('+this.fmt(h.r)+')').join(' → ')
+      : '—';
+    this.elTotal.textContent=this.fmt(this.total);
+    this.elTotal.className='val '+(this.history.length===0?'':(this.total>=0?'pos':'neg'));
+    if(this.path.length>=4)return;
+    const rL=this.REWARDS[this.path+'L'];
+    const rR=this.REWARDS[this.path+'R'];
+    this.elPeepL.textContent=this.fmt(rL);
+    this.elPeepR.textContent=this.fmt(rR);
+    this.elPeepL.className='dg-peep-val '+(rL>=0?'pos':'neg');
+    this.elPeepR.className='dg-peep-val '+(rR>=0?'pos':'neg');
+  }
+  finish(){
+    this.elDoors.style.display='none';
+    this.elFinal.hidden=false;
+    this.elFinalNum.textContent=this.fmt(this.total);
+    this.elFinalNum.className='dg-final-num '+(this.total>=0?'pos':'neg');
+    let msg;
+    if(this.total>=this.OPTIMAL) msg='🏆 Optimal! You found the best route ('+this.fmt(this.OPTIMAL)+').';
+    else if(this.total>=10) msg='Strong run. Best possible is '+this.fmt(this.OPTIMAL)+' — could you spot it?';
+    else if(this.total>=0) msg='Survived. Best possible is '+this.fmt(this.OPTIMAL)+'. The biggest peep number isn’t always the best move.';
+    else msg='Ouch. Best possible is '+this.fmt(this.OPTIMAL)+' — greedy peeking gets you trapped.';
+    this.elFinalMsg.textContent=msg;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  new Gridworld();
+  new PolicyIter();
+  new ValueIteration();
+  new BellmanTree();
+  new GammaDial();
+  new CellRefs();
+  new TreeQuiz({host:'oq-cells',reveal:'oq-reveal',reset:'oq-reset',V:OPT_V, Q:OPT_Q});   // slide 11 — Optimality
+  new TreeQuiz({host:'bq-cells',reveal:'bq-reveal',reset:'bq-reset',V:EVAL_V,Q:EVAL_Q});  // slide 12 — Bellman eval
+  new DoorsGame();
+});
+</script>
+
+</body>
+</html>

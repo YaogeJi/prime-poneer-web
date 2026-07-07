@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 6 — Policy Iteration: Evaluate → Improve</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+mjx-container[jax="SVG"]{color:var(--ink)}
+
+/* ===== equation / callout cards (borrowed from L4/L5 look) ===== */
+.eqn-card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:1rem 1.2rem;margin-top:.5rem}
+.eqn-card .eqn-label{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.18em;color:var(--dim);display:block;margin-bottom:.3rem}
+.eqn-big{text-align:center;font-size:clamp(1rem,1.4vw,1.2rem);margin:.2rem 0}
+.eqn-note{font-size:clamp(.78rem,1.02vw,.9rem);color:var(--dim);line-height:1.4;margin-top:.35rem;text-align:center}
+
+.callout{display:flex;gap:.7rem;align-items:flex-start;background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.7rem .95rem;margin-top:.7rem}
+.callout .ct-tag{font-family:var(--font-mono);font-weight:700;font-size:.72rem;letter-spacing:.1em;background:var(--sun);border:2px solid var(--line);border-radius:8px;padding:.25rem .5rem;white-space:nowrap}
+.callout p{margin:0;font-size:clamp(.82rem,1.05vw,.96rem);line-height:1.45}
+
+/* ===== two-column: tree + panel ===== */
+.tree-lab{display:grid;grid-template-columns:1.35fr 1fr;gap:clamp(.8rem,1.8vw,1.4rem);align-items:stretch;margin-top:.4rem}
+@media (max-width:860px){.tree-lab{grid-template-columns:1fr}}
+.tree-box{background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.6rem .6rem .3rem}
+.tree-box svg{width:100%;height:auto;max-height:44vh}
+.panel{display:flex;flex-direction:column;gap:.55rem}
+.panel .p-tag{font-family:var(--font-mono);font-weight:700;font-size:.72rem;letter-spacing:.12em;color:var(--dim)}
+.panel .p-formula{background:var(--lilac);border:2.5px solid var(--line);border-radius:12px;box-shadow:3px 3px 0 var(--line);padding:.5rem .7rem;text-align:center;font-size:clamp(.82rem,1.1vw,1rem)}
+.panel .p-cap{font-size:clamp(.82rem,1.05vw,.95rem);line-height:1.45;color:var(--ink);min-height:3.4em}
+.panel .p-cap .lead{font-weight:700}
+
+/* ===== warrior tree SVG ===== */
+.wt-edge{stroke:#b9b6c8;stroke-width:2}
+.wt-edge.pol{stroke:#e23e3e;stroke-width:3.5}
+.wt-edge.imp{stroke:#16924b;stroke-width:4;transition:stroke .35s var(--ease),stroke-width .35s var(--ease)}
+.wt-node circle{stroke:#1f1d2b;stroke-width:2.2}
+.wt-node text{font-family:var(--font-display);font-weight:700;fill:#1f1d2b}
+.wt-rew{font-family:var(--font-mono);font-weight:700;font-size:12px;fill:#1f1d2b}
+.wt-rew.good{fill:#16924b}.wt-rew.bad{fill:#e23e3e}
+.wt-leaf-cap{font-family:var(--font-mono);font-size:10px;fill:#9a97a8}
+.wt-nlabel{font-family:var(--font-mono);font-weight:700;font-size:11px;fill:#6c6a7a}
+
+/* value chips that light up */
+.vchip{opacity:0;transition:opacity .45s var(--ease)}
+.vchip.shown{opacity:1}
+.vchip rect{fill:#efe7fb;stroke:#7a4dc2;stroke-width:2;rx:7}
+.vchip text{font-family:var(--font-mono);font-weight:700;font-size:12px;fill:#7a4dc2}
+.vchip.flash rect{fill:#ffe27a;stroke:#1f1d2b}
+.vchip.flash text{fill:#1f1d2b}
+
+/* stepper buttons */
+.stepper{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
+.stepper button{font-family:var(--font-mono);font-size:.78rem;font-weight:700;padding:.42rem .85rem;border:2px solid #1f1d2b;border-radius:9px;background:#fff;cursor:pointer;box-shadow:2px 2px 0 var(--line);transition:.12s}
+.stepper button:hover:not(:disabled){background:#1f1d2b;color:#fff}
+.stepper button:disabled{opacity:.4;cursor:default;box-shadow:none}
+
+/* ===== sweep table ===== */
+.sweep-tbl{border-collapse:collapse;width:100%;font-family:var(--font-mono);font-size:clamp(.78rem,1vw,.92rem);margin-top:.2rem}
+.sweep-tbl th,.sweep-tbl td{border:2px solid var(--line);padding:.4rem .3rem;text-align:center}
+.sweep-tbl th{background:var(--lilac);font-size:.76rem;letter-spacing:.05em}
+.sweep-tbl td:first-child{background:var(--paper);font-weight:700}
+.sweep-tbl tr{opacity:.25;transition:opacity .4s var(--ease)}
+.sweep-tbl tr.shown{opacity:1}
+.sweep-tbl td.chg{background:var(--sun);font-weight:700}
+.sweep-tbl tr.done td:first-child{background:var(--mint)}
+
+/* ===== method compare ===== */
+.mcmp{display:grid;grid-template-columns:1fr 1fr;gap:clamp(.8rem,1.8vw,1.3rem);margin-top:.5rem}
+@media (max-width:820px){.mcmp{grid-template-columns:1fr}}
+.mcmp .m{border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1.05rem}
+.mcmp .m.van{background:var(--mint)}
+.mcmp .m.iter{background:var(--sky)}
+.mcmp .m h3{font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.5vw,1.3rem);margin-bottom:.35rem}
+.mcmp .m .rowc{display:flex;gap:.5rem;align-items:baseline;margin:.3rem 0;font-size:clamp(.8rem,1.02vw,.94rem);line-height:1.35}
+.mcmp .m .rowc b{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.08em;color:var(--dim);min-width:66px}
+
+/* ===== no-bottom cartoon ===== */
+.nb-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(.9rem,2vw,1.5rem);align-items:center;margin-top:.5rem}
+@media (max-width:820px){.nb-grid{grid-template-columns:1fr}}
+.nb-card{background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.8rem 1rem}
+.nb-card h3{font-family:var(--font-display);font-weight:700;font-size:clamp(.95rem,1.4vw,1.2rem);margin-bottom:.3rem}
+.nb-card p{font-size:clamp(.8rem,1.05vw,.94rem);color:var(--dim);line-height:1.45}
+.nb-card svg{width:100%;height:auto;max-height:22vh;margin-top:.3rem}
+
+/* recap cards */
+.recap-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.6rem,1.4vw,1rem);margin-top:.6rem}
+@media (max-width:820px){.recap-cards{grid-template-columns:1fr}}
+.rc{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.8rem}
+.rc:nth-child(1){background:var(--mint)}.rc:nth-child(2){background:var(--sky)}.rc:nth-child(3){background:var(--peach)}
+.rc .n{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.15em;color:var(--dim)}
+.rc h3{font-family:var(--font-display);font-weight:700;font-size:clamp(.95rem,1.35vw,1.15rem);margin:.2rem 0}
+.rc p{font-size:clamp(.78rem,1vw,.9rem);line-height:1.4}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → or space to navigate</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 1 — TITLE                               -->
+<!-- ============================================ -->
+<section class="slide" data-name="Title">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:130px;height:130px;top:8%;right:8%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:12%;left:6%"></span>
+  <span class="shape s-sun square bordered anim-float" style="width:60px;height:60px;top:20%;left:12%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag mint reveal">LECTURE 06 · POLICY ITERATION</span>
+    <h1 class="title reveal">Policy <span class="hl">iteration.</span></h1>
+    <p class="body dim reveal" style="max-width:720px;margin:0 auto">
+      <b>Policy iteration</b> = score a policy, improve it, repeat. Today we nail the <b>scoring</b> step on our old friend the <b>warrior tree</b> — two ways: the <b>vanilla</b> way (roll up from the leaves) and the <b>iterative</b> way (guess, then repeat). Then we <b>spend</b> those values: improve the policy and loop — <b>evaluate, improve, repeat</b> — until it can't get any better.
+    </p>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">1 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 2 — RESET / WHERE WE LOST YOU           -->
+<!-- ============================================ -->
+<section class="slide" data-name="Reset">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:110px;height:110px;top:7%;right:6%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">HONEST RESET</span>
+    <h2 class="h2 reveal">Last time we changed <span class="hl">four things at once.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      Gridworld threw <b>slip</b> (randomness), <b>Q-values</b>, <b>policy iteration</b>, and <b>value iteration</b> at you in one lecture. No wonder it blurred together. Today we rewind to the tiny, <b>deterministic</b> warrior tree and change <b>one</b> thing at a time.
+    </p>
+
+    <div class="recap-cards reveal" style="grid-template-columns:repeat(4,1fr)">
+      <div class="rc" style="background:var(--rose)"><div class="n">DROPPED TODAY</div><h3>Slip</h3><p>The tree is deterministic — a move goes exactly where you point.</p></div>
+      <div class="rc" style="background:var(--sun)"><div class="n">DROPPED TODAY</div><h3>Discount γ</h3><p>Only 4 steps, so \(\gamma=1\): value = just add up the rewards along the way.</p></div>
+      <div class="rc" style="background:var(--mint)"><div class="n">TODAY'S FOCUS</div><h3>Evaluation</h3><p>Given a policy, compute its value — <i>two</i> different ways.</p></div>
+      <div class="rc" style="background:var(--sky)"><div class="n">THEN</div><h3>Improve</h3><p>Spend the values: pick a better move, then loop until it's optimal.</p></div>
+    </div>
+  </div>
+  <div class="slide-name">Reset</div>
+  <div class="slide-num">2 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 3 — A POLICY & ITS VALUE                -->
+<!-- ============================================ -->
+<section class="slide" data-name="Policy & Value">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:7%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">SET-UP</span>
+    <h2 class="h2 reveal">A policy is a <span class="hl">rule at every node.</span></h2>
+
+    <div class="tree-lab reveal">
+      <div class="tree-box">
+        <!-- static intro tree: policy pi0 = always Right -->
+        <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <line class="wt-edge" data-c="L" x1="400" y1="20" x2="200" y2="75"/>
+          <line class="wt-edge pol" data-c="R" x1="400" y1="20" x2="600" y2="75"/>
+          <line class="wt-edge" data-c="LL" x1="200" y1="75" x2="100" y2="130"/>
+          <line class="wt-edge" data-c="LR" x1="200" y1="75" x2="300" y2="130"/>
+          <line class="wt-edge" data-c="LLL" x1="100" y1="130" x2="50" y2="185"/>
+          <line class="wt-edge" data-c="LLR" x1="100" y1="130" x2="150" y2="185"/>
+          <line class="wt-edge" data-c="LLLL" x1="50" y1="185" x2="25" y2="240"/>
+          <line class="wt-edge" data-c="LLLR" x1="50" y1="185" x2="75" y2="240"/>
+          <line class="wt-edge" data-c="LLRL" x1="150" y1="185" x2="125" y2="240"/>
+          <line class="wt-edge" data-c="LLRR" x1="150" y1="185" x2="175" y2="240"/>
+          <line class="wt-edge" data-c="LRL" x1="300" y1="130" x2="250" y2="185"/>
+          <line class="wt-edge" data-c="LRR" x1="300" y1="130" x2="350" y2="185"/>
+          <line class="wt-edge" data-c="LRLL" x1="250" y1="185" x2="225" y2="240"/>
+          <line class="wt-edge" data-c="LRLR" x1="250" y1="185" x2="275" y2="240"/>
+          <line class="wt-edge" data-c="LRRL" x1="350" y1="185" x2="325" y2="240"/>
+          <line class="wt-edge" data-c="LRRR" x1="350" y1="185" x2="375" y2="240"/>
+          <line class="wt-edge" data-c="RL" x1="600" y1="75" x2="500" y2="130"/>
+          <line class="wt-edge pol" data-c="RR" x1="600" y1="75" x2="700" y2="130"/>
+          <line class="wt-edge" data-c="RLL" x1="500" y1="130" x2="450" y2="185"/>
+          <line class="wt-edge" data-c="RLR" x1="500" y1="130" x2="550" y2="185"/>
+          <line class="wt-edge" data-c="RLLL" x1="450" y1="185" x2="425" y2="240"/>
+          <line class="wt-edge" data-c="RLLR" x1="450" y1="185" x2="475" y2="240"/>
+          <line class="wt-edge" data-c="RLRL" x1="550" y1="185" x2="525" y2="240"/>
+          <line class="wt-edge" data-c="RLRR" x1="550" y1="185" x2="575" y2="240"/>
+          <line class="wt-edge" data-c="RRL" x1="700" y1="130" x2="650" y2="185"/>
+          <line class="wt-edge pol" data-c="RRR" x1="700" y1="130" x2="750" y2="185"/>
+          <line class="wt-edge" data-c="RRLL" x1="650" y1="185" x2="625" y2="240"/>
+          <line class="wt-edge" data-c="RRLR" x1="650" y1="185" x2="675" y2="240"/>
+          <line class="wt-edge" data-c="RRRL" x1="750" y1="185" x2="725" y2="240"/>
+          <line class="wt-edge pol" data-c="RRRR" x1="750" y1="185" x2="775" y2="240"/>
+          <g class="wt-node">
+            <circle cx="400" cy="20" r="20" fill="#fff"/><text x="400" y="26" text-anchor="middle" font-size="16">🤺</text>
+            <circle cx="200" cy="75" r="15" fill="#ffb4b4"/><text x="200" y="79" text-anchor="middle" font-size="12">−9</text>
+            <circle cx="100" cy="130" r="13" fill="#bff0d0"/><text x="100" y="134" text-anchor="middle" font-size="11">+8</text>
+            <circle cx="50" cy="185" r="11" fill="#ffb4b4"/><text x="50" y="188" text-anchor="middle" font-size="9">−9</text>
+            <circle cx="25" cy="240" r="10" fill="#ffb4b4"/><text x="25" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="75" cy="240" r="10" fill="#ffb4b4"/><text x="75" y="243" text-anchor="middle" font-size="8">−5</text>
+            <circle cx="150" cy="185" r="11" fill="#bff0d0"/><text x="150" y="188" text-anchor="middle" font-size="9">+5</text>
+            <circle cx="125" cy="240" r="10" fill="#ffb4b4"/><text x="125" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="175" cy="240" r="10" fill="#bff0d0"/><text x="175" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="300" cy="130" r="13" fill="#bff0d0"/><text x="300" y="134" text-anchor="middle" font-size="11">+6</text>
+            <circle cx="250" cy="185" r="11" fill="#bff0d0"/><text x="250" y="188" text-anchor="middle" font-size="9">+10</text>
+            <circle cx="225" cy="240" r="10" fill="#bff0d0"/><text x="225" y="243" text-anchor="middle" font-size="8">+9</text>
+            <circle cx="275" cy="240" r="10" fill="#bff0d0"/><text x="275" y="243" text-anchor="middle" font-size="8">+10</text>
+            <circle cx="350" cy="185" r="11" fill="#ffb4b4"/><text x="350" y="188" text-anchor="middle" font-size="9">−7</text>
+            <circle cx="325" cy="240" r="10" fill="#bff0d0"/><text x="325" y="243" text-anchor="middle" font-size="8">+6</text>
+            <circle cx="375" cy="240" r="10" fill="#ffb4b4"/><text x="375" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="600" cy="75" r="15" fill="#ffb4b4"/><text x="600" y="79" text-anchor="middle" font-size="12">−6</text>
+            <circle cx="500" cy="130" r="13" fill="#bff0d0"/><text x="500" y="134" text-anchor="middle" font-size="11">+4</text>
+            <circle cx="450" cy="185" r="11" fill="#bff0d0"/><text x="450" y="188" text-anchor="middle" font-size="9">+6</text>
+            <circle cx="425" cy="240" r="10" fill="#ffb4b4"/><text x="425" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="475" cy="240" r="10" fill="#bff0d0"/><text x="475" y="243" text-anchor="middle" font-size="8">+8</text>
+            <circle cx="550" cy="185" r="11" fill="#ffb4b4"/><text x="550" y="188" text-anchor="middle" font-size="9">−8</text>
+            <circle cx="525" cy="240" r="10" fill="#bff0d0"/><text x="525" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="575" cy="240" r="10" fill="#ffb4b4"/><text x="575" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="700" cy="130" r="13" fill="#ffb4b4"/><text x="700" y="134" text-anchor="middle" font-size="11">−8</text>
+            <circle cx="650" cy="185" r="11" fill="#bff0d0"/><text x="650" y="188" text-anchor="middle" font-size="9">+7</text>
+            <circle cx="625" cy="240" r="10" fill="#bff0d0"/><text x="625" y="243" text-anchor="middle" font-size="8">+7</text>
+            <circle cx="675" cy="240" r="10" fill="#ffb4b4"/><text x="675" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="750" cy="185" r="11" fill="#ffb4b4"/><text x="750" y="188" text-anchor="middle" font-size="9">−6</text>
+            <circle cx="725" cy="240" r="10" fill="#ffb4b4"/><text x="725" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="775" cy="240" r="10" fill="#bff0d0"/><text x="775" y="243" text-anchor="middle" font-size="8">+9</text>
+          </g>
+          <g transform="translate(18,286)" font-family="var(--font-mono)" font-size="10" fill="#1f1d2b">
+            <circle cx="6" cy="-3" r="5" fill="#bff0d0" stroke="#1f1d2b" stroke-width="1.2"/><text x="16" y="0">🪙 coin (reward &gt; 0)</text>
+            <circle cx="165" cy="-3" r="5" fill="#ffb4b4" stroke="#1f1d2b" stroke-width="1.2"/><text x="175" y="0">💀 boss (reward &lt; 0)</text>
+            <line x1="330" y1="-3" x2="360" y2="-3" stroke="#e23e3e" stroke-width="3"/><text x="366" y="0">π₀ = always Right</text>
+          </g>
+        </svg>
+      </div>
+      <div class="panel">
+        <span class="p-tag">THE GAME</span>
+        <p class="p-cap">Four steps. At each node the warrior chooses <b>L</b> or <b>R</b>; the move lands on the next node and <b>pays the reward shown inside it</b> — a 🪙 coin or a 💀 boss. After the fourth move the game <b>ends</b> — nothing more to collect.</p>
+        <span class="p-tag">A POLICY \(\pi\)</span>
+        <div class="p-formula">\(\pi_0=\) "<b style="color:#e23e3e">always go Right</b>"</div>
+        <p class="p-cap"><span class="lead">Its value \(V_\pi(s)\)</span> = the <b>total reward you'll collect</b> from node \(s\) if you follow \(\pi\) to the end. That single number is the question of this whole lecture.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Policy &amp; Value</div>
+  <div class="slide-num">3 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 4 — VANILLA EVAL (backward pass)        -->
+<!-- ============================================ -->
+<section class="slide" data-name="Vanilla Eval">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:70px;height:70px;bottom:9%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">METHOD 1 · VANILLA</span>
+    <h2 class="h2 reveal">Roll up <span class="hl mint">from the leaves.</span></h2>
+
+    <div class="tree-lab reveal">
+      <div class="tree-box">
+        <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <line class="wt-edge" data-c="L" x1="400" y1="20" x2="200" y2="75"/>
+          <line class="wt-edge pol" data-c="R" x1="400" y1="20" x2="600" y2="75"/>
+          <line class="wt-edge" data-c="LL" x1="200" y1="75" x2="100" y2="130"/>
+          <line class="wt-edge" data-c="LR" x1="200" y1="75" x2="300" y2="130"/>
+          <line class="wt-edge" data-c="LLL" x1="100" y1="130" x2="50" y2="185"/>
+          <line class="wt-edge" data-c="LLR" x1="100" y1="130" x2="150" y2="185"/>
+          <line class="wt-edge" data-c="LLLL" x1="50" y1="185" x2="25" y2="240"/>
+          <line class="wt-edge" data-c="LLLR" x1="50" y1="185" x2="75" y2="240"/>
+          <line class="wt-edge" data-c="LLRL" x1="150" y1="185" x2="125" y2="240"/>
+          <line class="wt-edge" data-c="LLRR" x1="150" y1="185" x2="175" y2="240"/>
+          <line class="wt-edge" data-c="LRL" x1="300" y1="130" x2="250" y2="185"/>
+          <line class="wt-edge" data-c="LRR" x1="300" y1="130" x2="350" y2="185"/>
+          <line class="wt-edge" data-c="LRLL" x1="250" y1="185" x2="225" y2="240"/>
+          <line class="wt-edge" data-c="LRLR" x1="250" y1="185" x2="275" y2="240"/>
+          <line class="wt-edge" data-c="LRRL" x1="350" y1="185" x2="325" y2="240"/>
+          <line class="wt-edge" data-c="LRRR" x1="350" y1="185" x2="375" y2="240"/>
+          <line class="wt-edge" data-c="RL" x1="600" y1="75" x2="500" y2="130"/>
+          <line class="wt-edge pol" data-c="RR" x1="600" y1="75" x2="700" y2="130"/>
+          <line class="wt-edge" data-c="RLL" x1="500" y1="130" x2="450" y2="185"/>
+          <line class="wt-edge" data-c="RLR" x1="500" y1="130" x2="550" y2="185"/>
+          <line class="wt-edge" data-c="RLLL" x1="450" y1="185" x2="425" y2="240"/>
+          <line class="wt-edge" data-c="RLLR" x1="450" y1="185" x2="475" y2="240"/>
+          <line class="wt-edge" data-c="RLRL" x1="550" y1="185" x2="525" y2="240"/>
+          <line class="wt-edge" data-c="RLRR" x1="550" y1="185" x2="575" y2="240"/>
+          <line class="wt-edge" data-c="RRL" x1="700" y1="130" x2="650" y2="185"/>
+          <line class="wt-edge pol" data-c="RRR" x1="700" y1="130" x2="750" y2="185"/>
+          <line class="wt-edge" data-c="RRLL" x1="650" y1="185" x2="625" y2="240"/>
+          <line class="wt-edge" data-c="RRLR" x1="650" y1="185" x2="675" y2="240"/>
+          <line class="wt-edge" data-c="RRRL" x1="750" y1="185" x2="725" y2="240"/>
+          <line class="wt-edge pol" data-c="RRRR" x1="750" y1="185" x2="775" y2="240"/>
+          <g class="wt-node">
+            <circle cx="400" cy="20" r="20" fill="#fff"/><text x="400" y="26" text-anchor="middle" font-size="16">🤺</text>
+            <circle cx="200" cy="75" r="15" fill="#ffb4b4"/><text x="200" y="79" text-anchor="middle" font-size="12">−9</text>
+            <circle cx="100" cy="130" r="13" fill="#bff0d0"/><text x="100" y="134" text-anchor="middle" font-size="11">+8</text>
+            <circle cx="50" cy="185" r="11" fill="#ffb4b4"/><text x="50" y="188" text-anchor="middle" font-size="9">−9</text>
+            <circle cx="25" cy="240" r="10" fill="#ffb4b4"/><text x="25" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="75" cy="240" r="10" fill="#ffb4b4"/><text x="75" y="243" text-anchor="middle" font-size="8">−5</text>
+            <circle cx="150" cy="185" r="11" fill="#bff0d0"/><text x="150" y="188" text-anchor="middle" font-size="9">+5</text>
+            <circle cx="125" cy="240" r="10" fill="#ffb4b4"/><text x="125" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="175" cy="240" r="10" fill="#bff0d0"/><text x="175" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="300" cy="130" r="13" fill="#bff0d0"/><text x="300" y="134" text-anchor="middle" font-size="11">+6</text>
+            <circle cx="250" cy="185" r="11" fill="#bff0d0"/><text x="250" y="188" text-anchor="middle" font-size="9">+10</text>
+            <circle cx="225" cy="240" r="10" fill="#bff0d0"/><text x="225" y="243" text-anchor="middle" font-size="8">+9</text>
+            <circle cx="275" cy="240" r="10" fill="#bff0d0"/><text x="275" y="243" text-anchor="middle" font-size="8">+10</text>
+            <circle cx="350" cy="185" r="11" fill="#ffb4b4"/><text x="350" y="188" text-anchor="middle" font-size="9">−7</text>
+            <circle cx="325" cy="240" r="10" fill="#bff0d0"/><text x="325" y="243" text-anchor="middle" font-size="8">+6</text>
+            <circle cx="375" cy="240" r="10" fill="#ffb4b4"/><text x="375" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="600" cy="75" r="15" fill="#ffb4b4"/><text x="600" y="79" text-anchor="middle" font-size="12">−6</text>
+            <circle cx="500" cy="130" r="13" fill="#bff0d0"/><text x="500" y="134" text-anchor="middle" font-size="11">+4</text>
+            <circle cx="450" cy="185" r="11" fill="#bff0d0"/><text x="450" y="188" text-anchor="middle" font-size="9">+6</text>
+            <circle cx="425" cy="240" r="10" fill="#ffb4b4"/><text x="425" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="475" cy="240" r="10" fill="#bff0d0"/><text x="475" y="243" text-anchor="middle" font-size="8">+8</text>
+            <circle cx="550" cy="185" r="11" fill="#ffb4b4"/><text x="550" y="188" text-anchor="middle" font-size="9">−8</text>
+            <circle cx="525" cy="240" r="10" fill="#bff0d0"/><text x="525" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="575" cy="240" r="10" fill="#ffb4b4"/><text x="575" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="700" cy="130" r="13" fill="#ffb4b4"/><text x="700" y="134" text-anchor="middle" font-size="11">−8</text>
+            <circle cx="650" cy="185" r="11" fill="#bff0d0"/><text x="650" y="188" text-anchor="middle" font-size="9">+7</text>
+            <circle cx="625" cy="240" r="10" fill="#bff0d0"/><text x="625" y="243" text-anchor="middle" font-size="8">+7</text>
+            <circle cx="675" cy="240" r="10" fill="#ffb4b4"/><text x="675" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="750" cy="185" r="11" fill="#ffb4b4"/><text x="750" y="188" text-anchor="middle" font-size="9">−6</text>
+            <circle cx="725" cy="240" r="10" fill="#ffb4b4"/><text x="725" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="775" cy="240" r="10" fill="#bff0d0"/><text x="775" y="243" text-anchor="middle" font-size="8">+9</text>
+          </g>
+          <g class="vchip" id="ve-root"><rect x="383" y="43" width="34" height="16" rx="5"/><text x="400" y="55" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-L"><rect x="183" y="93" width="34" height="16" rx="5"/><text x="200" y="105" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LL"><rect x="83" y="146" width="34" height="16" rx="5"/><text x="100" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LLL"><rect x="33" y="199" width="34" height="16" rx="5"/><text x="50" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LLR"><rect x="133" y="199" width="34" height="16" rx="5"/><text x="150" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LR"><rect x="283" y="146" width="34" height="16" rx="5"/><text x="300" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LRL"><rect x="233" y="199" width="34" height="16" rx="5"/><text x="250" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-LRR"><rect x="333" y="199" width="34" height="16" rx="5"/><text x="350" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-R"><rect x="583" y="93" width="34" height="16" rx="5"/><text x="600" y="105" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RL"><rect x="483" y="146" width="34" height="16" rx="5"/><text x="500" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RLL"><rect x="433" y="199" width="34" height="16" rx="5"/><text x="450" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RLR"><rect x="533" y="199" width="34" height="16" rx="5"/><text x="550" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RR"><rect x="683" y="146" width="34" height="16" rx="5"/><text x="700" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RRL"><rect x="633" y="199" width="34" height="16" rx="5"/><text x="650" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip" id="ve-RRR"><rect x="733" y="199" width="34" height="16" rx="5"/><text x="750" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+        </svg>
+      </div>
+      <div class="panel">
+        <span class="p-tag">THE ONE RULE (BELLMAN)</span>
+        <div class="p-formula">\( V_\pi(s)=R\big(s,\pi(s)\big)+V_\pi(s') \)</div>
+        <p class="p-cap" id="ve-cap"><span class="lead">Start at the ends.</span> An END node has no future, so its value is \(0\). Press <b>Roll up</b> to fill each parent from the child \(\pi_0\) leads to.</p>
+        <div class="stepper">
+          <button id="ve-next" type="button">▶ Roll up</button>
+          <button id="ve-reset" type="button">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Vanilla Eval</div>
+  <div class="slide-num">4 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 5 — WHY THAT WORKED                      -->
+<!-- ============================================ -->
+<section class="slide" data-name="Why It Worked">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:120px;height:120px;top:7%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">THE TRICK BEHIND IT</span>
+    <h2 class="h2 reveal">It only worked because the tree <span class="hl sky">has a bottom.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      The whole roll-up hangs on <b>one</b> known fact: <b>an END node is worth 0.</b> That gives us a place to <i>start</i>. From there every value is just "my reward + a value I already know," so we sweep bottom-to-top and never guess.
+    </p>
+
+    <div class="callout reveal">
+      <span class="ct-tag">🔑 KEY</span>
+      <p>Vanilla evaluation = <b>backward induction</b>. It needs a <b>last step</b> (the leaves) to anchor the recursion. Solve the ends first, then work backwards. One pass, exact answer.</p>
+    </div>
+
+    <div class="callout reveal" style="background:var(--peach)">
+      <span class="ct-tag" style="background:#fff">🤔 THINK</span>
+      <p>So here's the trap for next slide: <b>what if the game never ends?</b> What if the warrior can wander in a loop, revisiting the same rooms forever — <b>no leaves at all?</b> Where would you even start rolling up from?</p>
+    </div>
+  </div>
+  <div class="slide-name">Why It Worked</div>
+  <div class="slide-num">5 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 6 — THE CATCH: NO BOTTOM                 -->
+<!-- ============================================ -->
+<section class="slide" data-name="No Bottom">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag rose reveal">THE CATCH</span>
+    <h2 class="h2 reveal">Gridworld has <span class="hl rose">no leaves.</span></h2>
+
+    <div class="nb-grid reveal">
+      <div class="nb-card">
+        <h3>🌳 Tree — has a bottom</h3>
+        <p>Every path ends in an END node. Start there (value 0) and roll up. Backward induction works.</p>
+        <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet">
+          <line x1="120" y1="20" x2="70" y2="70" stroke="#b9b6c8" stroke-width="2"/>
+          <line x1="120" y1="20" x2="170" y2="70" stroke="#b9b6c8" stroke-width="2"/>
+          <line x1="70" y1="70" x2="45" y2="105" stroke="#b9b6c8" stroke-width="2"/>
+          <line x1="70" y1="70" x2="95" y2="105" stroke="#b9b6c8" stroke-width="2"/>
+          <line x1="170" y1="70" x2="145" y2="105" stroke="#b9b6c8" stroke-width="2"/>
+          <line x1="170" y1="70" x2="195" y2="105" stroke="#b9b6c8" stroke-width="2"/>
+          <circle cx="120" cy="20" r="10" fill="#fff" stroke="#1f1d2b" stroke-width="2"/>
+          <circle cx="70" cy="70" r="9" fill="var(--peach)" stroke="#1f1d2b" stroke-width="2"/>
+          <circle cx="170" cy="70" r="9" fill="var(--peach)" stroke="#1f1d2b" stroke-width="2"/>
+          <g fill="var(--mint)" stroke="#1f1d2b" stroke-width="2">
+            <circle cx="45" cy="105" r="8"/><circle cx="95" cy="105" r="8"/><circle cx="145" cy="105" r="8"/><circle cx="195" cy="105" r="8"/>
+          </g>
+          <text x="45" y="108" text-anchor="middle" font-size="8" font-family="var(--font-mono)">0</text>
+          <text x="95" y="108" text-anchor="middle" font-size="8" font-family="var(--font-mono)">0</text>
+          <text x="145" y="108" text-anchor="middle" font-size="8" font-family="var(--font-mono)">0</text>
+          <text x="195" y="108" text-anchor="middle" font-size="8" font-family="var(--font-mono)">0</text>
+        </svg>
+      </div>
+      <div class="nb-card">
+        <h3>🔁 Grid — loops forever</h3>
+        <p>Step around and you can return to a room you already left. There is <b>no last step</b> — so there is no leaf to start from. Backward induction has nowhere to begin.</p>
+        <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet">
+          <circle cx="60" cy="60" r="16" fill="var(--sky)" stroke="#1f1d2b" stroke-width="2"/>
+          <circle cx="180" cy="60" r="16" fill="var(--sky)" stroke="#1f1d2b" stroke-width="2"/>
+          <text x="60" y="64" text-anchor="middle" font-size="11" font-family="var(--font-mono)">s₁</text>
+          <text x="180" y="64" text-anchor="middle" font-size="11" font-family="var(--font-mono)">s₂</text>
+          <path d="M76 50 Q120 20 164 50" fill="none" stroke="#e23e3e" stroke-width="2.5" marker-end="url(#ar6)"/>
+          <path d="M164 70 Q120 100 76 70" fill="none" stroke="#e23e3e" stroke-width="2.5" marker-end="url(#ar6)"/>
+          <defs><marker id="ar6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e23e3e"/></marker></defs>
+        </svg>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:.6rem">
+      <span class="ct-tag">SO…</span>
+      <p>We still want \(V_\pi\). But we can't start from the end, because there is no end. <b>New idea needed.</b></p>
+    </div>
+  </div>
+  <div class="slide-name">No Bottom</div>
+  <div class="slide-num">6 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — IDEA: GUESS & REPEAT                 -->
+<!-- ============================================ -->
+<section class="slide" data-name="Guess & Repeat">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">THE IDEA</span>
+    <h2 class="h2 reveal">Can't start from the end? <span class="hl">Guess — then repeat.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      If there's no leaf to anchor us, we just <b>make one up</b>: pretend every node is worth \(0\) to begin with. That guess is wrong — but the Bellman rule lets us make it <b>less wrong</b>, over and over.
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">THE SAME RULE — NOW AS AN UPDATE (\(k\) = sweep number)</span>
+      <div class="eqn-big">\[ V_{k+1}(s)\;\leftarrow\; R\big(s,\pi(s)\big)+V_k(s') \]</div>
+      <p class="eqn-note">Take your <b>current</b> guesses \(V_k\), apply the rule once to <b>every</b> node → better guesses \(V_{k+1}\). Repeat. When the numbers stop changing, they satisfy Bellman exactly — that's \(V_\pi\).</p>
+    </div>
+
+    <div class="callout reveal">
+      <span class="ct-tag">💡 WHY IT WORKS</span>
+      <p>Each sweep, the truth "leaks in" one step further. Real values reach nodes one layer at a time — and (with discounting in looping worlds) the leftover error shrinks every pass until it vanishes.</p>
+    </div>
+  </div>
+  <div class="slide-name">Guess &amp; Repeat</div>
+  <div class="slide-num">7 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 8 — ITERATIVE EVAL ON THE TREE (live)    -->
+<!-- ============================================ -->
+<section class="slide" data-name="Iterative Eval">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:110px;height:110px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:70px;height:70px;bottom:9%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">METHOD 2 · ITERATIVE</span>
+    <h2 class="h2 reveal">Same tree, but we <span class="hl sky">pretend we don't know the ends.</span></h2>
+
+    <div class="tree-lab reveal">
+      <div class="tree-box">
+        <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <line class="wt-edge" data-c="L" x1="400" y1="20" x2="200" y2="75"/>
+          <line class="wt-edge pol" data-c="R" x1="400" y1="20" x2="600" y2="75"/>
+          <line class="wt-edge" data-c="LL" x1="200" y1="75" x2="100" y2="130"/>
+          <line class="wt-edge" data-c="LR" x1="200" y1="75" x2="300" y2="130"/>
+          <line class="wt-edge" data-c="LLL" x1="100" y1="130" x2="50" y2="185"/>
+          <line class="wt-edge" data-c="LLR" x1="100" y1="130" x2="150" y2="185"/>
+          <line class="wt-edge" data-c="LLLL" x1="50" y1="185" x2="25" y2="240"/>
+          <line class="wt-edge" data-c="LLLR" x1="50" y1="185" x2="75" y2="240"/>
+          <line class="wt-edge" data-c="LLRL" x1="150" y1="185" x2="125" y2="240"/>
+          <line class="wt-edge" data-c="LLRR" x1="150" y1="185" x2="175" y2="240"/>
+          <line class="wt-edge" data-c="LRL" x1="300" y1="130" x2="250" y2="185"/>
+          <line class="wt-edge" data-c="LRR" x1="300" y1="130" x2="350" y2="185"/>
+          <line class="wt-edge" data-c="LRLL" x1="250" y1="185" x2="225" y2="240"/>
+          <line class="wt-edge" data-c="LRLR" x1="250" y1="185" x2="275" y2="240"/>
+          <line class="wt-edge" data-c="LRRL" x1="350" y1="185" x2="325" y2="240"/>
+          <line class="wt-edge" data-c="LRRR" x1="350" y1="185" x2="375" y2="240"/>
+          <line class="wt-edge" data-c="RL" x1="600" y1="75" x2="500" y2="130"/>
+          <line class="wt-edge pol" data-c="RR" x1="600" y1="75" x2="700" y2="130"/>
+          <line class="wt-edge" data-c="RLL" x1="500" y1="130" x2="450" y2="185"/>
+          <line class="wt-edge" data-c="RLR" x1="500" y1="130" x2="550" y2="185"/>
+          <line class="wt-edge" data-c="RLLL" x1="450" y1="185" x2="425" y2="240"/>
+          <line class="wt-edge" data-c="RLLR" x1="450" y1="185" x2="475" y2="240"/>
+          <line class="wt-edge" data-c="RLRL" x1="550" y1="185" x2="525" y2="240"/>
+          <line class="wt-edge" data-c="RLRR" x1="550" y1="185" x2="575" y2="240"/>
+          <line class="wt-edge" data-c="RRL" x1="700" y1="130" x2="650" y2="185"/>
+          <line class="wt-edge pol" data-c="RRR" x1="700" y1="130" x2="750" y2="185"/>
+          <line class="wt-edge" data-c="RRLL" x1="650" y1="185" x2="625" y2="240"/>
+          <line class="wt-edge" data-c="RRLR" x1="650" y1="185" x2="675" y2="240"/>
+          <line class="wt-edge" data-c="RRRL" x1="750" y1="185" x2="725" y2="240"/>
+          <line class="wt-edge pol" data-c="RRRR" x1="750" y1="185" x2="775" y2="240"/>
+          <g class="wt-node">
+            <circle cx="400" cy="20" r="20" fill="#fff"/><text x="400" y="26" text-anchor="middle" font-size="16">🤺</text>
+            <circle cx="200" cy="75" r="15" fill="#ffb4b4"/><text x="200" y="79" text-anchor="middle" font-size="12">−9</text>
+            <circle cx="100" cy="130" r="13" fill="#bff0d0"/><text x="100" y="134" text-anchor="middle" font-size="11">+8</text>
+            <circle cx="50" cy="185" r="11" fill="#ffb4b4"/><text x="50" y="188" text-anchor="middle" font-size="9">−9</text>
+            <circle cx="25" cy="240" r="10" fill="#ffb4b4"/><text x="25" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="75" cy="240" r="10" fill="#ffb4b4"/><text x="75" y="243" text-anchor="middle" font-size="8">−5</text>
+            <circle cx="150" cy="185" r="11" fill="#bff0d0"/><text x="150" y="188" text-anchor="middle" font-size="9">+5</text>
+            <circle cx="125" cy="240" r="10" fill="#ffb4b4"/><text x="125" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="175" cy="240" r="10" fill="#bff0d0"/><text x="175" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="300" cy="130" r="13" fill="#bff0d0"/><text x="300" y="134" text-anchor="middle" font-size="11">+6</text>
+            <circle cx="250" cy="185" r="11" fill="#bff0d0"/><text x="250" y="188" text-anchor="middle" font-size="9">+10</text>
+            <circle cx="225" cy="240" r="10" fill="#bff0d0"/><text x="225" y="243" text-anchor="middle" font-size="8">+9</text>
+            <circle cx="275" cy="240" r="10" fill="#bff0d0"/><text x="275" y="243" text-anchor="middle" font-size="8">+10</text>
+            <circle cx="350" cy="185" r="11" fill="#ffb4b4"/><text x="350" y="188" text-anchor="middle" font-size="9">−7</text>
+            <circle cx="325" cy="240" r="10" fill="#bff0d0"/><text x="325" y="243" text-anchor="middle" font-size="8">+6</text>
+            <circle cx="375" cy="240" r="10" fill="#ffb4b4"/><text x="375" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="600" cy="75" r="15" fill="#ffb4b4"/><text x="600" y="79" text-anchor="middle" font-size="12">−6</text>
+            <circle cx="500" cy="130" r="13" fill="#bff0d0"/><text x="500" y="134" text-anchor="middle" font-size="11">+4</text>
+            <circle cx="450" cy="185" r="11" fill="#bff0d0"/><text x="450" y="188" text-anchor="middle" font-size="9">+6</text>
+            <circle cx="425" cy="240" r="10" fill="#ffb4b4"/><text x="425" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="475" cy="240" r="10" fill="#bff0d0"/><text x="475" y="243" text-anchor="middle" font-size="8">+8</text>
+            <circle cx="550" cy="185" r="11" fill="#ffb4b4"/><text x="550" y="188" text-anchor="middle" font-size="9">−8</text>
+            <circle cx="525" cy="240" r="10" fill="#bff0d0"/><text x="525" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="575" cy="240" r="10" fill="#ffb4b4"/><text x="575" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="700" cy="130" r="13" fill="#ffb4b4"/><text x="700" y="134" text-anchor="middle" font-size="11">−8</text>
+            <circle cx="650" cy="185" r="11" fill="#bff0d0"/><text x="650" y="188" text-anchor="middle" font-size="9">+7</text>
+            <circle cx="625" cy="240" r="10" fill="#bff0d0"/><text x="625" y="243" text-anchor="middle" font-size="8">+7</text>
+            <circle cx="675" cy="240" r="10" fill="#ffb4b4"/><text x="675" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="750" cy="185" r="11" fill="#ffb4b4"/><text x="750" y="188" text-anchor="middle" font-size="9">−6</text>
+            <circle cx="725" cy="240" r="10" fill="#ffb4b4"/><text x="725" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="775" cy="240" r="10" fill="#bff0d0"/><text x="775" y="243" text-anchor="middle" font-size="8">+9</text>
+          </g>
+          <g class="vchip shown" id="it-root"><rect x="383" y="43" width="34" height="16" rx="5"/><text x="400" y="55" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-L"><rect x="183" y="93" width="34" height="16" rx="5"/><text x="200" y="105" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LL"><rect x="83" y="146" width="34" height="16" rx="5"/><text x="100" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LLL"><rect x="33" y="199" width="34" height="16" rx="5"/><text x="50" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LLR"><rect x="133" y="199" width="34" height="16" rx="5"/><text x="150" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LR"><rect x="283" y="146" width="34" height="16" rx="5"/><text x="300" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LRL"><rect x="233" y="199" width="34" height="16" rx="5"/><text x="250" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-LRR"><rect x="333" y="199" width="34" height="16" rx="5"/><text x="350" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-R"><rect x="583" y="93" width="34" height="16" rx="5"/><text x="600" y="105" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RL"><rect x="483" y="146" width="34" height="16" rx="5"/><text x="500" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RLL"><rect x="433" y="199" width="34" height="16" rx="5"/><text x="450" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RLR"><rect x="533" y="199" width="34" height="16" rx="5"/><text x="550" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RR"><rect x="683" y="146" width="34" height="16" rx="5"/><text x="700" y="158" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RRL"><rect x="633" y="199" width="34" height="16" rx="5"/><text x="650" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+          <g class="vchip shown" id="it-RRR"><rect x="733" y="199" width="34" height="16" rx="5"/><text x="750" y="211" text-anchor="middle" font-size="10.5">0</text></g>
+        </svg>
+      </div>
+      <div class="panel">
+        <span class="p-tag">SWEEPS (start: everything = 0)</span>
+        <table class="sweep-tbl">
+          <thead><tr><th>sweep k</th><th>V(🤺)</th></tr></thead>
+          <tbody id="it-rows"></tbody>
+        </table>
+        <p class="p-cap" id="it-cap"><span class="lead">Guess: all zeros.</span> Press <b>Sweep</b> to apply the update to every node at once.</p>
+        <div class="stepper">
+          <button id="it-next" type="button">▶ Sweep</button>
+          <button id="it-reset" type="button">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Iterative Eval</div>
+  <div class="slide-num">8 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 9 — WHEN DO WE STOP?                     -->
+<!-- ============================================ -->
+<section class="slide" data-name="Stopping">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">CONVERGENCE</span>
+    <h2 class="h2 reveal">Stop when the numbers <span class="hl mint">stop moving.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      Each sweep changes the values by less than the last. Once a full sweep barely nudges anything — say the biggest change is under some tiny \(\varepsilon\) — the guesses have <b>settled onto \(V_\pi\)</b>. On our depth-4 tree that took about 4 sweeps — one per layer; a looping grid takes more, but it always settles.
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">STOPPING TEST</span>
+      <div class="eqn-big">\[ \max_s\;\big|\,V_{k+1}(s)-V_k(s)\,\big|\;<\;\varepsilon \quad\Rightarrow\quad \text{stop} \]</div>
+      <p class="eqn-note">"The largest change across all nodes is tiny." In a discounted looping world each sweep shrinks the error by a factor \(\gamma&lt;1\), so it can only get smaller — convergence is guaranteed.</p>
+    </div>
+  </div>
+  <div class="slide-name">Stopping</div>
+  <div class="slide-num">9 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 10 — ALGORITHM BOX                        -->
+<!-- ============================================ -->
+<section class="slide" data-name="Algorithm">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:7%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag lilac reveal">THE ALGORITHM (NOW DEMYSTIFIED)</span>
+    <h2 class="h2 reveal">Iterative Policy Evaluation.</h2>
+    <p class="body reveal" style="max-width:980px">
+      This is the exact pseudocode from Lecture 5 — the one that looked like magic. Read it again now: it's just "guess zero, sweep the Bellman rule, stop when it settles."
+    </p>
+
+    <div class="eqn-card reveal" style="text-align:left;font-family:var(--font-mono);font-size:clamp(.8rem,1.05vw,.98rem);line-height:1.7">
+      <span class="eqn-label">GIVEN A POLICY \(\pi\)</span>
+      <div style="margin-top:.3rem">
+        <b>1.</b> Initialize \(V(s)\leftarrow 0\) for every state \(s\).<br>
+        <b>2.</b> <b>Repeat</b> until the biggest change \(&lt;\varepsilon\):<br>
+        <span style="margin-left:1.6em">for every state \(s\): &nbsp;\(V(s)\leftarrow R\big(s,\pi(s)\big)+\gamma\sum_{s'}P(s'\!\mid\! s,\pi(s))\,V(s')\)</span><br>
+        <b>3.</b> <b>Return</b> \(V\approx V_\pi\).
+      </div>
+      <p class="eqn-note" style="text-align:left;margin-top:.5rem">On our tree the sum \(\sum_{s'}\) has one term (deterministic) and \(\gamma=1\), so it collapses to \(V(s)\leftarrow R+V(s')\) — exactly what we just did by hand. Gridworld only adds the average over slip and the discount.</p>
+    </div>
+  </div>
+  <div class="slide-name">Algorithm</div>
+  <div class="slide-num">10 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — DIRECT SOLVE (closed form)          -->
+<!-- ============================================ -->
+<section class="slide" data-name="Direct Solve">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-sky circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">METHOD 3 · DIRECT</span>
+    <h2 class="h2 reveal">Or just <span class="hl">solve the equations.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      The Bellman rule gives <b>one equation per state</b>. With \(n\) states that's \(n\) equations in \(n\) unknowns \(V(s)\) — and they're <b>linear</b>. So you don't have to roll up <i>or</i> sweep: solve the whole system at once, like the simultaneous equations from algebra class.
+    </p>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">TWO LOOPING ROOMS · \(\gamma=0.5\) · \(s_1\) pays \(+3\), \(s_2\) pays \(+6\)</span>
+      <div class="eqn-big">\[ \begin{aligned} V(s_1)&=3+0.5\,V(s_2)\\ V(s_2)&=6+0.5\,V(s_1) \end{aligned} \qquad\Longrightarrow\qquad V(s_1)=8,\;\; V(s_2)=10 \]</div>
+      <p class="eqn-note">Substitute one into the other and solve — no leaves, no sweeps, <b>exact in one shot</b>. The loop that stumped backward induction is no trouble at all for algebra.</p>
+    </div>
+
+    <div class="eqn-card reveal">
+      <span class="eqn-label">THE SAME MOVE FOR ALL \(n\) STATES AT ONCE</span>
+      <div class="eqn-big">\[ V_\pi \;=\; \big(I-\gamma P_\pi\big)^{-1}\,R_\pi \]</div>
+      <p class="eqn-note">Stack every state's value into a vector. \(P_\pi\) is the table of move probabilities under \(\pi\), \(R_\pi\) the reward at each state. One matrix inverse returns <b>every</b> \(V_\pi(s)\) exactly.</p>
+    </div>
+
+    <div class="callout reveal" style="background:var(--peach)">
+      <span class="ct-tag" style="background:#fff">⚖️ SO WHY ITERATE?</span>
+      <p>Inverting an \(n\times n\) table costs about \(n^3\) work. For a few states it's instant — but Gridworld has thousands of states and a video game has billions. There the cheap iterative sweeps win. <b>Direct for small, iterative for big.</b></p>
+    </div>
+  </div>
+  <div class="slide-name">Direct Solve</div>
+  <div class="slide-num">11 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — TWO METHODS, ONE ANSWER              -->
+<!-- ============================================ -->
+<section class="slide" data-name="Two Methods">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag peach reveal">SIDE BY SIDE</span>
+    <h2 class="h2 reveal">Two methods, <span class="hl">one answer.</span></h2>
+
+    <div class="mcmp reveal">
+      <div class="m van">
+        <h3>🌳 Vanilla (backward)</h3>
+        <div class="rowc"><b>NEEDS</b><span>a last step — leaves to start from.</span></div>
+        <div class="rowc"><b>HOW</b><span>solve the ends, roll up once.</span></div>
+        <div class="rowc"><b>COST</b><span>one pass · exact.</span></div>
+        <div class="rowc"><b>USE WHEN</b><span>the problem truly ends (finite tree / horizon).</span></div>
+      </div>
+      <div class="m iter">
+        <h3>🔁 Iterative (repeat)</h3>
+        <div class="rowc"><b>NEEDS</b><span>nothing — start from a guess of 0.</span></div>
+        <div class="rowc"><b>HOW</b><span>sweep the Bellman rule until it settles.</span></div>
+        <div class="rowc"><b>COST</b><span>many passes · approximate → exact.</span></div>
+        <div class="rowc"><b>USE WHEN</b><span>the problem loops (any MDP — Gridworld).</span></div>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:.6rem">
+      <span class="ct-tag">SAME \(V_\pi\)</span>
+      <p>Both gave \(V_{\pi_0}(🤺)=-11\) on our tree — and solving the equations directly lands on the very same number, because a linear system has <b>exactly one</b> solution. Vanilla is the shortcut you can use <b>only</b> when there's a bottom; iterative is the general tool that always works at scale. That's the whole point of iterating.</p>
+    </div>
+  </div>
+  <div class="slide-name">Two Methods</div>
+  <div class="slide-num">12 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 12 — PAYOFF: NOW IMPROVE IT (light)       -->
+<!-- ============================================ -->
+<section class="slide" data-name="Improve">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-rose circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sun reveal">THE PAYOFF</span>
+    <h2 class="h2 reveal">Once you can <span class="hl">score</span> a policy, you can <span class="hl mint">beat it.</span></h2>
+    <p class="body reveal" style="max-width:1000px">
+      We scored \(\pi_0=\) "always Right" and got \(V(🤺)=-11\) — it marches down the right edge into boss after boss. The values now tell us, at <b>every</b> node, which move is really worth more: just compare <b>reward + value of where it lands</b>, and take the bigger one.
+    </p>
+
+    <div class="tree-lab reveal">
+      <div class="tree-box">
+        <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <line class="wt-edge" data-c="L" x1="400" y1="20" x2="200" y2="75"/>
+          <line class="wt-edge pol" data-c="R" x1="400" y1="20" x2="600" y2="75"/>
+          <line class="wt-edge" data-c="LL" x1="200" y1="75" x2="100" y2="130"/>
+          <line class="wt-edge" data-c="LR" x1="200" y1="75" x2="300" y2="130"/>
+          <line class="wt-edge" data-c="LLL" x1="100" y1="130" x2="50" y2="185"/>
+          <line class="wt-edge" data-c="LLR" x1="100" y1="130" x2="150" y2="185"/>
+          <line class="wt-edge" data-c="LLLL" x1="50" y1="185" x2="25" y2="240"/>
+          <line class="wt-edge" data-c="LLLR" x1="50" y1="185" x2="75" y2="240"/>
+          <line class="wt-edge" data-c="LLRL" x1="150" y1="185" x2="125" y2="240"/>
+          <line class="wt-edge" data-c="LLRR" x1="150" y1="185" x2="175" y2="240"/>
+          <line class="wt-edge" data-c="LRL" x1="300" y1="130" x2="250" y2="185"/>
+          <line class="wt-edge" data-c="LRR" x1="300" y1="130" x2="350" y2="185"/>
+          <line class="wt-edge" data-c="LRLL" x1="250" y1="185" x2="225" y2="240"/>
+          <line class="wt-edge" data-c="LRLR" x1="250" y1="185" x2="275" y2="240"/>
+          <line class="wt-edge imp" data-c="LRRL" x1="350" y1="185" x2="325" y2="240"/>
+          <line class="wt-edge" data-c="LRRR" x1="350" y1="185" x2="375" y2="240"/>
+          <line class="wt-edge" data-c="RL" x1="600" y1="75" x2="500" y2="130"/>
+          <line class="wt-edge pol" data-c="RR" x1="600" y1="75" x2="700" y2="130"/>
+          <line class="wt-edge" data-c="RLL" x1="500" y1="130" x2="450" y2="185"/>
+          <line class="wt-edge" data-c="RLR" x1="500" y1="130" x2="550" y2="185"/>
+          <line class="wt-edge" data-c="RLLL" x1="450" y1="185" x2="425" y2="240"/>
+          <line class="wt-edge" data-c="RLLR" x1="450" y1="185" x2="475" y2="240"/>
+          <line class="wt-edge imp" data-c="RLRL" x1="550" y1="185" x2="525" y2="240"/>
+          <line class="wt-edge" data-c="RLRR" x1="550" y1="185" x2="575" y2="240"/>
+          <line class="wt-edge" data-c="RRL" x1="700" y1="130" x2="650" y2="185"/>
+          <line class="wt-edge pol" data-c="RRR" x1="700" y1="130" x2="750" y2="185"/>
+          <line class="wt-edge imp" data-c="RRLL" x1="650" y1="185" x2="625" y2="240"/>
+          <line class="wt-edge" data-c="RRLR" x1="650" y1="185" x2="675" y2="240"/>
+          <line class="wt-edge" data-c="RRRL" x1="750" y1="185" x2="725" y2="240"/>
+          <line class="wt-edge pol" data-c="RRRR" x1="750" y1="185" x2="775" y2="240"/>
+          <g class="wt-node">
+            <circle cx="400" cy="20" r="20" fill="#fff"/><text x="400" y="26" text-anchor="middle" font-size="16">🤺</text>
+            <circle cx="200" cy="75" r="15" fill="#ffb4b4"/><text x="200" y="79" text-anchor="middle" font-size="12">−9</text>
+            <circle cx="100" cy="130" r="13" fill="#bff0d0"/><text x="100" y="134" text-anchor="middle" font-size="11">+8</text>
+            <circle cx="50" cy="185" r="11" fill="#ffb4b4"/><text x="50" y="188" text-anchor="middle" font-size="9">−9</text>
+            <circle cx="25" cy="240" r="10" fill="#ffb4b4"/><text x="25" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="75" cy="240" r="10" fill="#ffb4b4"/><text x="75" y="243" text-anchor="middle" font-size="8">−5</text>
+            <circle cx="150" cy="185" r="11" fill="#bff0d0"/><text x="150" y="188" text-anchor="middle" font-size="9">+5</text>
+            <circle cx="125" cy="240" r="10" fill="#ffb4b4"/><text x="125" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="175" cy="240" r="10" fill="#bff0d0"/><text x="175" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="300" cy="130" r="13" fill="#bff0d0"/><text x="300" y="134" text-anchor="middle" font-size="11">+6</text>
+            <circle cx="250" cy="185" r="11" fill="#bff0d0"/><text x="250" y="188" text-anchor="middle" font-size="9">+10</text>
+            <circle cx="225" cy="240" r="10" fill="#bff0d0"/><text x="225" y="243" text-anchor="middle" font-size="8">+9</text>
+            <circle cx="275" cy="240" r="10" fill="#bff0d0"/><text x="275" y="243" text-anchor="middle" font-size="8">+10</text>
+            <circle cx="350" cy="185" r="11" fill="#ffb4b4"/><text x="350" y="188" text-anchor="middle" font-size="9">−7</text>
+            <circle cx="325" cy="240" r="10" fill="#bff0d0"/><text x="325" y="243" text-anchor="middle" font-size="8">+6</text>
+            <circle cx="375" cy="240" r="10" fill="#ffb4b4"/><text x="375" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="600" cy="75" r="15" fill="#ffb4b4"/><text x="600" y="79" text-anchor="middle" font-size="12">−6</text>
+            <circle cx="500" cy="130" r="13" fill="#bff0d0"/><text x="500" y="134" text-anchor="middle" font-size="11">+4</text>
+            <circle cx="450" cy="185" r="11" fill="#bff0d0"/><text x="450" y="188" text-anchor="middle" font-size="9">+6</text>
+            <circle cx="425" cy="240" r="10" fill="#ffb4b4"/><text x="425" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="475" cy="240" r="10" fill="#bff0d0"/><text x="475" y="243" text-anchor="middle" font-size="8">+8</text>
+            <circle cx="550" cy="185" r="11" fill="#ffb4b4"/><text x="550" y="188" text-anchor="middle" font-size="9">−8</text>
+            <circle cx="525" cy="240" r="10" fill="#bff0d0"/><text x="525" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="575" cy="240" r="10" fill="#ffb4b4"/><text x="575" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="700" cy="130" r="13" fill="#ffb4b4"/><text x="700" y="134" text-anchor="middle" font-size="11">−8</text>
+            <circle cx="650" cy="185" r="11" fill="#bff0d0"/><text x="650" y="188" text-anchor="middle" font-size="9">+7</text>
+            <circle cx="625" cy="240" r="10" fill="#bff0d0"/><text x="625" y="243" text-anchor="middle" font-size="8">+7</text>
+            <circle cx="675" cy="240" r="10" fill="#ffb4b4"/><text x="675" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="750" cy="185" r="11" fill="#ffb4b4"/><text x="750" y="188" text-anchor="middle" font-size="9">−6</text>
+            <circle cx="725" cy="240" r="10" fill="#ffb4b4"/><text x="725" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="775" cy="240" r="10" fill="#bff0d0"/><text x="775" y="243" text-anchor="middle" font-size="8">+9</text>
+          </g>
+        </svg>
+      </div>
+      <div class="panel">
+        <span class="p-tag">GREEDY UPDATE · AVOID THE BOSSES</span>
+        <div class="p-formula" style="background:var(--mint)">e.g. at RRL: go L (+7) &gt; go R (−8) → <b>switch to L</b></div>
+        <p class="p-cap"><span class="lead">That's the greedy idea:</span> wherever a move walks into a boss but the sibling grabs a coin, swap it. Three obvious wins are highlighted. Do it at <b>every</b> node and you get a new policy \(\pi_1\) — but is one pass enough? Next we write the rule, and hit a twist.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Improve</div>
+  <div class="slide-num">13 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — POLICY UPDATE: THE GREEDY RULE      -->
+<!-- ============================================ -->
+<section class="slide" data-name="Policy Update">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:120px;height:120px;top:6%;right:6%"></span>
+  <span class="shape s-lilac circle bordered anim-wobble-r" style="width:80px;height:80px;bottom:10%;left:5%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">POLICY UPDATE</span>
+    <h2 class="h2 reveal">The improvement step is <span class="hl mint">one rule too.</span></h2>
+
+    <div class="tree-lab reveal">
+      <div class="tree-box">
+        <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <line class="wt-edge" data-c="L" x1="400" y1="20" x2="200" y2="75"/>
+          <line class="wt-edge pol" data-c="R" x1="400" y1="20" x2="600" y2="75"/>
+          <line class="wt-edge" data-c="LL" x1="200" y1="75" x2="100" y2="130"/>
+          <line class="wt-edge" data-c="LR" x1="200" y1="75" x2="300" y2="130"/>
+          <line class="wt-edge" data-c="LLL" x1="100" y1="130" x2="50" y2="185"/>
+          <line class="wt-edge" data-c="LLR" x1="100" y1="130" x2="150" y2="185"/>
+          <line class="wt-edge" data-c="LLLL" x1="50" y1="185" x2="25" y2="240"/>
+          <line class="wt-edge" data-c="LLLR" x1="50" y1="185" x2="75" y2="240"/>
+          <line class="wt-edge" data-c="LLRL" x1="150" y1="185" x2="125" y2="240"/>
+          <line class="wt-edge" data-c="LLRR" x1="150" y1="185" x2="175" y2="240"/>
+          <line class="wt-edge" data-c="LRL" x1="300" y1="130" x2="250" y2="185"/>
+          <line class="wt-edge" data-c="LRR" x1="300" y1="130" x2="350" y2="185"/>
+          <line class="wt-edge" data-c="LRLL" x1="250" y1="185" x2="225" y2="240"/>
+          <line class="wt-edge" data-c="LRLR" x1="250" y1="185" x2="275" y2="240"/>
+          <line class="wt-edge" data-c="LRRL" x1="350" y1="185" x2="325" y2="240"/>
+          <line class="wt-edge" data-c="LRRR" x1="350" y1="185" x2="375" y2="240"/>
+          <line class="wt-edge" data-c="RL" x1="600" y1="75" x2="500" y2="130"/>
+          <line class="wt-edge pol" data-c="RR" x1="600" y1="75" x2="700" y2="130"/>
+          <line class="wt-edge" data-c="RLL" x1="500" y1="130" x2="450" y2="185"/>
+          <line class="wt-edge" data-c="RLR" x1="500" y1="130" x2="550" y2="185"/>
+          <line class="wt-edge" data-c="RLLL" x1="450" y1="185" x2="425" y2="240"/>
+          <line class="wt-edge" data-c="RLLR" x1="450" y1="185" x2="475" y2="240"/>
+          <line class="wt-edge" data-c="RLRL" x1="550" y1="185" x2="525" y2="240"/>
+          <line class="wt-edge" data-c="RLRR" x1="550" y1="185" x2="575" y2="240"/>
+          <line class="wt-edge" data-c="RRL" x1="700" y1="130" x2="650" y2="185"/>
+          <line class="wt-edge pol" data-c="RRR" x1="700" y1="130" x2="750" y2="185"/>
+          <line class="wt-edge" data-c="RRLL" x1="650" y1="185" x2="625" y2="240"/>
+          <line class="wt-edge" data-c="RRLR" x1="650" y1="185" x2="675" y2="240"/>
+          <line class="wt-edge" data-c="RRRL" x1="750" y1="185" x2="725" y2="240"/>
+          <line class="wt-edge pol" data-c="RRRR" x1="750" y1="185" x2="775" y2="240"/>
+          <g class="wt-node">
+            <circle cx="400" cy="20" r="20" fill="#fff"/><text x="400" y="26" text-anchor="middle" font-size="16">🤺</text>
+            <circle cx="200" cy="75" r="15" fill="#ffb4b4"/><text x="200" y="79" text-anchor="middle" font-size="12">−9</text>
+            <circle cx="100" cy="130" r="13" fill="#bff0d0"/><text x="100" y="134" text-anchor="middle" font-size="11">+8</text>
+            <circle cx="50" cy="185" r="11" fill="#ffb4b4"/><text x="50" y="188" text-anchor="middle" font-size="9">−9</text>
+            <circle cx="25" cy="240" r="10" fill="#ffb4b4"/><text x="25" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="75" cy="240" r="10" fill="#ffb4b4"/><text x="75" y="243" text-anchor="middle" font-size="8">−5</text>
+            <circle cx="150" cy="185" r="11" fill="#bff0d0"/><text x="150" y="188" text-anchor="middle" font-size="9">+5</text>
+            <circle cx="125" cy="240" r="10" fill="#ffb4b4"/><text x="125" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="175" cy="240" r="10" fill="#bff0d0"/><text x="175" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="300" cy="130" r="13" fill="#bff0d0"/><text x="300" y="134" text-anchor="middle" font-size="11">+6</text>
+            <circle cx="250" cy="185" r="11" fill="#bff0d0"/><text x="250" y="188" text-anchor="middle" font-size="9">+10</text>
+            <circle cx="225" cy="240" r="10" fill="#bff0d0"/><text x="225" y="243" text-anchor="middle" font-size="8">+9</text>
+            <circle cx="275" cy="240" r="10" fill="#bff0d0"/><text x="275" y="243" text-anchor="middle" font-size="8">+10</text>
+            <circle cx="350" cy="185" r="11" fill="#ffb4b4"/><text x="350" y="188" text-anchor="middle" font-size="9">−7</text>
+            <circle cx="325" cy="240" r="10" fill="#bff0d0"/><text x="325" y="243" text-anchor="middle" font-size="8">+6</text>
+            <circle cx="375" cy="240" r="10" fill="#ffb4b4"/><text x="375" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="600" cy="75" r="15" fill="#ffb4b4"/><text x="600" y="79" text-anchor="middle" font-size="12">−6</text>
+            <circle cx="500" cy="130" r="13" fill="#bff0d0"/><text x="500" y="134" text-anchor="middle" font-size="11">+4</text>
+            <circle cx="450" cy="185" r="11" fill="#bff0d0"/><text x="450" y="188" text-anchor="middle" font-size="9">+6</text>
+            <circle cx="425" cy="240" r="10" fill="#ffb4b4"/><text x="425" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="475" cy="240" r="10" fill="#bff0d0"/><text x="475" y="243" text-anchor="middle" font-size="8">+8</text>
+            <circle cx="550" cy="185" r="11" fill="#ffb4b4"/><text x="550" y="188" text-anchor="middle" font-size="9">−8</text>
+            <circle cx="525" cy="240" r="10" fill="#bff0d0"/><text x="525" y="243" text-anchor="middle" font-size="8">+5</text>
+            <circle cx="575" cy="240" r="10" fill="#ffb4b4"/><text x="575" y="243" text-anchor="middle" font-size="8">−6</text>
+            <circle cx="700" cy="130" r="13" fill="#ffb4b4"/><text x="700" y="134" text-anchor="middle" font-size="11">−8</text>
+            <circle cx="650" cy="185" r="11" fill="#bff0d0"/><text x="650" y="188" text-anchor="middle" font-size="9">+7</text>
+            <circle cx="625" cy="240" r="10" fill="#bff0d0"/><text x="625" y="243" text-anchor="middle" font-size="8">+7</text>
+            <circle cx="675" cy="240" r="10" fill="#ffb4b4"/><text x="675" y="243" text-anchor="middle" font-size="8">−8</text>
+            <circle cx="750" cy="185" r="11" fill="#ffb4b4"/><text x="750" y="188" text-anchor="middle" font-size="9">−6</text>
+            <circle cx="725" cy="240" r="10" fill="#ffb4b4"/><text x="725" y="243" text-anchor="middle" font-size="8">−7</text>
+            <circle cx="775" cy="240" r="10" fill="#bff0d0"/><text x="775" y="243" text-anchor="middle" font-size="8">+9</text>
+          </g>
+          <g class="vchip shown" id="piv-root"><rect x="383" y="43" width="34" height="16" rx="5"/><text x="400" y="55" text-anchor="middle" font-size="10.5">−11</text></g>
+          <g class="vchip shown" id="piv-L"><rect x="183" y="93" width="34" height="16" rx="5"/><text x="200" y="105" text-anchor="middle" font-size="10.5">−9</text></g>
+          <g class="vchip shown" id="piv-LL"><rect x="83" y="146" width="34" height="16" rx="5"/><text x="100" y="158" text-anchor="middle" font-size="10.5">+10</text></g>
+          <g class="vchip shown" id="piv-LLL"><rect x="33" y="199" width="34" height="16" rx="5"/><text x="50" y="211" text-anchor="middle" font-size="10.5">−5</text></g>
+          <g class="vchip shown" id="piv-LLR"><rect x="133" y="199" width="34" height="16" rx="5"/><text x="150" y="211" text-anchor="middle" font-size="10.5">+5</text></g>
+          <g class="vchip shown" id="piv-LR"><rect x="283" y="146" width="34" height="16" rx="5"/><text x="300" y="158" text-anchor="middle" font-size="10.5">−15</text></g>
+          <g class="vchip shown" id="piv-LRL"><rect x="233" y="199" width="34" height="16" rx="5"/><text x="250" y="211" text-anchor="middle" font-size="10.5">+10</text></g>
+          <g class="vchip shown" id="piv-LRR"><rect x="333" y="199" width="34" height="16" rx="5"/><text x="350" y="211" text-anchor="middle" font-size="10.5">−8</text></g>
+          <g class="vchip shown" id="piv-R"><rect x="583" y="93" width="34" height="16" rx="5"/><text x="600" y="105" text-anchor="middle" font-size="10.5">−5</text></g>
+          <g class="vchip shown" id="piv-RL"><rect x="483" y="146" width="34" height="16" rx="5"/><text x="500" y="158" text-anchor="middle" font-size="10.5">−14</text></g>
+          <g class="vchip shown" id="piv-RLL"><rect x="433" y="199" width="34" height="16" rx="5"/><text x="450" y="211" text-anchor="middle" font-size="10.5">+8</text></g>
+          <g class="vchip shown" id="piv-RLR"><rect x="533" y="199" width="34" height="16" rx="5"/><text x="550" y="211" text-anchor="middle" font-size="10.5">−6</text></g>
+          <g class="vchip shown" id="piv-RR"><rect x="683" y="146" width="34" height="16" rx="5"/><text x="700" y="158" text-anchor="middle" font-size="10.5">+3</text></g>
+          <g class="vchip shown" id="piv-RRL"><rect x="633" y="199" width="34" height="16" rx="5"/><text x="650" y="211" text-anchor="middle" font-size="10.5">−8</text></g>
+          <g class="vchip shown" id="piv-RRR"><rect x="733" y="199" width="34" height="16" rx="5"/><text x="750" y="211" text-anchor="middle" font-size="10.5">+9</text></g>
+        </svg>
+      </div>
+      <div class="panel">
+        <span class="p-tag">POLICY IMPROVEMENT (GREEDY)</span>
+        <div class="p-formula">\( \pi'(s)=\arg\max_a\big[\,R(s,a)+\gamma\textstyle\sum_{s'}P(s'\!\mid\! s,a)\,V_\pi(s')\,\big] \)</div>
+        <p class="p-cap" id="pi-cap"><span class="lead">Read it aloud:</span> at each node pick the move with the biggest "reward + value where it lands." Press <b>Improve</b> to switch the clear losers against \(V_{\pi_0}\) (shown on the spine; leaves \(=0\)).</p>
+        <div class="stepper">
+          <button id="pi-next" type="button">▶ Improve</button>
+          <button id="pi-reset" type="button">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Policy Update</div>
+  <div class="slide-num">14 / 15</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — RECAP + NEXT                          -->
+<!-- ============================================ -->
+<section class="slide" data-name="Recap">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:130px;height:130px;top:7%;right:7%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:11%;left:6%"></span>
+
+  <div class="slide-inner">
+    <span class="tag mint reveal">RECAP</span>
+    <h2 class="h2 reveal">One value, <span class="hl mint">two ways to find it.</span></h2>
+
+    <div class="recap-cards reveal">
+      <div class="rc"><div class="n">METHOD 1</div><h3>Vanilla</h3><p>Roll up from the leaves. Exact in one pass — but needs a bottom.</p></div>
+      <div class="rc"><div class="n">METHOD 2</div><h3>Iterative</h3><p>Guess 0, sweep, repeat until settled. Works on any looping world.</p></div>
+      <div class="rc"><div class="n">PAYOFF</div><h3>Improve</h3><p>Values in hand → greedily pick the better move → loop to the best policy \(\pi^\star\).</p></div>
+    </div>
+
+    <p class="body reveal" style="margin-top:1rem;text-align:center;max-width:820px;margin-left:auto;margin-right:auto">
+      Evaluation is the <b>engine</b>. Next we ask: what if we don't even know the rewards and slip probabilities — and the state is a raw image, not a tidy grid? <b>L7: function approximation.</b>
+    </p>
+
+    <div class="lecture-nav reveal" style="margin-top:1rem">
+      <a class="prev" href="lecture-5.html">← Lecture 5</a>
+      <a class="home" href="../index.html">Home</a>
+    </div>
+  </div>
+  <div class="slide-name">Recap</div>
+  <div class="slide-num">15 / 15</div>
+</section>
+
+<script src="shared.js"></script>
+<script>
+/* ---------- Slide 4: vanilla roll-up over the WHOLE tree (backward induction) ---------- */
+class VanillaEval{
+  constructor(){
+    this.next=document.getElementById('ve-next');this.reset=document.getElementById('ve-reset');this.cap=document.getElementById('ve-cap');
+    if(!this.next) return;
+    this.steps=[{"ids": ["ve-LLL", "ve-LLR", "ve-LRL", "ve-LRR", "ve-RLL", "ve-RLR", "ve-RRL", "ve-RRR"], "vals": ["−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "lead": "Deepest nodes first.", "body": "Each is one move from a leaf (worth 0), so its value is just the reward it lands on."}, {"ids": ["ve-LL", "ve-LR", "ve-RL", "ve-RR"], "vals": ["+10", "−15", "−14", "+3"], "lead": "Roll up a layer.", "body": "Value = the reward you land on + the child value you just found. Do all four at once."}, {"ids": ["ve-L", "ve-R"], "vals": ["−9", "−5"], "lead": "One more layer up.", "body": "Same rule again — both depth-1 nodes."}, {"ids": ["ve-root"], "vals": ["−11"], "lead": "Up to the root.", "body": "V(🤺) = −11. Every node now holds its exact value, in one clean sweep from the bottom."}];
+    this.allIds=["ve-LLL", "ve-LLR", "ve-LRL", "ve-LRR", "ve-RLL", "ve-RLR", "ve-RRL", "ve-RRR", "ve-LL", "ve-LR", "ve-RL", "ve-RR", "ve-L", "ve-R", "ve-root"];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.adv());this.reset.addEventListener('click',()=>this.rst());this.rst();
+  }
+  say(lead,body){this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([this.cap]);}
+  adv(){
+    if(this.i>=this.steps.length)return;
+    const s=this.steps[this.i];
+    s.ids.forEach((id,j)=>{const g=document.getElementById(id);g.querySelector('text').textContent=s.vals[j];g.classList.add('shown');});
+    this.say(s.lead,s.body);this.i++;
+    if(this.i>=this.steps.length)this.next.disabled=true;
+  }
+  rst(){
+    this.i=0;this.next.disabled=false;
+    this.allIds.forEach(id=>{const g=document.getElementById(id);g.classList.remove('shown');g.querySelector('text').textContent='0';});
+    this.say('Start at the ends.','After 4 moves the game ends, so every leaf is worth 0. Press <b>Roll up</b> to fill the tree one layer at a time, bottom to top.');
+  }
+}
+
+/* ---------- Slide 8: iterative sweeps over the WHOLE tree ---------- */
+class IterEval{
+  constructor(){
+    this.next=document.getElementById('it-next');this.reset=document.getElementById('it-reset');
+    this.cap=document.getElementById('it-cap');this.rows=document.getElementById('it-rows');
+    if(!this.next) return;
+    this.ids=["it-root", "it-L", "it-R", "it-LL", "it-LR", "it-RL", "it-RR", "it-LLL", "it-LLR", "it-LRL", "it-LRR", "it-RLL", "it-RLR", "it-RRL", "it-RRR"];              // 15 internal nodes, BFS order; [0] = root
+    this.seq=[{"v": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"], "chg": [], "cap": "Guess: all zeros. Wrong, but it gives us somewhere to start.", "root": "0"}, {"v": ["−6", "+6", "−8", "+5", "−7", "−8", "−6", "−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "chg": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "cap": "Sweep 1: every node reads its reward + a neighbour still stuck at 0. Only the layer just above the leaves is correct.", "root": "−6"}, {"v": ["−14", "−1", "−14", "+10", "−15", "−14", "+3", "−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "chg": [0, 1, 2, 3, 4, 5, 6], "cap": "Sweep 2: correct values have climbed one layer. Deeper nodes settle; the root is still catching up.", "root": "−14"}, {"v": ["−20", "−9", "−5", "+10", "−15", "−14", "+3", "−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "chg": [0, 1, 2], "cap": "Sweep 3: one more layer locks in. Most of the tree already sits at its final value.", "root": "−20"}, {"v": ["−11", "−9", "−5", "+10", "−15", "−14", "+3", "−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "chg": [0], "cap": "Sweep 4: the root reaches −11 — the whole tree now matches the roll-up.", "root": "−11"}, {"v": ["−11", "−9", "−5", "+10", "−15", "−14", "+3", "−5", "+5", "+10", "−8", "+8", "−6", "−8", "+9"], "chg": [], "cap": "Sweep 5: nothing moved → settled. Iterative needs about one sweep per layer of depth.", "root": "−11", "done": true}];
+    this.i=0;
+    this.next.addEventListener('click',()=>this.adv());this.reset.addEventListener('click',()=>this.rst());this.rst();
+  }
+  setChips(v,chg){this.ids.forEach((id,j)=>{const g=document.getElementById(id);g.querySelector('text').textContent=v[j];g.classList.toggle('flash',chg&&chg.indexOf(j)>=0);});}
+  addRow(k,step){const tr=document.createElement('tr');[String(k),step.root].forEach((c,idx)=>{const td=document.createElement('td');td.textContent=c;if(idx===1&&step.chg&&step.chg.indexOf(0)>=0)td.classList.add('chg');tr.appendChild(td);});if(step.done)tr.classList.add('done');requestAnimationFrame(()=>tr.classList.add('shown'));this.rows.appendChild(tr);}
+  say(cap){this.cap.innerHTML='<span class="lead">'+cap.split('.')[0]+'.</span> '+cap.slice(cap.indexOf('.')+1).trim();if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([this.cap]);}
+  adv(){if(this.i>=this.seq.length-1)return;this.i++;const s=this.seq[this.i];this.setChips(s.v,s.chg);this.addRow(this.i,s);this.say(s.cap);if(this.i>=this.seq.length-1)this.next.disabled=true;}
+  rst(){this.i=0;this.next.disabled=false;this.rows.innerHTML='';this.setChips(this.seq[0].v,null);this.addRow(0,this.seq[0]);this.say(this.seq[0].cap);}
+}
+
+/* ---------- Slide 14: policy improvement (greedy, boss-avoid switches) ---------- */
+class PolicyImprove{
+  constructor(){
+    this.next=document.getElementById('pi-next');this.reset=document.getElementById('pi-reset');this.cap=document.getElementById('pi-cap');
+    if(!this.next)return;
+    this.switchEdges=['RRLL','RLRL','LRRL'];
+    this.steps=[
+      {edge:'RRLL',lead:'Node RRL.',body:'Going R walks into a −8 boss. Compare the two moves: L pays +7, R pays −8. Take <b>L</b>.'},
+      {edge:'RLRL',lead:'Node RLR.',body:'L pays +5, R pays −6. Take <b>L</b>.'},
+      {edge:'LRRL',lead:'Node LRR.',body:'L pays +6, R pays −8. Take <b>L</b>.'},
+      {edge:null,lead:'New policy π₁ — but the root has not felt it yet.',body:'These switches fix deep boss-leaves, yet 🤺 still routes down the far-right path, so V(🤺) will not jump this pass. A deep fix needs another round to reach the root. Repeat evaluate → improve and the value climbs to the best, V★ = +17.'}
+    ];
+    this.i=0;this.next.addEventListener('click',()=>this.adv());this.reset.addEventListener('click',()=>this.rst());this.rst();
+  }
+  edgeEl(c){return document.querySelector('[data-c="'+c+'"]');}
+  say(lead,body){this.cap.innerHTML='<span class="lead">'+lead+'</span> '+body;if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([this.cap]);}
+  adv(){if(this.i>=this.steps.length)return;const s=this.steps[this.i];if(s.edge){const e=this.edgeEl(s.edge);if(e){e.classList.remove('pol');e.classList.add('imp');}}this.say(s.lead,s.body);this.i++;if(this.i>=this.steps.length)this.next.disabled=true;}
+  rst(){this.i=0;this.next.disabled=false;this.switchEdges.forEach(c=>{const e=this.edgeEl(c);if(e)e.classList.remove('imp');});this.say('Read it aloud:','at each node pick the move with the biggest reward + value where it lands. Press <b>Improve</b> to switch the clear losers.');}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  new VanillaEval();
+  new IterEval();
+  new PolicyImprove();
+});
+
+
+</script>
+
+</body>
+</html>

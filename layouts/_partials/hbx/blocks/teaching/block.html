@@ -1,0 +1,70 @@
+{{/* Hugo Blox: Teaching (custom block)
+     Renders data/teaching.yaml so the homepage section and /teaching/ share
+     one source. */}}
+
+{{ $page := .wcPage }}
+{{ $block := .wcBlock }}
+{{ $content := $block.content }}
+{{ if not (reflect.IsMap $content) }}{{ $content = dict }}{{ end }}
+
+{{ $title := "" }}
+{{ with index $content "title" }}{{ $title = printf "%v" . | emojify | $page.RenderString }}{{ end }}
+
+{{ $data := site.Data.teaching }}
+
+{{ if $title }}
+<div class="flex flex-col items-center max-w-prose mx-auto gap-3 justify-center px-6 md:px-0">
+  <div class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">
+    {{ $title }}
+  </div>
+</div>
+{{ end }}
+
+<div class="flex flex-col items-center px-6">
+  <div class="teaching max-w-prose w-full">
+
+    {{ with $data.heading }}<h2 class="tch-heading">{{ . }}</h2>{{ end }}
+
+    {{ range $data.groups }}
+    <section class="tch-group">
+      {{ with .institution }}<h3 class="tch-inst">{{ . }}</h3>{{ end }}
+      {{ range .roles }}
+      <p class="tch-role">
+        {{ .role }}
+        {{ with .award }}<span class="tch-award">{{ . }}</span>{{ end }}
+      </p>
+      {{ with .courses }}
+      <ul class="tch-courses">
+        {{ range . }}
+        <li>
+          <span class="tch-course">{{ .name }}{{ with .note }} <em>({{ . }})</em>{{ end }}</span>
+          {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
+        </li>
+        {{ end }}
+      </ul>
+      {{ end }}
+      {{ end }}
+    </section>
+    {{ end }}
+
+    {{ with $data.outreach }}
+    {{ with .heading }}<h2 class="tch-heading">{{ . }}</h2>{{ end }}
+    {{ with .items }}
+    <section class="tch-group">
+      <ul class="tch-courses">
+        {{ range . }}
+        <li>
+          <span class="tch-course">
+            {{ with .kind }}<span class="tch-kind">{{ . }}</span>{{ end }}
+            {{ if .url }}<a href="{{ .url | relLangURL }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+          </span>
+          {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
+        </li>
+        {{ end }}
+      </ul>
+    </section>
+    {{ end }}
+    {{ end }}
+
+  </div>
+</div>

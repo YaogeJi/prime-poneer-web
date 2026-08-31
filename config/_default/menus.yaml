@@ -9,7 +9,7 @@ main:
     url: /#presentations
     weight: 12
   - name: Teaching
-    url: /rl-course/
+    url: /#teaching
     weight: 13
   - name: News
     url: /#news

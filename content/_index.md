@@ -42,6 +42,10 @@ sections:
           - presentations
     design:
       view: citation
+  - block: teaching
+    id: teaching
+    content:
+      title: Teaching
   - block: collection
     id: news
     content:

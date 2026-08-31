@@ -1,5 +1,16 @@
 :root {
   --font-family-sans: 'Geist', ui-sans-serif, system-ui, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
+
+  /* One selected/hover look, shared by everything clickable or hover-revealing:
+     a faint tint and a slightly deeper text colour. No transform, no shadow. */
+  --hl-bg: color-mix(in oklch, var(--color-primary-500) 9%, transparent);
+  --hl-fg: var(--color-gray-800, #1f2937);
+  --hl-radius: 0.3rem;
+}
+
+.dark {
+  --hl-bg: color-mix(in oklch, var(--color-primary-400) 14%, transparent);
+  --hl-fg: #fff;
 }
 
 body,
@@ -129,15 +140,12 @@ html {
   background: color-mix(in oklch, var(--color-primary-400) 70%, transparent);
 }
 
-.dark .bio-timeline-h .btl-head:hover .btl-dot,
-.dark .bio-timeline-h .btl-head:focus-within .btl-dot {
-  box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-primary-400) 26%, transparent);
-}
-
-.bio-timeline-h .btl-head:hover .btl-dot,
-.bio-timeline-h .btl-head:focus-within .btl-dot {
-  transform: scale(1.12);
-  box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-primary-500) 16%, transparent);
+/* The header takes the shared tint; the dot no longer scales or rings, so a
+   node hover looks the same as a topic or a prose term. */
+.bio-timeline-h .btl-head {
+  border-radius: var(--hl-radius);
+  padding-bottom: 0.15rem;
+  transition: color 0.16s ease, background 0.16s ease;
 }
 
 .bio-timeline-h .btl-label {
@@ -167,27 +175,29 @@ html {
 
 /* ── Layer 2: research-topic branches ─────────────────── */
 
-/* A hairline stack: centred captions under each node, separated by rules.
-   No tree glyphs and no boxes — the right column stays airy. */
+/* One light rule above the whole group, not one per row — nine hairlines
+   read as a table; a single divider plus spacing carries the same grouping. */
 .bio-timeline-h .btl-topics {
-  margin: 0.9rem 0 0;
-  padding: 0;
+  margin: 0.85rem 0.3rem 0;
+  padding: 0.6rem 0 0;
+  border-top: 1px solid color-mix(in oklch, var(--color-primary-500) 15%, transparent);
   list-style: none;
   text-align: center;
 }
 
 .bio-timeline-h .btl-topic {
-  margin: 0 0.3rem;
-  padding: 0.42rem 0.25rem;
-  border-top: 1px solid color-mix(in oklch, var(--color-primary-500) 22%, transparent);
+  padding: 0.26rem 0.4rem;
   font-size: 0.72rem;
   line-height: 1.35;
   text-wrap: balance;
   color: var(--color-gray-500, #6b7280);
 }
 
+.dark .bio-timeline-h .btl-topics {
+  border-top-color: color-mix(in oklch, var(--color-primary-400) 22%, transparent);
+}
+
 .dark .bio-timeline-h .btl-topic {
-  border-top-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
   color: var(--color-gray-400, #9ca3af);
 }
 
@@ -195,24 +205,61 @@ html {
 
 /* Research terms in the prose. The paired highlight itself is generated per
    topic in the block partial (a :has() rule for each slug, both directions). */
+/* Styled exactly like the inline links in the paragraph above: accent colour,
+   weight 500, no underline. */
 .rterm {
-  font-weight: 600;
+  color: var(--color-primary-600);
+  font-weight: 500;
   cursor: default;
   padding: 0 0.15rem;
   margin: 0 -0.15rem;
-  border-radius: 0.25rem;
-  border-bottom: 1px dotted color-mix(in oklch, var(--color-primary-500) 45%, transparent);
+  border-radius: var(--hl-radius);
   transition: color 0.16s ease, background 0.16s ease;
 }
 
 .dark .rterm {
-  border-bottom-color: color-mix(in oklch, var(--color-primary-400) 50%, transparent);
+  color: var(--color-primary-300);
 }
 
 .bio-timeline-h .btl-topic[data-topic] {
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
   cursor: default;
   transition: color 0.16s ease, background 0.16s ease;
+}
+
+/* The generated :has() rules light the *other* end of a pair, so the element
+   under the cursor got no mark of its own. This gives each end a faint
+   selected trace when pointed at directly. */
+.bio-timeline-h .btl-topic[data-topic]:hover,
+.rterm:hover,
+.text-link:hover,
+.text-link:focus-visible,
+.bio-timeline-h .btl-head:hover,
+.bio-timeline-h .btl-head:focus-within,
+.resume-biography .bio-text a:hover,
+.resume-biography .bio-text a:focus-visible,
+.resume-biography .affiliation-line a:hover,
+.resume-biography .affiliation-line a:focus-visible {
+  color: var(--hl-fg);
+  background: var(--hl-bg);
+}
+
+/* Inline links carry no underline — the accent colour marks them — and they
+   take the same tint on hover as every other interactive element. */
+.resume-biography .bio-text a,
+.resume-biography .affiliation-line a {
+  color: var(--color-primary-600);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0 0.15rem;
+  margin: 0 -0.15rem;
+  border-radius: var(--hl-radius);
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.dark .resume-biography .bio-text a,
+.dark .resume-biography .affiliation-line a {
+  color: var(--color-primary-300);
 }
 
 /* Hover card — the only place time / thesis / advisor appear.
@@ -359,7 +406,7 @@ html {
    shadow lifts it — framed by composition rather than by a stroke. */
 .avatar-wrapper.avatar-rectangle {
   position: relative;
-  margin-bottom: 1.4rem;
+  margin-bottom: 0.8rem;
 }
 
 .avatar-wrapper.avatar-rectangle::before {
@@ -455,22 +502,234 @@ html {
   }
 }
 
+/* ── Publications & presentations citations ───────────── */
+
+/* Same link language as the homepage: accent colour, no underline, and the
+   shared tint on hover. Overrides the theme's `underline` utility on titles. */
+.view-citation a {
+  color: var(--color-primary-600);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0 0.15rem;
+  margin: 0 -0.15rem;
+  border-radius: var(--hl-radius);
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.dark .view-citation a {
+  color: var(--color-primary-300);
+}
+
+.view-citation a:hover,
+.view-citation a:focus-visible {
+  color: var(--hl-fg);
+  background: var(--hl-bg);
+}
+
+/* Author names point at author pages that this site does not build, so they
+   render with href="" — shown as plain text rather than as live links. */
+.view-citation .li-cite-author a {
+  color: inherit;
+  font-weight: inherit;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  background: none;
+}
+
+/* Venue / journal */
+.view-citation em {
+  font-style: italic;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .view-citation em {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* Attachment chips (PDF / Slides / DOI / Poster) */
+.view-citation .hb-attachment-link {
+  color: var(--color-primary-600);
+}
+
+.dark .view-citation .hb-attachment-link {
+  color: var(--color-primary-300);
+}
+
+/* ── Teaching page ────────────────────────────────────── */
+
+.teaching {
+  width: 100%;
+}
+
+.teaching .tch-heading {
+  margin: 2.25rem 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-gray-900, #111827);
+}
+
+.teaching .tch-heading:first-child {
+  margin-top: 0;
+}
+
+.dark .teaching .tch-heading {
+  color: #fff;
+}
+
+.teaching .tch-group {
+  margin-bottom: 1.75rem;
+}
+
+/* Institution takes the accent colour, matching the timeline's school names */
+.teaching .tch-inst {
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+}
+
+.dark .teaching .tch-inst {
+  color: var(--color-primary-300);
+}
+
+.teaching .tch-role {
+  margin: 0.5rem 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .teaching .tch-role {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.teaching .tch-award {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 25%, transparent);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--color-primary-600);
+}
+
+.dark .teaching .tch-award {
+  color: var(--color-primary-300);
+  border-color: color-mix(in oklch, var(--color-primary-400) 32%, transparent);
+}
+
+/* Course rows: title left, term right, separated by hairlines */
+.teaching .tch-courses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teaching .tch-courses li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0.45rem 0;
+  border-top: 1px solid color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+}
+
+.dark .teaching .tch-courses li {
+  border-top-color: color-mix(in oklch, var(--color-primary-400) 20%, transparent);
+}
+
+.teaching .tch-course {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-gray-800, #1f2937);
+}
+
+.dark .teaching .tch-course {
+  color: var(--color-gray-200, #e5e7eb);
+}
+
+.teaching .tch-course em {
+  font-style: normal;
+  font-size: 0.85em;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.teaching .tch-kind {
+  font-weight: 600;
+  color: var(--color-primary-600);
+}
+
+.dark .teaching .tch-kind {
+  color: var(--color-primary-300);
+}
+
+.teaching .tch-term {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .teaching .tch-term {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+@media (max-width: 560px) {
+  .teaching .tch-courses li {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+/* ── Current-page nav indicator ───────────────────────── */
+
+/* The theme emits .nav-link.active but leaves it unstyled. A 1px underline
+   and a slightly deeper colour — no pill, no background. */
+.nav-link.active {
+  position: relative;
+  color: var(--color-primary-700);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.55rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.dark .nav-link.active {
+  color: var(--color-primary-300);
+}
+
 /* ── Job-market callout ───────────────────────────────── */
 
+/* Announcement strip rather than a CTA card: it should not compete with the
+   portrait and the "Operations Researcher" heading for visual priority. */
 .jobmarket {
   margin-top: clamp(1.25rem, 3dvh, 2rem);
-  padding: clamp(1.5rem, 2.5dvh, 2rem);
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 18%, transparent);
-  border-radius: 1.125rem;
-  background: color-mix(in oklch, var(--color-primary-500) 5%, transparent);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  padding: 1.35rem 1.5rem;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 12%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in oklch, var(--color-primary-500) 3.5%, transparent);
+  box-shadow: none;
   text-align: left;
 }
 
 .dark .jobmarket {
-  border-color: color-mix(in oklch, var(--color-primary-400) 26%, transparent);
-  background: color-mix(in oklch, var(--color-primary-400) 8%, transparent);
-  box-shadow: none;
+  border-color: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
+  background: color-mix(in oklch, var(--color-primary-400) 6%, transparent);
 }
 
 .jm-badge {
@@ -494,8 +753,8 @@ html {
 }
 
 .jm-title {
-  margin: 0.5rem 0 0.55rem;
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  margin: 0.4rem 0 0.45rem;
+  font-size: clamp(0.98rem, 1.15vw, 1.12rem);
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-gray-900, #111827);
@@ -547,7 +806,7 @@ html {
   line-height: 1.2;
   color: var(--color-gray-700, #374151);
   text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
 }
 
 .dark .text-link {
@@ -558,16 +817,12 @@ html {
 
 .text-link:hover,
 .text-link:focus-visible {
-  transform: translateY(-1px);
-  color: var(--color-primary-600);
-  border-color: color-mix(in oklch, var(--color-primary-500) 50%, transparent);
-  box-shadow: 0 6px 12px -4px rgb(0 0 0 / 0.14);
+  border-color: color-mix(in oklch, var(--color-primary-500) 34%, transparent);
 }
 
 .dark .text-link:hover,
 .dark .text-link:focus-visible {
-  color: var(--color-primary-300);
-  border-color: color-mix(in oklch, var(--color-primary-400) 60%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
 }
 
 /* ── Off-duty badges ──────────────────────────────────── */
@@ -600,37 +855,44 @@ html {
   margin-top: 0;
 }
 
-/* Round, bordered and shadowed to match the social icon buttons */
+/* Pictogram first, circle second: a very faint keyline at ~14% by default
+   that only firms up on hover, with no fill and no shadow, so nothing reads
+   as a button shell. The circle also shrinks while the glyph does not,
+   raising the symbol-to-container ratio from 0.62 to 0.72. */
 .hobby-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2.875rem;
+  height: 2.875rem;
   border-radius: 9999px;
   cursor: pointer;
   color: var(--color-primary-600);
-  background: var(--color-white, #fff);
-  border: 1px solid var(--color-gray-200, #e5e7eb);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  box-shadow: none;
+  transition: border-color 0.16s ease, background 0.16s ease;
 }
 
 .hobby-ico {
-  width: 62%;
-  height: 62%;
+  width: 72%;
+  height: 72%;
 }
 
 .dark .hobby-badge {
   color: var(--color-primary-300);
-  background: var(--color-gray-800, #1f2937);
-  border-color: var(--color-gray-700, #374151);
+  border-color: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
 }
 
 .hobby-item:hover .hobby-badge,
 .hobby-item:focus-within .hobby-badge {
-  transform: translateY(-0.25rem) scale(1.1);
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border-color: color-mix(in oklch, var(--color-primary-500) 34%, transparent);
+  background: var(--hl-bg);
+}
+
+.dark .hobby-item:hover .hobby-badge,
+.dark .hobby-item:focus-within .hobby-badge {
+  border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
 }
 
 .hobby-badge:focus-visible {

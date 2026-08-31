@@ -1,0 +1,58 @@
+# Rendered by the `teaching` block on the homepage and /teaching/.
+heading: Teaching Experience
+
+groups:
+  - institution: Georgia Institute of Technology, ISyE
+    roles:
+      - role: Instructor
+        courses:
+          - name: "ISyE 4106: Senior Design"
+            term: Fall 2026
+
+  - institution: Purdue University, Industrial Engineering
+    roles:
+      - role: Teaching Assistant
+        courses:
+          - name: "IE 335: Operations Research"
+            term: Spring and Fall 2023
+          - name: "IE 330: Probability and Statistics in Engineering"
+            term: Fall 2022
+          - name: "IE 590: Introduction to Optimization Algorithms"
+            note: graduate-level
+            term: Fall 2022
+
+  - institution: Beijing Normal University, School of Mathematical Sciences
+    roles:
+      - role: Co-Lecturer
+        courses:
+          - name: Large Deviation Theory
+            term: Spring 2018
+          - name: Brownian Motion
+            term: Fall 2017
+          - name: Random Walk in Random Environment
+            term: Spring 2017
+          - name: Galton–Watson Branching Process
+            term: Fall 2016
+      - role: Teaching Assistant
+        award: Outstanding Teaching Assistant Award
+        courses:
+          - name: Measure Theory I
+            term: Fall 2017 and Fall 2018
+          - name: Measure Theory II
+            term: Spring 2017 and Spring 2018
+          - name: Stochastic Calculus for Finance
+            note: graduate-level
+            term: Fall 2016
+
+outreach:
+  heading: Outreach
+  items:
+    - kind: Instructor
+      name: Pre-College Reinforcement Learning Course for High School Students, Georgia Tech
+      term: Summer 2026
+    - kind: Judge
+      name: "STEM Spark: INFORMS K–12 Poster Competition"
+      term: 2026
+    - kind: Judge
+      name: Georgia Tech 2026 CRIDC Poster Competition
+      term: 2026

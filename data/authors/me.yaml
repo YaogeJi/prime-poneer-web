@@ -14,56 +14,94 @@ status:
   icon: ""
 role: H. Milton Stewart Postdoctoral Fellow
 bio: |
-  I am an H. Milton Stewart Postdoctoral Fellow in the [H. Milton Stewart School of Industrial and Systems Engineering (ISyE)](https://www.isye.gatech.edu/) at [Georgia Institute of Technology](https://www.gatech.edu/). My postdoctoral mentor is [Prof. Guanghui (George) Lan](https://sites.gatech.edu/guanghui-lan/).
+  I am an H. Milton Stewart Postdoctoral Fellow in the [H. Milton Stewart School of Industrial and Systems Engineering](https://www.isye.gatech.edu/) at [Georgia Tech](https://www.gatech.edu/) advised by [Prof. Guanghui (George) Lan](https://sites.gatech.edu/guanghui-lan/).
 
-  I earned my Ph.D. in [Industrial Engineering](https://engineering.purdue.edu/IE) at [Purdue University](https://www.purdue.edu/) (2024), advised by [Prof. Harsha Honnappa](https://engineering.purdue.edu/IE/people/ptProfile?resource_id=119661). Prior to that, I received my B.S. (2016) and M.S. (2019) degrees in the [School of Mathematical Sciences](https://english.bnu.edu.cn/schoolsdepartments/byx/113297.htm) from [Beijing Normal University](https://english.bnu.edu.cn/).
+# Rendered below the education / experience timeline
+bio_research: |
+  My current focus is on <span class="rterm" data-topic="parameter-free">optimal parameter-free methods</span> for stochastic optimization. I study <span class="rterm" data-topic="high-order">first- and higher-order methods</span> for convex and nonconvex problems in both deterministic and stochastic settings. I have worked on <span class="rterm" data-topic="gradient-min">gradient minimization</span>, <span class="rterm" data-topic="variational-inequalities">variational inequalities</span>, <span class="rterm" data-topic="distributed">distributed optimization</span>, <span class="rterm" data-topic="statistical-learning">statistical learning</span>, and <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, including <span class="rterm" data-topic="healthcare">applications in healthcare</span>.
+
+# Time-limited notice rendered below the timeline; delete this key to remove it
+job_market:
+  badge: Available Fall 2026
+  title: Seeking faculty position
+  body: |
+    I will be on the academic job market in Fall 2026 and am seeking faculty positions in operations research and stochastic optimization. I would be delighted to connect regarding opportunities.
 
 affiliations:
   - name: H. Milton Stewart School of Industrial and Systems Engineering
     url: https://www.isye.gatech.edu/
 
 links:
-  - icon: at-symbol
+  - text: Email
+    icon: at-symbol
     url: mailto:yaoji@gatech.edu
     label: E-mail Me
-  - icon: brands/github
+  - text: GitHub
+    icon: brands/github
     url: https://github.com/YaogeJi/
-  - icon: brands/linkedin
+  - text: LinkedIn
+    icon: brands/linkedin
     url: https://www.linkedin.com/in/yao-ji-522a751a9/
-  - icon: academicons/google-scholar
+  - text: Scholar
+    icon: academicons/google-scholar
     url: https://scholar.google.com/citations?user=Z3bDxfYAAAAJ&hl=en
-
-interests:
-  - Parameter-Free Optimization
-  - Variational Inequality
-  - Stochastic Optimization
-  - Gradient Minimization
-  - High Order Optimization
-  - Reinforcement Learning
-  - Reinforcement Learning in Health Care
+  - text: CV
+    icon: academicons/cv
+    url: /uploads/Yao_CV.pdf
+    label: Download CV
 
 education:
-  - degree: Ph.D. in Operation Research
-    institution: Purdue University
-    start: 2019-08-01
-    end: 2024-09-30
-    summary: "Thesis: High-dimensional inference over networks: statistical and computational guarantees"
-  - degree: M.S. in Probability and Stochastic Process
+  - degree: B.S. in Mathematics
+    short: B.S.
     institution: Beijing Normal University
-    start: 2016-09-01
-    end: 2019-06-30
-    summary: "Thesis: Conditional Limit Theorem for Bellman-Harris Branching Process"
-  - degree: B.S. in Mathematics and Statistics
-    institution: Beijing Normal University
+    institution_short: BNU
+    focus: Probability and statistics foundation
     start: 2012-09-01
     end: 2016-06-30
+  - degree: Thesis M.S. in Probability Theory and Stochastic Processes
+    short: M.S.
+    institution: Beijing Normal University
+    institution_short: BNU
+    focus: Stochastic processes
+    start: 2016-09-01
+    end: 2019-06-30
+    advisor: Prof. Wenming Hong
+    summary: "Conditional Limit Theorem for Bellman-Harris Branching Process"
+  - degree: Ph.D. in Operations Research
+    short: Ph.D.
+    icon: doctoral-tam
+    institution: Purdue University
+    institution_short: Purdue
+    topics:
+      - name: Distributed Optimization
+        slug: distributed
+      - name: Statistical Learning
+        slug: statistical-learning
+    start: 2019-08-01
+    end: 2024-09-30
+    advisor: Prof. Harsha Honnappa
+    summary: "High-dimensional inference over networks: statistical and computational guarantees"
 
 experience:
   - role: H. Milton Stewart Postdoctoral Fellow
+    short: Postdoc
     org: Georgia Institute of Technology
+    org_short: Georgia Tech
+    topics:
+      - name: Parameter-free
+        slug: parameter-free
+      - name: First / Higher-order
+        slug: high-order
+      - name: Gradient Minimization
+        slug: gradient-min
+      - name: Variational Inequalities
+        slug: variational-inequalities
+      - name: Reinforcement Learning
+        slug: reinforcement-learning
+      - name: Healthcare Applications
+        slug: healthcare
     start: 2024-10-01
-    summary: |
-      Research on parameter-free optimization, stochastic optimization, high order optimization, variational inequality, reinforcement learning and its application in health care.
+    advisor: Prof. Guanghui (George) Lan
 
 skills:
   - name: Technical Skills

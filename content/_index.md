@@ -16,9 +16,7 @@ sections:
         text: ''
         url: ''
       headings:
-        about: ''
-        education: 'Experience & Education'
-        interests: ''
+        about: 'Operations Researcher'
     design:
       name:
         size: md

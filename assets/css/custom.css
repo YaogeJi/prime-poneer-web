@@ -9,8 +9,15 @@ html {
 
 /* Viewport-adaptive biography section */
 .resume-biography {
-  padding-top: clamp(1rem, 3dvh, 4rem) !important;
+  padding-top: clamp(0.4rem, 1.2dvh, 1.6rem) !important;
   padding-bottom: clamp(1rem, 3dvh, 4rem) !important;
+}
+
+/* Gap between the header and the top of the page content. Both this and the
+   block padding above are halved from their previous values (6rem / 3dvh
+   originally). Scoped to the bio section — inter-section gaps keep 6rem. */
+.hbb-section.blox-resume-biography-3 {
+  padding-top: 2.4rem;
 }
 
 .resume-biography .bio-section-gap {
@@ -33,6 +40,300 @@ html {
   gap: clamp(0.5rem, 1.5dvh, 1rem);
 }
 
+/* ── Horizontal education / experience timeline ───────── */
+
+.bio-timeline-h {
+  --btl-dot: 2.25rem;
+  display: flex;
+  align-items: stretch;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0 0;
+}
+
+.bio-timeline-h .btl-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Connector spans the gap between two circles, stopping short of each edge */
+.bio-timeline-h .btl-item + .btl-item::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--btl-dot) / 2 - 1px);
+  right: calc(50% + var(--btl-dot) / 2 + 0.35rem);
+  width: calc(100% - var(--btl-dot) - 0.7rem);
+  height: 2px;
+  background: color-mix(in oklch, var(--color-primary-500) 35%, transparent);
+}
+
+/* Anchors the hover card to the node header only, so the card still opens
+   just under the labels rather than below the whole scroll. */
+.bio-timeline-h .btl-head {
+  position: relative;
+}
+
+.bio-timeline-h .btl-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0 0.25rem;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: center;
+  color: inherit;
+}
+
+.bio-timeline-h .btl-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--btl-dot);
+  height: var(--btl-dot);
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary-500);
+  background: var(--color-white, #fff);
+  color: var(--color-primary-600);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.bio-timeline-h .btl-dot svg {
+  width: 55%;
+  height: 55%;
+}
+
+/* The tam is drawn with more padding inside its viewBox than the Phosphor
+   glyphs, so it needs a nudge to carry the same visual weight. */
+.bio-timeline-h .btl-dot svg.btl-ico-tam {
+  width: 66%;
+  height: 66%;
+}
+
+.dark .bio-timeline-h .btl-dot {
+  background: var(--color-gray-900, #111827);
+  border-color: var(--color-primary-400);
+  color: var(--color-primary-300);
+}
+
+/* Dark mode: primary-500/600 sit too close to the page background,
+   so the axis and nodes step up to the lighter end of the ramp. */
+.dark .bio-timeline-h .btl-item + .btl-item::before {
+  background: color-mix(in oklch, var(--color-primary-400) 70%, transparent);
+}
+
+.dark .bio-timeline-h .btl-head:hover .btl-dot,
+.dark .bio-timeline-h .btl-head:focus-within .btl-dot {
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-primary-400) 26%, transparent);
+}
+
+.bio-timeline-h .btl-head:hover .btl-dot,
+.bio-timeline-h .btl-head:focus-within .btl-dot {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px color-mix(in oklch, var(--color-primary-500) 16%, transparent);
+}
+
+.bio-timeline-h .btl-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-gray-900, #111827);
+}
+
+/* School name carries the node's identity, so it takes the accent colour —
+   the topic captions below stay grey, which keeps the three tiers distinct:
+   degree (near-black, bold) > school (navy) > topics (grey). */
+.bio-timeline-h .btl-org {
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-primary-600);
+}
+
+.dark .bio-timeline-h .btl-label {
+  color: #fff;
+}
+
+.dark .bio-timeline-h .btl-org {
+  color: var(--color-primary-300);
+}
+
+/* ── Layer 2: research-topic branches ─────────────────── */
+
+/* A hairline stack: centred captions under each node, separated by rules.
+   No tree glyphs and no boxes — the right column stays airy. */
+.bio-timeline-h .btl-topics {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.bio-timeline-h .btl-topic {
+  margin: 0 0.3rem;
+  padding: 0.42rem 0.25rem;
+  border-top: 1px solid color-mix(in oklch, var(--color-primary-500) 22%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-wrap: balance;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .bio-timeline-h .btl-topic {
+  border-top-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Layer 3: prose ⇄ timeline cross-reference ────────── */
+
+/* Research terms in the prose. The paired highlight itself is generated per
+   topic in the block partial (a :has() rule for each slug, both directions). */
+.rterm {
+  font-weight: 600;
+  cursor: default;
+  padding: 0 0.15rem;
+  margin: 0 -0.15rem;
+  border-radius: 0.25rem;
+  border-bottom: 1px dotted color-mix(in oklch, var(--color-primary-500) 45%, transparent);
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.dark .rterm {
+  border-bottom-color: color-mix(in oklch, var(--color-primary-400) 50%, transparent);
+}
+
+.bio-timeline-h .btl-topic[data-topic] {
+  border-radius: 0.25rem;
+  cursor: default;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+/* Hover card — the only place time / thesis / advisor appear.
+   Opens upward: downward it would cover the topic branches below the node.
+   Triggered by .btl-head only (icon + degree + school), so pointing at a
+   topic caption underneath does not pop the card. */
+.bio-timeline-h .btl-tip {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(0.25rem);
+  z-index: 40;
+  width: max-content;
+  max-width: min(20rem, 70vw);
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.75rem;
+  background: var(--color-white, #fff);
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.dark .bio-timeline-h .btl-tip {
+  background: var(--color-gray-800, #1f2937);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+}
+
+.bio-timeline-h .btl-head:hover .btl-tip,
+.bio-timeline-h .btl-head:focus-within .btl-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Keep the end cards inside the column */
+.bio-timeline-h .btl-item:first-child .btl-tip {
+  left: 0;
+  transform: translateX(0) translateY(0.25rem);
+}
+
+.bio-timeline-h .btl-item:first-child:hover .btl-tip,
+.bio-timeline-h .btl-item:first-child:focus-within .btl-tip {
+  transform: translateX(0) translateY(0);
+}
+
+.bio-timeline-h .btl-item:last-child .btl-tip {
+  left: auto;
+  right: 0;
+  transform: translateX(0) translateY(0.25rem);
+}
+
+.bio-timeline-h .btl-item:last-child:hover .btl-tip,
+.bio-timeline-h .btl-item:last-child:focus-within .btl-tip {
+  transform: translateX(0) translateY(0);
+}
+
+.bio-timeline-h .btl-tip-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-gray-900, #111827);
+}
+
+.bio-timeline-h .btl-tip-org {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-primary-600);
+}
+
+.bio-timeline-h .btl-tip-date {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.bio-timeline-h .btl-tip-row {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.bio-timeline-h .btl-tip-key {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .bio-timeline-h .btl-tip-title {
+  color: #fff;
+}
+
+.dark .bio-timeline-h .btl-tip-org {
+  color: var(--color-primary-300);
+}
+
+.dark .bio-timeline-h .btl-tip-date,
+.dark .bio-timeline-h .btl-tip-row {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+@media (max-width: 640px) {
+  .bio-timeline-h {
+    --btl-dot: 1.85rem;
+  }
+  .bio-timeline-h .btl-label {
+    font-size: 0.82rem;
+  }
+  .bio-timeline-h .btl-org {
+    font-size: 0.68rem;
+  }
+}
+
 /* Custom avatar size */
 .avatar-wrapper:not(.avatar-rectangle) {
   width: 240px !important;
@@ -42,9 +343,12 @@ html {
   width: 240px !important;
   height: 240px !important;
 }
+/* 10% smaller than the block's inline 420px (inline style needs !important) */
 .avatar-wrapper.avatar-rectangle {
   margin-left: 0;
   margin-right: 0;
+  width: 378px !important;
+  max-width: 100%;
 }
 
 /* Larger font for citation view */
@@ -102,7 +406,251 @@ html {
   scrollbar-color: rgba(161, 161, 170, 0.2) transparent;
 }
 
+/* Affiliation line — sized to stay on a single line in the left column */
+.affiliation-line {
+  font-size: clamp(0.55rem, 1.1vw, 0.85rem);
+  line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+  .affiliation-line {
+    white-space: nowrap;
+  }
+}
+
+/* ── Job-market callout ───────────────────────────────── */
+
+.jobmarket {
+  margin-top: clamp(1.25rem, 3dvh, 2rem);
+  padding: clamp(1.5rem, 2.5dvh, 2rem);
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 18%, transparent);
+  border-radius: 1.125rem;
+  background: color-mix(in oklch, var(--color-primary-500) 5%, transparent);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  text-align: left;
+}
+
+.dark .jobmarket {
+  border-color: color-mix(in oklch, var(--color-primary-400) 26%, transparent);
+  background: color-mix(in oklch, var(--color-primary-400) 8%, transparent);
+  box-shadow: none;
+}
+
+.jm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-primary-600);
+}
+
+.jm-badge svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.dark .jm-badge {
+  color: var(--color-primary-300);
+}
+
+.jm-title {
+  margin: 0.5rem 0 0.55rem;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .jm-title {
+  color: #fff;
+}
+
+.jm-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.dark .jm-body {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+.jm-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* ── Contact text links ───────────────────────────────── */
+
+.link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  /* Pulls up against the affiliation line: the left column's flex gap
+     already sits above this row, so the offset trims it back. */
+  margin-top: -0.45rem;
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-200, #e5e7eb);
+  background: var(--color-white, #fff);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-gray-700, #374151);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .text-link {
+  background: var(--color-gray-800, #1f2937);
+  border-color: var(--color-gray-700, #374151);
+  color: var(--color-gray-200, #e5e7eb);
+}
+
+.text-link:hover,
+.text-link:focus-visible {
+  transform: translateY(-1px);
+  color: var(--color-primary-600);
+  border-color: color-mix(in oklch, var(--color-primary-500) 50%, transparent);
+  box-shadow: 0 6px 12px -4px rgb(0 0 0 / 0.14);
+}
+
+.dark .text-link:hover,
+.dark .text-link:focus-visible {
+  color: var(--color-primary-300);
+  border-color: color-mix(in oklch, var(--color-primary-400) 60%, transparent);
+}
+
+/* ── Off-duty badges ──────────────────────────────────── */
+/* Label + badges are one flex child of the left column, so the column's
+   gap no longer lands between them — it was stacking on the label's margin. */
+.hobby-block {
+  width: 100%;
+}
+
+/* Small, pale, all-caps label above the badges — no rule, no long line */
+.hobby-heading {
+  display: block;
+  margin: 0 0 0.4rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .hobby-heading {
+  color: var(--color-gray-500, #6b7280);
+}
+
+.hobby-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+/* Round, bordered and shadowed to match the social icon buttons */
+.hobby-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--color-primary-600);
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-gray-200, #e5e7eb);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.hobby-ico {
+  width: 62%;
+  height: 62%;
+}
+
+.dark .hobby-badge {
+  color: var(--color-primary-300);
+  background: var(--color-gray-800, #1f2937);
+  border-color: var(--color-gray-700, #374151);
+}
+
+.hobby-item:hover .hobby-badge,
+.hobby-item:focus-within .hobby-badge {
+  transform: translateY(-0.25rem) scale(1.1);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.hobby-badge:focus-visible {
+  outline: none;
+}
+
+/* Label — hidden until hover / focus.
+   Anchored to the row and opening upward: the badges sit at the bottom of
+   the column, and .resume-biography clips overflow, so a card below them
+   would be cut off by the section edge. */
+.hobby-tip {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 0;
+  z-index: 40;
+  width: max-content;
+  max-width: min(22rem, 78vw);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--color-gray-700, #374151);
+  background: var(--color-white, #fff);
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.25rem);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.dark .hobby-tip {
+  color: var(--color-gray-200, #e5e7eb);
+  background: var(--color-gray-800, #1f2937);
+  border-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+}
+
+.hobby-tip a {
+  text-decoration: underline;
+  color: var(--color-primary-600);
+}
+
+.dark .hobby-tip a {
+  color: var(--color-primary-300);
+}
+
+.hobby-item:hover .hobby-tip,
+.hobby-item:focus-within .hobby-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 /* ── Full-page Gradient Mesh Background ───────────────── */
+
 
 .gradient-mesh-global {
   position: absolute;

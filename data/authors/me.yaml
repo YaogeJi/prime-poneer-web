@@ -25,11 +25,12 @@ job_market:
   badge: Available Fall 2026
   title: Seeking faculty position
   body: |
-    I will be on the academic job market in Fall 2026 and am seeking faculty positions in operations research and stochastic optimization. I would be delighted to connect regarding opportunities.
+    I will be on the academic job market in Fall 2026 and am seeking faculty positions in operations research. I would be delighted to connect regarding opportunities.
 
 affiliations:
   - name: H. Milton Stewart School of Industrial and Systems Engineering
     url: https://www.isye.gatech.edu/
+  - name: Georgia Institute of Technology, Atlanta, GA, 30332
 
 links:
   - text: Email
@@ -63,6 +64,9 @@ education:
     institution: Beijing Normal University
     institution_short: BNU
     focus: Stochastic processes
+    topics:
+      - name: Branching Process
+        slug: branching-process
     start: 2016-09-01
     end: 2019-06-30
     advisor: Prof. Wenming Hong

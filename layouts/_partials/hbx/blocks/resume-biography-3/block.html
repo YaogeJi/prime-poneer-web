@@ -453,7 +453,7 @@
               {{ $summary := "" }}
               {{ $short := "" }}
               {{ $org_short := "" }}
-              {{ $advisor := "" }}
+              {{ $advisors := slice }}
               {{ $focus := "" }}
               {{ with index . "role" }}{{ $role = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ if not $role }}{{ with index . "position" }}{{ $role = strings.TrimSpace (printf "%v" .) }}{{ end }}{{ end }}
@@ -466,7 +466,14 @@
               {{ with index . "summary" }}{{ $summary = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ with index . "short" }}{{ $short = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ with index . "org_short" }}{{ $org_short = strings.TrimSpace (printf "%v" .) }}{{ end }}
-              {{ with index . "advisor" }}{{ $advisor = strings.TrimSpace (printf "%v" .) }}{{ end }}
+              {{/* advisor: a single name or a list of them */}}
+              {{ with index . "advisor" }}
+                {{ if reflect.IsSlice . }}
+                  {{ range . }}{{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}{{ end }}
+                {{ else }}
+                  {{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}
+                {{ end }}
+              {{ end }}
               {{ with index . "focus" }}{{ $focus = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ $topics := slice }}
               {{ with index . "topics" }}{{ if reflect.IsSlice . }}{{ $topics = . }}{{ end }}{{ end }}
@@ -475,7 +482,7 @@
               {{ if not $short }}{{ $short = $role }}{{ end }}
               {{ if not $org_short }}{{ $org_short = $org }}{{ end }}
               {{ if or $role $org }}
-                {{ $timeline_items = $timeline_items | append (dict "title" $role "subtitle" $org "short" $short "org_short" $org_short "advisor" $advisor "focus" $focus "topics" $topics "icon" $icon "start" $start "end" $end "summary" $summary "type" "experience") }}
+                {{ $timeline_items = $timeline_items | append (dict "title" $role "subtitle" $org "short" $short "org_short" $org_short "advisors" $advisors "focus" $focus "topics" $topics "icon" $icon "start" $start "end" $end "summary" $summary "type" "experience") }}
               {{ end }}
             {{ end }}
           {{ end }}
@@ -493,7 +500,7 @@
               {{ $summary := "" }}
               {{ $short := "" }}
               {{ $inst_short := "" }}
-              {{ $advisor := "" }}
+              {{ $advisors := slice }}
               {{ $focus := "" }}
               {{ $degreeRaw := index . "degree" | default (index . "area") }}
               {{ if ne $degreeRaw nil }}{{ $degree = strings.TrimSpace (printf "%v" $degreeRaw) }}{{ end }}
@@ -505,7 +512,14 @@
               {{ with index . "summary" }}{{ $summary = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ with index . "short" }}{{ $short = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ with index . "institution_short" }}{{ $inst_short = strings.TrimSpace (printf "%v" .) }}{{ end }}
-              {{ with index . "advisor" }}{{ $advisor = strings.TrimSpace (printf "%v" .) }}{{ end }}
+              {{/* advisor: a single name or a list of them */}}
+              {{ with index . "advisor" }}
+                {{ if reflect.IsSlice . }}
+                  {{ range . }}{{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}{{ end }}
+                {{ else }}
+                  {{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}
+                {{ end }}
+              {{ end }}
               {{ with index . "focus" }}{{ $focus = strings.TrimSpace (printf "%v" .) }}{{ end }}
               {{ $topics := slice }}
               {{ with index . "topics" }}{{ if reflect.IsSlice . }}{{ $topics = . }}{{ end }}{{ end }}
@@ -514,7 +528,7 @@
               {{ if not $short }}{{ $short = $degree }}{{ end }}
               {{ if not $inst_short }}{{ $inst_short = $institution }}{{ end }}
               {{ if or $degree $institution }}
-                {{ $timeline_items = $timeline_items | append (dict "title" $degree "subtitle" $institution "short" $short "org_short" $inst_short "advisor" $advisor "focus" $focus "topics" $topics "icon" $icon "start" $start "end" $end "summary" $summary "type" "education") }}
+                {{ $timeline_items = $timeline_items | append (dict "title" $degree "subtitle" $institution "short" $short "org_short" $inst_short "advisors" $advisors "focus" $focus "topics" $topics "icon" $icon "start" $start "end" $end "summary" $summary "type" "education") }}
               {{ end }}
             {{ end }}
           {{ end }}
@@ -577,7 +591,7 @@
                 {{ with .subtitle }}<p class="btl-tip-org">{{ . }}</p>{{ end }}
                 {{ with $period }}<p class="btl-tip-date">{{ . | safeHTML }}</p>{{ end }}
                 {{ with .focus }}<p class="btl-tip-row"><span class="btl-tip-key">Focus</span>{{ . }}</p>{{ end }}
-                {{ with .advisor }}<p class="btl-tip-row"><span class="btl-tip-key">Advisor</span>{{ . }}</p>{{ end }}
+                {{ with .advisors }}<p class="btl-tip-row"><span class="btl-tip-key">{{ if gt (len .) 1 }}Advisors{{ else }}Advisor{{ end }}</span>{{ delimit . " · " }}</p>{{ end }}
                 {{ with .summary }}<p class="btl-tip-row"><span class="btl-tip-key">Thesis</span>{{ . }}</p>{{ end }}
               </div>
               </div>

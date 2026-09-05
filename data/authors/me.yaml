@@ -18,7 +18,7 @@ bio: |
 
 # Rendered below the education / experience timeline
 bio_research: |
-  My current focus is on <span class="rterm" data-topic="parameter-free">optimal parameter-free methods</span> for stochastic optimization. I study <span class="rterm" data-topic="high-order">first- and higher-order methods</span> for convex and nonconvex problems in both deterministic and stochastic settings. I have worked on <span class="rterm" data-topic="gradient-min">gradient minimization</span>, <span class="rterm" data-topic="variational-inequalities">variational inequalities</span>, <span class="rterm" data-topic="distributed">distributed optimization</span>, <span class="rterm" data-topic="statistical-learning">statistical learning</span>, and <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, including <span class="rterm" data-topic="healthcare">applications in healthcare</span>.
+  My current focus is on <span class="rterm" data-topic="parameter-free">optimal parameter-free methods</span> for stochastic optimization. I study <span class="rterm" data-topic="high-order">first- and higher-order methods</span> for convex and nonconvex problems in both deterministic and stochastic settings. I have worked on <span class="rterm" data-topic="gradient-min">gradient minimization</span>, <span class="rterm" data-topic="variational-inequalities">variational inequalities</span>, and <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, including <span class="rterm" data-topic="healthcare">applications in healthcare</span>.
 
 # Time-limited notice rendered below the timeline; delete this key to remove it
 job_market:
@@ -57,6 +57,9 @@ education:
     institution: Beijing Normal University
     institution_short: BNU
     focus: Probability and statistics foundation
+    topics:
+      - name: Branching Process
+        slug: branching-process
     start: 2012-09-01
     end: 2016-06-30
   - degree: Thesis M.S. in Probability Theory and Stochastic Processes
@@ -65,8 +68,8 @@ education:
     institution_short: BNU
     focus: Stochastic processes
     topics:
-      - name: Branching Process
-        slug: branching-process
+      - name: Bellman–Harris Process
+        slug: bellman-harris
     start: 2016-09-01
     end: 2019-06-30
     advisor: Prof. Wenming Hong
@@ -83,7 +86,9 @@ education:
         slug: statistical-learning
     start: 2019-08-01
     end: 2024-09-30
-    advisor: Prof. Harsha Honnappa
+    advisor:
+      - Prof. Harsha Honnappa
+      - Prof. Gesualdo Scutari
     summary: "High-dimensional inference over networks: statistical and computational guarantees"
 
 experience:

@@ -1,5 +1,5 @@
 ---
-title: 2026 Fall academic job market
+title: Fall 2026 academic job market
 summary: Seeking position in operations research.
 date: 2026-09-01
 
@@ -7,7 +7,7 @@ date: 2026-09-01
 # so it stays visible as newer items come in. Remove both keys once the search
 # is over and it becomes an ordinary dated entry.
 pinned: true
-badge: Available Fall 2026
+badge: Available
 
 authors:
   - me

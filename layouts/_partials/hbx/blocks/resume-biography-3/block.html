@@ -639,43 +639,53 @@
         </div>
         {{ end }}
 
-        {{/* Job-market callout */}}
-        {{ with $author_data.job_market }}
-        <aside class="jobmarket">
-          {{ with index . "badge" }}
-          <span class="jm-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="2.5" y="7" width="19" height="13" rx="2.2" />
-              <path d="M8.5 7V5.4A1.9 1.9 0 0 1 10.4 3.5h3.2a1.9 1.9 0 0 1 1.9 1.9V7" />
-              <path d="M2.5 12.4c3 1.4 6.2 2.1 9.5 2.1s6.5-.7 9.5-2.1" />
-            </svg>
-            {{ . }}
-          </span>
-          {{ end }}
-          {{ with index . "title" }}<h3 class="jm-title">{{ . }}</h3>{{ end }}
-          {{ with index . "body" }}<p class="jm-body">{{ printf "%v" . | $page.RenderString }}</p>{{ end }}
-          {{ $jm_links := index . "links" }}
-          {{ if reflect.IsSlice $jm_links }}
-          <div class="jm-links">
-            {{ range $jm_links }}
-            {{ $u := "" }}{{ $t := "" }}
-            {{ with index . "url" }}{{ $u = strings.TrimSpace (printf "%v" .) }}{{ end }}
-            {{ with index . "text" }}{{ $t = strings.TrimSpace (printf "%v" .) }}{{ end }}
-            {{ if and $u $t }}
-              {{ $scheme := (urls.Parse $u).Scheme }}
-              {{ $target := "" }}
-              {{ if not $scheme }}
-                {{ if not (hasPrefix $u "#") }}{{ $u = $u | relLangURL }}{{ end }}
-                {{ if eq (path.Ext $u) ".pdf" }}{{ $target = "target=\"_blank\" rel=\"noopener\"" }}{{ end }}
-              {{ else if in (slice "http" "https") $scheme }}
-                {{ $target = "target=\"_blank\" rel=\"noopener\"" }}
-              {{ end }}
-              <a class="text-link" href="{{ $u | safeURL }}" {{ $target | safeHTMLAttr }}>{{ $t }}</a>
-            {{ end }}
-            {{ end }}
+        {{/* Recent news — sits where the job-market callout used to, so the
+             announcement now arrives as the pinned item at the top of the feed
+             rather than as a separate card competing with it.
+
+             Queried here rather than reusing the collection block so the feed
+             can live inside this column; the per-item markup is still the
+             shared views/news-feed.html partial. */}}
+        {{ $news := where site.RegularPages "Type" "blog" }}
+        {{ $news = where $news "Params.unpublished" "!=" true }}
+        {{ $pinned := sort (where $news "Params.pinned" true) "Date" "desc" }}
+
+        {{/* Order by the date the feed actually shows. Announcements for a
+             future event are dated today (Hugo will not build a future-dated
+             page) and carry `event_start`, which views/news-feed.html displays
+             — so sorting on .Date alone would file them under the day they
+             were posted rather than the day they happen. */}}
+        {{ $rows := slice }}
+        {{ range where $news "Params.pinned" "!=" true }}
+          {{ $when := .Date }}
+          {{ with .Params.event_start }}{{ $when = time.AsTime . }}{{ end }}
+          {{ $rows = $rows | append (dict "page" . "when" $when) }}
+        {{ end }}
+        {{ $rows = sort $rows "when" "desc" }}
+
+        {{ if or (gt (len $pinned) 0) (gt (len $rows) 0) }}
+        <section id="news" class="bio-news">
+          <div class="flex items-center gap-4 bio-heading-gap">
+            <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/50 rounded-full flex items-center justify-center">
+              {{ partial "functions/get_icon" (dict "name" "megaphone" "attributes" "class='w-6 h-6 text-primary-600 dark:text-primary-400'") }}
+            </div>
+            <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Recent News</h2>
           </div>
+
+          {{/* Pinned items sit outside the scroll container, so they stay put
+               while everything below them scrolls. */}}
+          {{ range $pinned }}
+            {{ partial "views/news-feed--pinned.html" (dict "item" .) }}
           {{ end }}
-        </aside>
+
+          {{ if gt (len $rows) 0 }}
+            {{ partial "views/news-feed--start.html" . }}
+            {{ range $rows }}
+              {{ partial "views/news-feed.html" (dict "item" .page) }}
+            {{ end }}
+            {{ partial "views/news-feed--end.html" . }}
+          {{ end }}
+        </section>
         {{ end }}
 
 

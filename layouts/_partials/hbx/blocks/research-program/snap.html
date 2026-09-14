@@ -1,0 +1,139 @@
+{{/* Research Snap — the figure that opens every item.
+
+     Resolution order:
+       1. item.snap          — a built-in diagram partial under snaps/<name>.html
+       2. item.figure_pages  — a multi-page scan, shown one page at a time with
+                               a page flipper (each entry needs file + alt)
+       3. item.figure        — a single image under assets/media/
+                               (item.figure_alt required)
+       4. placeholder        — a sized, dashed frame so the page rhythm holds
+                               until the real figure arrives
+
+     Placeholders carry a visible caption rather than an aria-label, so the
+     "figure in preparation" state is announced to everyone the same way. */}}
+
+{{ $item := .item }}
+{{ $title := .title }}
+
+{{ $snap := strings.TrimSpace (printf "%v" (index $item "snap" | default "")) }}
+{{ $figure := strings.TrimSpace (printf "%v" (index $item "figure" | default "")) }}
+{{ $pages := index $item "figure_pages" }}
+{{ $hasPages := and (reflect.IsSlice $pages) (gt (len $pages) 0) }}
+
+{{/* Delivery widths: the widest column the snap can occupy is ~608px, so
+     1400w covers a 2x display and 700w covers 1x. */}}
+{{ $widths := slice 700 1400 }}
+
+<figure class="rp-snap">
+  {{ if $snap }}
+    {{ $snapPath := printf "hbx/blocks/research-program/snaps/%s.html" $snap }}
+    {{ if templates.Exists (printf "_partials/%s" $snapPath) }}
+      {{ partial $snapPath (dict "item" $item "title" $title) }}
+    {{ else }}
+      {{ errorf "research-program: unknown snap %q on item %q" $snap $title }}
+    {{ end }}
+
+  {{ else if $hasPages }}
+    <div class="rp-flip" data-rp-flip>
+      <div class="rp-flip-stage">
+        {{ range $i, $p := $pages }}
+          {{ $file := strings.TrimSpace (printf "%v" (index $p "file" | default "")) }}
+          {{ $alt := strings.TrimSpace (printf "%v" (index $p "alt" | default "")) }}
+          {{ if not $file }}
+            {{ errorf "research-program: figure_pages entry %d on %q has no `file`" (add $i 1) $title }}
+          {{ end }}
+          {{ if not $alt }}
+            {{ errorf "research-program: figure_pages entry %d on %q has no `alt`" (add $i 1) $title }}
+          {{ end }}
+          {{ $res := resources.Get (path.Join "media" $file) }}
+          {{ if not $res }}
+            {{ errorf "research-program: figure page %q not found under assets/media/" $file }}
+          {{ end }}
+          {{ $srcset := slice }}
+          {{ range $widths }}
+            {{ $r := $res.Resize (printf "%dx webp q82 Lanczos" .) }}
+            {{ $srcset = $srcset | append (printf "%s %dw" $r.RelPermalink .) }}
+          {{ end }}
+          {{ $fallback := $res.Resize "1400x webp q82 Lanczos" }}
+          <img class="rp-flip-page{{ if eq $i 0 }} is-current{{ end }}"
+               data-rp-page="{{ $i }}"
+               src="{{ $fallback.RelPermalink }}"
+               srcset="{{ delimit $srcset ", " }}"
+               sizes="(min-width: 1024px) 600px, 92vw"
+               width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
+               alt="{{ $alt }}"
+               loading="{{ cond (eq $i 0) "eager" "lazy" }}" decoding="async">
+        {{ end }}
+      </div>
+
+      <div class="rp-flip-nav" data-rp-nav hidden>
+        <button type="button" class="rp-flip-btn" data-rp-prev
+                aria-label="Previous page of the Research Snap for {{ $title }}">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M10 2 4 8l6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <span class="rp-flip-dots">
+          {{ range $i, $p := $pages }}
+            <button type="button" class="rp-flip-dot" data-rp-dot
+                    {{ if eq $i 0 }}aria-current="true"{{ end }}
+                    aria-label="Go to page {{ add $i 1 }}"></button>
+          {{ end }}
+        </span>
+
+        <button type="button" class="rp-flip-btn" data-rp-next
+                aria-label="Next page of the Research Snap for {{ $title }}">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M6 2l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="rp-sr-only" aria-live="polite" data-rp-live></p>
+    </div>
+
+  {{ else if $figure }}
+    {{ $alt := strings.TrimSpace (printf "%v" (index $item "figure_alt" | default "")) }}
+    {{ if not $alt }}
+      {{ errorf "research-program: item %q sets `figure` but no `figure_alt`" $title }}
+    {{ end }}
+    {{ $res := resources.Get (path.Join "media" $figure) }}
+    {{ if not $res }}
+      {{ errorf "research-program: figure %q not found under assets/media/" $figure }}
+    {{ end }}
+    {{/* SVGs have no raster pipeline, so they pass through untouched. The
+         viewBox supplies intrinsic dimensions, which keeps the figure from
+         shifting the column while it loads. */}}
+    {{ if eq $res.MediaType.SubType "svg" }}
+      {{ $vb := findRESubmatch `viewBox="[-0-9.]+ +[-0-9.]+ +([0-9.]+) +([0-9.]+)"` $res.Content 1 }}
+      <img class="rp-snap-img" src="{{ $res.RelPermalink }}" alt="{{ $alt }}"
+           {{ with $vb }}width="{{ index (index . 0) 1 }}" height="{{ index (index . 0) 2 }}"{{ end }}
+           loading="lazy" decoding="async">
+    {{ else }}
+      {{ $srcset := slice }}
+      {{ range $widths }}
+        {{ $r := $res.Resize (printf "%dx webp q82 Lanczos" .) }}
+        {{ $srcset = $srcset | append (printf "%s %dw" $r.RelPermalink .) }}
+      {{ end }}
+      {{ $fallback := $res.Resize "1400x webp q82 Lanczos" }}
+      <img class="rp-snap-img"
+           src="{{ $fallback.RelPermalink }}"
+           srcset="{{ delimit $srcset ", " }}"
+           sizes="(min-width: 1024px) 600px, 92vw"
+           width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
+           alt="{{ $alt }}" loading="lazy" decoding="async">
+    {{ end }}
+
+  {{ else }}
+    <div class="rp-snap-placeholder">
+      <span class="rp-snap-placeholder-mark" aria-hidden="true"></span>
+      <span class="rp-snap-placeholder-text">
+        Research Snap
+        <span class="rp-snap-placeholder-sub">figure in preparation</span>
+      </span>
+    </div>
+  {{ end }}
+</figure>

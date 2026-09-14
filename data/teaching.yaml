@@ -8,6 +8,15 @@ groups:
         courses:
           - name: "ISyE 4106: Senior Design"
             term: Fall 2026
+            # `about` renders as a hover / focus footnote on the course name.
+            about: >-
+              ISyE 4106 Senior Design is the flagship capstone experience of
+              Georgia Tech’s Industrial Engineering undergraduate program.
+              Georgia Tech has described Senior Design as its “most important
+              and most challenging undergraduate course,” and its projects have
+              repeatedly received national recognition, including first-place
+              finishes in the IISE Outstanding ISE Capstone Senior Design
+              Project Competition.
 
   - institution: Purdue University, Industrial Engineering
     roles:

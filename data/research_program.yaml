@@ -1,0 +1,206 @@
+# Research Program — single source for the homepage section.
+#
+# Every item renders as: Research Snap → label → title → contribution →
+# authors / venue → links. Edit text and links here; no template changes needed.
+#
+# Research Snap options, checked in this order:
+#   snap:          name of a built-in hand-drawn diagram (`acfgm` or `ar`)
+#   figure_pages:  a multi-page scan — a list of `{file, alt}` entries, shown one
+#                  page at a time with a page flipper
+#   figure:        a single image under assets/media/ — e.g.
+#                  `research/strong-solutions.svg` (figure_alt is then required)
+#   neither: a sized placeholder is drawn, so the page rhythm holds until the
+#            real figure lands.
+#
+# `tags:` is a short list of current-focus areas the item belongs to. They are
+# labels, not links — there is no tag index to point at.
+#
+# `pending: true` suppresses the authors / venue / links row and prints a short
+# "details to come" note instead — used where metadata is not settled yet.
+
+heading: Research Interests and Selected Works
+
+intro: Stochastic optimization; reinforcement learning; healthcare.
+
+current_focus_label: Current focus
+current_focus:
+  - Parameter-Free Optimization
+  - Stochastic Optimization
+  - Higher-Order Optimization
+  - Variational Inequalities
+  - Reinforcement Learning
+  - Healthcare
+  - Distributed Optimization
+
+sections:
+  - title: Foundation
+    items:
+      - label: Selected work
+        title: Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates
+        # The title overflows the column by about 10px, so it wraps to two lines;
+        # left alone, balancing splits the method name. This binds it together.
+        keep_together:
+          - Fast Gradient Methods
+        tags:
+          - Parameter-Free Optimization
+          - Stochastic Optimization
+        contribution: Optimal iteration and sample complexities for parameter-free stochastic acceleration.
+        authors: Yao Ji and Guanghui Lan
+        venue: 'arXiv:2604.06525'
+        year: '2026'
+        status: Under review, Mathematical Programming
+        snap: acfgm
+        links:
+          - text: Paper
+            url: https://arxiv.org/abs/2604.06525
+          - text: Slides
+            url: /slides/informs-os-2026-stochastic-acfgm.pdf
+
+      - label: Selected work
+        title: Computation of Strong Solutions to Stochastic Variational Inequalities
+        # Fits on one line on a wide desktop, but strands "to" once the
+        # column narrows.
+        keep_together:
+          - to Stochastic
+        tags:
+          - Variational Inequalities
+          - Reinforcement Learning
+        contribution: Optimal residual complexity for computing strong solutions to stochastic variational inequalities.
+        authors: Yao Ji, Guanghui Lan, and Jason Zhu
+        venue: 'arXiv:2609.04188'
+        year: '2026'
+        status: Under review, Mathematical Programming
+        figure_pages:
+          - file: research/strong-solutions-vi-1.jpg
+            alt: >-
+              Research Snap, page 1 of 3 — "What is the problem?" Handwritten notes
+              defining a variational inequality with an L-Lipschitz, monotone operator,
+              then comparing termination criteria: weak gap, strong gap, distance to
+              the optimal solution, and the residual. Notes that the residual works
+              for unbounded feasible sets, and sets out the stochastic case, where the
+              classical uniform noise model and a distance-based condition both fail
+              for merely monotone problems — motivating a new noise model.
+          - file: research/strong-solutions-vi-2.jpg
+            alt: >-
+              Research Snap, page 2 of 3 — "What are our results?" Introduces the
+              state-dependent noise model, shows it is well defined and consistent
+              with the strong-gap interpretation when the solution is not unique, and
+              states the main complexity results for the monotone and strongly
+              monotone cases, which match the lower bound up to logarithmic factors
+              and improve on the existing literature.
+          - file: research/strong-solutions-vi-3.jpg
+            alt: >-
+              Research Snap, page 3 of 3 — "What is our idea? Accumulative
+              regularization." Contrasts the deterministic regularized hybrid
+              proximal extragradient method with the stochastic case, where a fixed
+              regularization level no longer works, then develops accumulative
+              regularization: increase the regularization in epochs so the method
+              benefits from stronger monotonicity while the bias stays controlled.
+        links:
+          - text: Paper
+            url: https://arxiv.org/abs/2609.04188
+
+      - label: Selected work
+        title: High-Order Accumulative Regularization for Gradient Minimization in Convex Programming
+        # Keeps the prepositions off the end of a line — balancing otherwise
+        # strands "for" there, and "in" once the column narrows.
+        keep_together:
+          - for Gradient
+          - in Convex
+        tags:
+          - Parameter-Free Optimization
+          - Higher-Order Optimization
+        contribution: Optimal gradient complexity for finding points with small gradients.
+        authors: Yao Ji and Guanghui Lan
+        venue: 'arXiv:2511.03723'
+        year: '2025'
+        status: R&R 2nd round review, SIAM Journal on Optimization
+        snap: ar
+        links:
+          - text: Paper
+            url: https://arxiv.org/abs/2511.03723
+          - text: Slides
+            url: /slides/informs-2025-high-order-ar.pdf
+
+  - title: Learning and Decision-Making
+    items:
+      - label: Selected presentation
+        title: >-
+          Transformer-Based Patient Response Modeling Across All Perioperative Phases
+          for Cardiac Surgery-Associated Acute Kidney Injury Management
+        tags:
+          - Healthcare
+        figure: research/cardiac-aki-poster.jpg
+        figure_alt: >-
+          The SCA 2026 conference poster. Sections cover the background and
+          motivation for cardiac surgery-associated acute kidney injury, the
+          dataset of 108,258 adult cardiac surgery admissions, a reinforcement
+          learning framework formulating perioperative management as sequential
+          decision-making, a transformer model architecture, and results on
+          kernel performance, AKI prediction, and complication prediction,
+          closing with discussion and future work.
+        contribution: >-
+          Transformer-based modeling of patient response across all perioperative
+          phases, built to support sequential clinical decision-making for cardiac
+          surgery-associated acute kidney injury.
+        authors: >-
+          Yao Ji, Yan Li, Guanghui Lan, Zehua Dong, Shuoling Li, Ilker Guven,
+          Xiaoyu Chen, Lihui Bai, and Jiapeng Huang
+        venue: Society of Cardiovascular Anesthesiologists Annual Meeting — poster
+        year: '2026'
+        snap_alt: >-
+          Research Snap for perioperative patient-response modeling in cardiac
+          surgery-associated acute kidney injury.
+        links:
+          - text: Poster
+            url: https://yaoji-academic.com/posters/sts-poster.pdf
+      - label: Selected work
+        title: Distributed Sparse Regression via Penalization
+        tags:
+          - Distributed Optimization
+        contribution: >-
+          Statistical and computational guarantees for sparse linear regression over a
+          network of agents, formulated as local LASSO losses plus a quadratic penalty
+          on the consensus constraint.
+        authors: Yao Ji, Gesualdo Scutari, Ying Sun, and Harsha Honnappa
+        venue: Journal of Machine Learning Research, 24(272):1–62
+        year: '2023'
+        figure: research/distributed-cta.jpg
+        figure_alt: >-
+          Two motivating settings for distributed optimization. Left: a swarm of
+          UAVs linked by local communication over a mesh network. Right: several
+          hospitals and a university jointly analysing gene expression data over
+          local links. Data stay stored and processed locally at each agent, and
+          the agents work together to solve a common problem.
+        links:
+          - text: Paper
+            url: https://www.jmlr.org/papers/v24/21-1333.html
+
+      - label: Selected work
+        title: Distributed (ATC) Gradient Descent for High Dimension Sparse Regression
+        # Same: stops "for" being left hanging at a line end.
+        keep_together:
+          - for High
+        tags:
+          - Distributed Optimization
+        contribution: >-
+          First statistical study of adapt-then-combine distributed gradient descent,
+          showing linear convergence to centralized statistical precision with
+          communication growing only logarithmically in the ambient dimension.
+        authors: Yao Ji, Gesualdo Scutari, Ying Sun, and Harsha Honnappa
+        venue: 'IEEE Transactions on Information Theory, 69(8):5253–5276'
+        year: '2023'
+        figure: research/distributed-atc.svg
+        figure_alt: >-
+          Test mean squared error against the number of communications. ATC-DGD
+          with step size 0.06 drops sharply within a few thousand communications
+          and settles on the centralized mean squared error. CTA-DGD with the
+          same step size stalls at the local mean squared error, and CTA-DGD with
+          much smaller step sizes, 0.0001 and 0.00005, decreases only slowly and
+          is still far above the centralized level after 45,000 communications.
+        links:
+          - text: Paper
+            url: https://ieeexplore.ieee.org/abstract/document/10103556
+          - text: DOI
+            url: https://doi.org/10.1109/TIT.2023.3267742
+

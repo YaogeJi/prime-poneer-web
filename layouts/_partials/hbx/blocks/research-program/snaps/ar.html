@@ -1,0 +1,65 @@
+{{/* Research Snap — High-Order Accumulative Regularization.
+
+     Two parts in one snap: the transformation the framework performs, then the
+     algorithm that performs it. Rebuilt as real text plus KaTeX rather than an
+     exported image, so it stays crisp, adapts to dark mode, and can be edited
+     here instead of in a slide deck.
+
+     The pipeline row is role="img" because the arrows carry the meaning; the
+     algorithm below is left as ordinary markup, since pseudocode reads
+     correctly in document order. */}}
+
+<div class="rp-ar">
+
+  <div class="rp-ar-pipe" role="img"
+       aria-label="Any subroutine A is passed through accumulative regularization, which turns its fast function-value residual rate into a matching gradient norm rate.">
+    <div class="rp-ar-in">
+      <span class="rp-ar-sym">$\mathcal{A}$</span>
+      <span class="rp-ar-cap">any subroutine</span>
+    </div>
+
+    <span class="rp-ar-arrow" aria-hidden="true"></span>
+
+    <div class="rp-ar-box">
+      <span class="rp-ar-box-name">AR</span>
+      <span class="rp-ar-box-cap">accumulative<br>regularization</span>
+    </div>
+
+    <span class="rp-ar-arrow" aria-hidden="true"></span>
+
+    <div class="rp-ar-out">
+      <span class="rp-ar-out-main">Gradient norm</span>
+      <span class="rp-ar-out-sub">matching function residual</span>
+    </div>
+  </div>
+
+  <div class="rp-ar-algo">
+    <p class="rp-ar-algo-title">
+      <span class="rp-ar-algo-kicker">Algorithm</span>
+      AR framework for gradient minimization
+    </p>
+
+    <p class="rp-ar-req">
+      <span class="rp-ar-kw">Require:</span>
+      $S$, a strictly increasing sequence $\{\sigma_s\}_{s=0}^{S}$ with
+      $\sigma_0 = 0$, and an initial point $x_0 \in \mathbb{R}^n$.
+    </p>
+
+    <ol class="rp-ar-steps">
+      <li><span class="rp-ar-kw">for</span> $s = 1,\dots,S$ <span class="rp-ar-kw">do</span></li>
+      <li class="rp-ar-in1">
+        Compute an approximate solution $x_s$ of the proximal subproblem
+        <span class="rp-ar-eq">
+          $$x_s \approx \operatorname*{arg\,min}_{x \in \mathbb{R}^n}
+            \Big\{\, f_s(x) := f(x) + \textstyle\sum_{i=1}^{s}
+            \tfrac{\sigma_i - \sigma_{i-1}}{p+\nu}\,\|x - x_{i-1}\|^{p+\nu} \Big\}$$
+        </span>
+        where $p + \nu \geq 2$, by running a subroutine $\mathcal{A}$ initialized
+        at $x_{s-1}$ for $N_s$ iterations.
+      </li>
+      <li><span class="rp-ar-kw">end for</span></li>
+      <li><span class="rp-ar-kw">Output:</span> $x_S$</li>
+    </ol>
+  </div>
+
+</div>

@@ -1,0 +1,54 @@
+{{/* Research Snap page flipper.
+
+     Progressive enhancement: without JavaScript the pages render stacked, so
+     the figure is never hidden behind a control that cannot run. This script
+     collapses each set to one page at a time and reveals the nav. */}}
+
+{{ $js := resources.FromString "js/research-snap-flip.js" `
+(function () {
+  var roots = document.querySelectorAll('[data-rp-flip]');
+
+  Array.prototype.forEach.call(roots, function (root) {
+    var pages = root.querySelectorAll('[data-rp-page]');
+    if (pages.length < 2) return;
+
+    var nav  = root.querySelector('[data-rp-nav]');
+    var live = root.querySelector('[data-rp-live]');
+    var dots = root.querySelectorAll('[data-rp-dot]');
+    var prev = root.querySelector('[data-rp-prev]');
+    var next = root.querySelector('[data-rp-next]');
+    var at = 0;
+
+    function show(n) {
+      at = (n + pages.length) % pages.length;
+      Array.prototype.forEach.call(pages, function (page, k) {
+        page.classList.toggle('is-current', k === at);
+        // Keep hidden pages out of the a11y tree and out of tab order.
+        page.setAttribute('aria-hidden', k === at ? 'false' : 'true');
+      });
+      Array.prototype.forEach.call(dots, function (dot, k) {
+        if (k === at) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+      if (live) live.textContent = 'Page ' + (at + 1) + ' of ' + pages.length;
+    }
+
+    if (prev) prev.addEventListener('click', function () { show(at - 1); });
+    if (next) next.addEventListener('click', function () { show(at + 1); });
+    Array.prototype.forEach.call(dots, function (dot, k) {
+      dot.addEventListener('click', function () { show(k); });
+    });
+
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft')  { show(at - 1); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { show(at + 1); e.preventDefault(); }
+    });
+
+    root.classList.add('is-ready');
+    if (nav) nav.hidden = false;
+    show(0);
+  });
+})();
+` }}
+{{ $js = $js | js.Build (dict "minify" true) | resources.Fingerprint "sha256" }}
+<script defer src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}"></script>

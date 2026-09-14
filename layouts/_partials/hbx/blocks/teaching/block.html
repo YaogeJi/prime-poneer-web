@@ -12,59 +12,79 @@
 
 {{ $data := site.Data.teaching }}
 
-{{ if $title }}
-<div class="flex flex-col items-center max-w-prose mx-auto gap-3 justify-center px-6 md:px-0">
-  <div class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">
-    {{ $title }}
-  </div>
-</div>
-{{ end }}
-
 <div class="flex flex-col items-center px-6">
-  <div class="teaching max-w-prose w-full">
+  <div class="teaching max-w-7xl w-full">
 
-    {{ with $data.heading }}<h2 class="tch-heading">{{ . }}</h2>{{ end }}
+    {{ if $title }}
+      <h2 class="tch-title">{{ $title }}</h2>
+    {{ end }}
 
-    {{ range $data.groups }}
-    <section class="tch-group">
-      {{ with .institution }}<h3 class="tch-inst">{{ . }}</h3>{{ end }}
-      {{ range .roles }}
-      <p class="tch-role">
-        {{ .role }}
-        {{ with .award }}<span class="tch-award">{{ . }}</span>{{ end }}
-      </p>
-      {{ with .courses }}
-      <ul class="tch-courses">
-        {{ range . }}
-        <li>
-          <span class="tch-course">{{ .name }}{{ with .note }} <em>({{ . }})</em>{{ end }}</span>
-          {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
-        </li>
+    {{/* Teaching experience and outreach sit side by side once there is room
+         for two readable columns, and stack below that — same grid and column
+         rule as the Research section, so the two wide sections match. */}}
+    <div class="tch-columns">
+
+      <section class="tch-col">
+        {{ with $data.heading }}<h3 class="tch-heading">{{ . }}</h3>{{ end }}
+
+        {{ range $data.groups }}
+        <section class="tch-group">
+          {{ with .institution }}<h4 class="tch-inst">{{ . }}</h4>{{ end }}
+          {{ range .roles }}
+          <p class="tch-role">
+            {{ .role }}
+            {{ with .award }}<span class="tch-award">{{ . }}</span>{{ end }}
+          </p>
+          {{ with .courses }}
+          <ul class="tch-courses">
+            {{ range . }}
+            <li>
+              <span class="tch-course">
+                {{/* `about` turns the course name into a hover / focus
+                     footnote. The trigger is a real button so the note is
+                     reachable by keyboard, not pointer only; aria-describedby
+                     exposes the text even while the card is hidden. */}}
+                {{ if .about }}
+                  {{ $tipId := printf "tch-tip-%s" (.name | urlize) }}
+                  <span class="tch-annot">
+                    <button type="button" class="tch-annot-trigger"
+                            aria-describedby="{{ $tipId }}">{{ .name }}</button>
+                    <span class="tch-tip" role="tooltip" id="{{ $tipId }}">{{ .about }}</span>
+                  </span>
+                {{ else }}{{ .name }}{{ end }}
+                {{- with .note }} <em>({{ . }})</em>{{ end }}
+              </span>
+              {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
+            </li>
+            {{ end }}
+          </ul>
+          {{ end }}
+          {{ end }}
+        </section>
         {{ end }}
-      </ul>
-      {{ end }}
-      {{ end }}
-    </section>
-    {{ end }}
+      </section>
 
-    {{ with $data.outreach }}
-    {{ with .heading }}<h2 class="tch-heading">{{ . }}</h2>{{ end }}
-    {{ with .items }}
-    <section class="tch-group">
-      <ul class="tch-courses">
-        {{ range . }}
-        <li>
-          <span class="tch-course">
-            {{ with .kind }}<span class="tch-kind">{{ . }}</span>{{ end }}
-            {{ if .url }}<a href="{{ .url | relLangURL }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
-          </span>
-          {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
-        </li>
+      {{ with $data.outreach }}
+      <section class="tch-col">
+        {{ with .heading }}<h3 class="tch-heading">{{ . }}</h3>{{ end }}
+        {{ with .items }}
+        <section class="tch-group">
+          <ul class="tch-courses">
+            {{ range . }}
+            <li>
+              <span class="tch-course">
+                {{ with .kind }}<span class="tch-kind">{{ . }}</span>{{ end }}
+                {{ if .url }}<a href="{{ .url | relLangURL }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+              </span>
+              {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
+            </li>
+            {{ end }}
+          </ul>
+        </section>
         {{ end }}
-      </ul>
-    </section>
-    {{ end }}
-    {{ end }}
+      </section>
+      {{ end }}
 
+    </div>
   </div>
 </div>

@@ -21,12 +21,6 @@ bio_research: |
   My current focus is on <span class="rterm" data-topic="parameter-free">optimal parameter-free methods</span> for stochastic optimization. I study <span class="rterm" data-topic="high-order">first- and higher-order methods</span> for convex and nonconvex problems in both deterministic and stochastic settings. I have worked on <span class="rterm" data-topic="gradient-min">gradient minimization</span>, <span class="rterm" data-topic="variational-inequalities">variational inequalities</span>, and <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, including <span class="rterm" data-topic="healthcare">applications in healthcare</span>.
 
 # Time-limited notice rendered below the timeline; delete this key to remove it
-job_market:
-  badge: Available Fall 2026
-  title: On the Academic Job Market
-  body: |
-    I will be on the academic job market in Fall 2026 and am seeking faculty positions in operations research. I would be delighted to connect regarding opportunities.
-
 affiliations:
   - name: H. Milton Stewart School of Industrial and Systems Engineering
     url: https://www.isye.gatech.edu/

@@ -1,0 +1,154 @@
+{{/* Hugo Blox: Research Program (custom block)
+
+     Renders data/research_program.yaml as a single vertical column: each
+     selected work shown in full, Research Snap first, then label, title,
+     contribution, metadata and links.
+
+     Snap resolution order per item: `snap` (built-in diagram partial) →
+     `figure` (image under assets/media/) → sized placeholder. */}}
+
+{{ $page := .wcPage }}
+{{ $block := .wcBlock }}
+{{ $content := $block.content }}
+{{ if not (reflect.IsMap $content) }}{{ $content = dict }}{{ end }}
+
+{{ $data := site.Data.research_program }}
+{{ if not (reflect.IsMap $data) }}{{ $data = dict }}{{ end }}
+
+{{/* Block `content.title` wins, so the heading can be overridden per page. */}}
+{{ $heading := index $data "heading" }}
+{{ with index $content "title" }}{{ $heading = . }}{{ end }}
+
+<div class="flex flex-col items-center px-6">
+  <div class="research-program max-w-7xl w-full">
+
+    {{/* The lede keeps a reading measure even though the section runs wide. */}}
+    <div class="rp-lede">
+      {{ with $heading }}
+        <h2 class="rp-heading">{{ printf "%v" . | emojify }}</h2>
+      {{ end }}
+
+      {{ with index $data "intro" }}
+        <p class="rp-intro">{{ printf "%v" . | emojify | $page.RenderString }}</p>
+      {{ end }}
+
+      {{ with index $data "current_focus" }}
+        {{ if reflect.IsSlice . }}
+          <div class="rp-focus">
+            <h3 class="rp-focus-label" id="rp-focus-label">
+              {{ index $data "current_focus_label" | default "Current focus" }}
+            </h3>
+            <ul class="rp-focus-list" aria-labelledby="rp-focus-label">
+              {{ range . }}<li>{{ printf "%v" . }}</li>{{ end }}
+            </ul>
+          </div>
+        {{ end }}
+      {{ end }}
+    </div>
+
+    {{/* Two columns on wide screens, stacked below — each column is still the
+         same uninterrupted vertical run of works. */}}
+    <div class="rp-columns">
+    {{ range $sIdx, $section := (index $data "sections" | default slice) }}
+      {{ $sectionId := printf "rp-section-%d" (add $sIdx 1) }}
+      <section class="rp-section" aria-labelledby="{{ $sectionId }}">
+        {{ with index $section "title" }}
+          <h3 class="rp-section-title" id="{{ $sectionId }}">{{ printf "%v" . }}</h3>
+        {{ end }}
+
+        {{ range $iIdx, $item := (index $section "items" | default slice) }}
+          {{ $itemId := printf "%s-item-%d" $sectionId (add $iIdx 1) }}
+          {{ $title := printf "%v" (index $item "title" | default "") }}
+          {{ $pending := eq (index $item "pending") true }}
+
+          <article class="rp-item" aria-labelledby="{{ $itemId }}">
+
+            {{/* 1. Research Snap — always first, on every viewport width. */}}
+            {{ partial "hbx/blocks/research-program/snap.html" (dict
+                 "page" $page "item" $item "title" $title) }}
+
+            {{/* 2. Label */}}
+            {{ with index $item "label" }}
+              <p class="rp-label">{{ printf "%v" . }}</p>
+            {{ end }}
+
+            {{/* 3. Title. `keep_together` binds a phrase with non-breaking
+                 spaces so a wrap cannot fall inside it — used where balancing
+                 would otherwise split a method name across two lines. The
+                 plain $title is kept for ids and labels. */}}
+            {{ $titleShown := $title }}
+            {{ with index $item "keep_together" }}
+              {{ if reflect.IsSlice . }}
+                {{ range . }}
+                  {{ $phrase := printf "%v" . }}
+                  {{ $titleShown = replace $titleShown $phrase (replace $phrase " " "\u00A0") }}
+                {{ end }}
+              {{ end }}
+            {{ end }}
+            <h4 class="rp-title" id="{{ $itemId }}">{{ $titleShown }}</h4>
+
+            {{/* 4. Contribution */}}
+            {{ with index $item "contribution" }}
+              <p class="rp-contribution">{{ printf "%v" . | $page.RenderString }}</p>
+            {{ end }}
+
+            {{/* 5. Tags — which research interests the item belongs to.
+                 Labels, not links: there is no tag index to point at, so
+                 making them look clickable would be a false affordance. */}}
+            {{ $tags := index $item "tags" }}
+            {{ if and (reflect.IsSlice $tags) (gt (len $tags) 0) }}
+              <ul class="rp-tags" aria-label="Research interests for {{ $title }}">
+                {{ range $tags }}<li class="rp-tag">{{ printf "%v" . }}</li>{{ end }}
+              </ul>
+            {{ end }}
+
+            {{/* 6. Authors, venue / year, links */}}
+            {{ if $pending }}
+              <p class="rp-pending">
+                {{ index $item "pending_note" | default "Details to follow." }}
+              </p>
+            {{ else }}
+              {{ $venue := printf "%v" (index $item "venue" | default "") }}
+              {{ $year := printf "%v" (index $item "year" | default "") }}
+              {{ with index $item "authors" }}
+                <p class="rp-authors">{{ printf "%v" . }}</p>
+              {{ end }}
+              {{ if or $venue $year }}
+                <p class="rp-venue">
+                  <em>{{ $venue }}</em>{{ if and $venue $year }}, {{ end }}{{ $year }}
+                </p>
+              {{ end }}
+              {{ with index $item "status" }}
+                <p class="rp-status">{{ printf "%v" . }}</p>
+              {{ end }}
+
+              {{ $links := index $item "links" }}
+              {{ if and (reflect.IsSlice $links) (gt (len $links) 0) }}
+                <ul class="rp-links">
+                  {{ range $links }}
+                    {{ $url := strings.TrimSpace (printf "%v" (index . "url" | default "")) }}
+                    {{ $text := printf "%v" (index . "text" | default "Link") }}
+                    {{ if $url }}
+                      {{ $external := or (hasPrefix $url "http://") (hasPrefix $url "https://") }}
+                      {{ $href := cond $external $url ($url | relLangURL) }}
+                      {{ $newTab := or $external (eq (path.Ext $url) ".pdf") }}
+                      <li>
+                        <a class="rp-link" href="{{ $href | safeURL }}"
+                           {{ if $newTab }}target="_blank" rel="noopener"{{ end }}>
+                          {{ $text }}<span class="rp-sr-only"> — {{ $title }}</span>
+                        </a>
+                      </li>
+                    {{ end }}
+                  {{ end }}
+                </ul>
+              {{ end }}
+            {{ end }}
+
+          </article>
+        {{ end }}
+      </section>
+    {{ end }}
+    </div>
+
+  </div>
+</div>

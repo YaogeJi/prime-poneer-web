@@ -562,16 +562,83 @@ html {
   width: 100%;
 }
 
+/* Section title, matching the Research section's heading rather than the
+   theme's centred block title — this section is now the same width. */
+.teaching .tch-title {
+  margin: 0 0 1rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .teaching .tch-title {
+  color: #fff;
+}
+
+/* Teaching experience and outreach side by side, stacking below 1024px.
+   Divider is a centred pseudo-element so both columns keep equal width, and
+   it fades out because the two columns never end level. */
+.teaching .tch-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2rem;
+  margin-top: 2rem;
+}
+
+.teaching .tch-columns > .tch-col {
+  max-width: 65ch;
+}
+
+@media (min-width: 1024px) {
+  .teaching .tch-columns {
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 4rem;
+    align-items: start;
+  }
+  .teaching .tch-columns > .tch-col {
+    max-width: none;
+  }
+  .teaching .tch-columns::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--color-primary-500) 16%, transparent) 0%,
+      color-mix(in oklch, var(--color-primary-500) 16%, transparent) 55%,
+      transparent 100%
+    );
+  }
+}
+
+.dark .teaching .tch-columns::before {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--color-primary-400) 24%, transparent) 0%,
+    color-mix(in oklch, var(--color-primary-400) 24%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* One heading per column now, so it always sits flush with the column top. */
 .teaching .tch-heading {
-  margin: 2.25rem 0 1rem;
+  margin: 0 0 1rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--color-primary-500) 16%, transparent);
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--color-gray-900, #111827);
 }
 
-.teaching .tch-heading:first-child {
-  margin-top: 0;
+.dark .teaching .tch-heading {
+  border-bottom-color: color-mix(in oklch, var(--color-primary-400) 24%, transparent);
 }
 
 .dark .teaching .tch-heading {
@@ -711,75 +778,6 @@ html {
 
 .dark .nav-link.active {
   color: var(--color-primary-300);
-}
-
-/* ── Job-market callout ───────────────────────────────── */
-
-/* Announcement strip rather than a CTA card: it should not compete with the
-   portrait and the "Operations Researcher" heading for visual priority. */
-.jobmarket {
-  margin-top: clamp(1.25rem, 3dvh, 2rem);
-  padding: 1.35rem 1.5rem;
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 12%, transparent);
-  border-radius: 0.8rem;
-  background: color-mix(in oklch, var(--color-primary-500) 3.5%, transparent);
-  box-shadow: none;
-  text-align: left;
-}
-
-.dark .jobmarket {
-  border-color: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
-  background: color-mix(in oklch, var(--color-primary-400) 6%, transparent);
-}
-
-.jm-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--color-primary-600);
-}
-
-.jm-badge svg {
-  width: 0.9rem;
-  height: 0.9rem;
-}
-
-.dark .jm-badge {
-  color: var(--color-primary-300);
-}
-
-.jm-title {
-  margin: 0.4rem 0 0.45rem;
-  font-size: clamp(0.98rem, 1.15vw, 1.12rem);
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--color-gray-900, #111827);
-}
-
-.dark .jm-title {
-  color: #fff;
-}
-
-.jm-body {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.65;
-  color: var(--color-gray-600, #4b5563);
-}
-
-.dark .jm-body {
-  color: var(--color-gray-300, #d1d5db);
-}
-
-.jm-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
 }
 
 /* ── Contact text links ───────────────────────────────── */
@@ -1010,4 +1008,1279 @@ html {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(25px, 30px) scale(1.08); }
   66% { transform: translate(-35px, -15px) scale(0.92); }
+}
+
+/* ── Research Program ─────────────────────────────────── */
+
+/* One vertical column: Research Snap, then label, title, contribution and
+   metadata. Same type scale and accent language as Teaching and the
+   citation views — this section adds no new colours of its own. */
+
+.research-program {
+  width: 100%;
+  --rp-rule: color-mix(in oklch, var(--color-primary-500) 16%, transparent);
+  --rp-rule-strong: color-mix(in oklch, var(--color-primary-500) 40%, transparent);
+  --rp-tint: color-mix(in oklch, var(--color-primary-500) 4%, transparent);
+}
+
+.dark .research-program {
+  --rp-rule: color-mix(in oklch, var(--color-primary-400) 24%, transparent);
+  --rp-rule-strong: color-mix(in oklch, var(--color-primary-400) 55%, transparent);
+  --rp-tint: color-mix(in oklch, var(--color-primary-400) 7%, transparent);
+}
+
+/* Visually hidden, still announced. Defined locally rather than relying on a
+   utility class, so the template does not depend on class extraction. */
+.rp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Heading, intro, interests ────────────────────────── */
+
+/* The lede is deliberately not capped to a reading measure: the intro is a
+   single sentence meant to sit on one line wherever the viewport allows, and
+   the interests are a compact run rather than prose. The works below are what
+   gets a measure, via the column grid. */
+.research-program .rp-lede {
+  max-width: none;
+}
+
+.research-program .rp-heading {
+  margin: 0 0 1rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-heading {
+  color: #fff;
+}
+
+/* `balance` rather than `pretty`: this is a two-line lede, and Blink's
+   `pretty` only repairs short last lines, so it falls back to the greedy
+   break and strands "drawing" at the end of line one. `balance` minimizes the
+   longest line, which puts the break on the clause boundary at the comma in
+   both Blink and WebKit. */
+.research-program .rp-intro {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  text-wrap: balance;
+  color: var(--color-gray-700, #374151);
+}
+
+.dark .research-program .rp-intro {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+/* The focus list reads as a caption, not as a set of buttons: one small label
+   and a middot-separated run, so it cannot be mistaken for section headings. */
+.research-program .rp-focus {
+  margin-top: 1.1rem;
+}
+
+.research-program .rp-focus-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .research-program .rp-focus-label {
+  color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-focus-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-gray-500, #6b7280);
+}
+
+/* The separator hangs off the end of each item rather than leading the next
+   one, so a wrapped line never opens with a stray middot. */
+.research-program .rp-focus-list li:not(:last-child)::after {
+  content: '·';
+  margin-left: 0.5rem;
+  color: var(--rp-rule-strong);
+}
+
+.dark .research-program .rp-focus-list {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Sections and items ───────────────────────────────── */
+
+/* Foundation and Learning sit side by side once there is room for two
+   readable measures; below that they stack, Foundation first. The divider is
+   a centred pseudo-element rather than a border on one column, so both
+   columns keep exactly the same width. */
+.research-program .rp-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2.5rem;
+  margin-top: 3.25rem;
+}
+
+/* Stacked: the full width is far too long a line, so each column keeps a
+   reading measure until it actually sits beside the other one. */
+.research-program .rp-columns > .rp-section {
+  max-width: 65ch;
+}
+
+@media (min-width: 1024px) {
+  .research-program .rp-columns {
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 4rem;
+    align-items: start;
+  }
+  .research-program .rp-columns > .rp-section {
+    max-width: none;
+  }
+  /* The two columns rarely end level, so the rule fades out rather than
+     running on past the shorter one. */
+  .research-program .rp-columns::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      var(--rp-rule) 0%,
+      var(--rp-rule) 55%,
+      transparent 100%
+    );
+  }
+}
+
+.research-program .rp-section-title {
+  margin: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rp-rule);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-section-title {
+  color: #fff;
+}
+
+/* Generous whitespace between works; a hairline only between siblings, so a
+   section never opens with a doubled rule. */
+.research-program .rp-item {
+  padding-top: 2.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.research-program .rp-item + .rp-item {
+  border-top: 1px solid var(--rp-rule);
+}
+
+/* ── Research Snap ────────────────────────────────────── */
+
+/* The snap is a containment context so the AC-FGM diagram sizes itself to the
+   column it lands in, not to the viewport — it has to behave the same in the
+   one-column and two-column layouts. */
+.research-program .rp-snap {
+  container-type: inline-size;
+  container-name: rpsnap;
+  margin: 0 0 1.5rem;
+}
+
+/* Single-image snaps sit on an explicit white card. Vector plots are exported
+   with a transparent background and black axes and labels, which would vanish
+   against the dark theme; the padding is what makes that card visible around
+   the figure rather than just behind it. */
+.research-program .rp-snap-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--rp-rule);
+  border-radius: 0.6rem;
+  background: #fff;
+}
+
+/* ── Multi-page Research Snap ─────────────────────────── */
+
+/* Before the script runs the pages are simply stacked, so the figure is fully
+   readable with JavaScript off. `is-ready` switches to one page at a time. */
+.research-program .rp-flip-page {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.6rem;
+  border: 1px solid var(--rp-rule);
+}
+
+.research-program .rp-flip-page + .rp-flip-page {
+  margin-top: 0.75rem;
+}
+
+.research-program .rp-flip.is-ready .rp-flip-page {
+  display: none;
+  margin-top: 0;
+}
+
+.research-program .rp-flip.is-ready .rp-flip-page.is-current {
+  display: block;
+}
+
+.research-program .rp-flip-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-top: 0.7rem;
+}
+
+.research-program .rp-flip-nav[hidden] {
+  display: none;
+}
+
+.research-program .rp-flip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--rp-rule-strong);
+  background: var(--color-white, #fff);
+  color: var(--color-gray-600, #4b5563);
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.research-program .rp-flip-btn svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.dark .research-program .rp-flip-btn {
+  background: color-mix(in oklch, var(--color-gray-900, #111827) 70%, transparent);
+  color: var(--color-gray-300, #d1d5db);
+}
+
+.research-program .rp-flip-btn:hover,
+.research-program .rp-flip-btn:focus-visible {
+  color: var(--hl-fg);
+  background: var(--hl-bg);
+  border-color: color-mix(in oklch, var(--color-primary-500) 45%, transparent);
+}
+
+.research-program .rp-flip-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The dot is small, so the button keeps a 1.5rem hit area around it and paints
+   the mark with a pseudo-element — a 6px tap target would fail on touch. */
+.research-program .rp-flip-dot {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: none;
+  cursor: pointer;
+}
+
+.research-program .rp-flip-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 1px solid var(--rp-rule-strong);
+  background: transparent;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.research-program .rp-flip-dot[aria-current='true']::after {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+}
+
+.dark .research-program .rp-flip-dot[aria-current='true']::after {
+  background: var(--color-primary-300);
+  border-color: var(--color-primary-300);
+}
+
+.research-program .rp-flip-dot:hover::after,
+.research-program .rp-flip-dot:focus-visible::after {
+  border-color: var(--color-primary-600);
+}
+
+/* Every reserved snap is the same size, so the column keeps its rhythm while
+   figures land one at a time. */
+.research-program .rp-snap-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  padding: 1rem;
+  border: 1px dashed var(--rp-rule-strong);
+  border-radius: 0.75rem;
+  background: var(--rp-tint);
+  text-align: center;
+}
+
+/* A small drawn mark rather than an icon: two strokes, nothing pictorial, so
+   it never reads as a real figure. */
+.research-program .rp-snap-placeholder-mark {
+  width: 2.4rem;
+  height: 1.5rem;
+  border-left: 1.5px solid var(--rp-rule-strong);
+  border-bottom: 1.5px solid var(--rp-rule-strong);
+  opacity: 0.75;
+}
+
+.research-program .rp-snap-placeholder-text {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.research-program .rp-snap-placeholder-sub {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-size: 0.72rem;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .research-program .rp-snap-placeholder-text,
+.dark .research-program .rp-snap-placeholder-sub {
+  color: var(--color-gray-500, #6b7280);
+}
+
+/* ── Item text ────────────────────────────────────────── */
+
+.research-program .rp-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .research-program .rp-label {
+  color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-title {
+  color: #fff;
+}
+
+.research-program .rp-contribution {
+  margin: 0.5rem 0 0;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+  color: var(--color-gray-700, #374151);
+}
+
+.dark .research-program .rp-contribution {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+.research-program .rp-authors {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.dark .research-program .rp-authors {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* Venue matches the citation views: italic, grey, never competing with the
+   title. */
+.research-program .rp-venue {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-venue em {
+  font-style: italic;
+}
+
+.research-program .rp-status,
+.research-program .rp-pending {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-pending {
+  font-style: italic;
+}
+
+.dark .research-program .rp-venue,
+.dark .research-program .rp-status,
+.dark .research-program .rp-pending {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Item links ───────────────────────────────────────── */
+
+.research-program .rp-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Same quiet chip as the contact row on the homepage. */
+.research-program .rp-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-200, #e5e7eb);
+  background: var(--color-white, #fff);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-gray-700, #374151);
+  text-decoration: none;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.dark .research-program .rp-link {
+  background: var(--color-gray-800, #1f2937);
+  border-color: var(--color-gray-700, #374151);
+  color: var(--color-gray-200, #e5e7eb);
+}
+
+.research-program .rp-link:hover,
+.research-program .rp-link:focus-visible {
+  color: var(--hl-fg);
+  background: var(--hl-bg);
+  border-color: color-mix(in oklch, var(--color-primary-500) 34%, transparent);
+}
+
+.dark .research-program .rp-link:hover,
+.dark .research-program .rp-link:focus-visible {
+  border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
+}
+
+/* ── Snap: stochastic AC-FGM take-home diagram ────────── */
+
+/* 3x3 grid: nodes on the corners, arrow cells between them. Kept as text so
+   it scales, reflows and stays readable in dark mode. */
+
+.research-program .rp-acfgm {
+  --rp-acfgm-scale: 1;
+  width: 100%;
+}
+
+.research-program .rp-acfgm-frame {
+  padding: 1.5rem 1.25rem 1rem;
+  border: 1px dashed var(--rp-rule-strong);
+  border-radius: 0.75rem;
+  background: var(--rp-tint);
+}
+
+.research-program .rp-acfgm-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(4.5rem, auto) 1fr;
+  grid-template-rows: auto minmax(2.75rem, auto) auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: 0.5rem;
+}
+
+.research-program .rp-acfgm-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  height: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--rp-rule-strong);
+  border-radius: 0.4rem;
+  background: var(--color-white, #fff);
+  text-align: center;
+}
+
+.dark .research-program .rp-acfgm-node {
+  background: color-mix(in oklch, var(--color-gray-900, #111827) 70%, transparent);
+}
+
+/* Our method carries the only filled panel and the only heavier border, which
+   is the whole point of the figure. */
+.research-program .rp-acfgm-node-ours {
+  border-width: 2px;
+  border-color: var(--color-primary-600);
+  background: color-mix(in oklch, var(--color-primary-500) 9%, var(--color-white, #fff));
+}
+
+.dark .research-program .rp-acfgm-node-ours {
+  border-color: var(--color-primary-300);
+  background: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
+}
+
+.research-program .rp-acfgm-name {
+  font-size: calc(0.82rem * var(--rp-acfgm-scale));
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-acfgm-name {
+  color: #fff;
+}
+
+.research-program .rp-acfgm-node-ours .rp-acfgm-name {
+  color: var(--color-primary-700);
+}
+
+.dark .research-program .rp-acfgm-node-ours .rp-acfgm-name {
+  color: #fff;
+}
+
+.research-program .rp-acfgm-star {
+  color: var(--color-primary-600);
+}
+
+.dark .research-program .rp-acfgm-star {
+  color: var(--color-primary-300);
+}
+
+.research-program .rp-acfgm-cite {
+  font-size: calc(0.68rem * var(--rp-acfgm-scale));
+  line-height: 1.3;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-acfgm-cite {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.research-program .rp-acfgm-rate {
+  margin-top: 0.18rem;
+  font-size: calc(0.72rem * var(--rp-acfgm-scale));
+  line-height: 1.4;
+  color: var(--color-gray-800, #1f2937);
+}
+
+.dark .research-program .rp-acfgm-rate {
+  color: var(--color-gray-200, #e5e7eb);
+}
+
+/* Arrows: a rule plus a CSS triangle head, so no image or SVG is needed and
+   both orientations stay hairline-crisp at any zoom. */
+.research-program .rp-acfgm-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 100%;
+}
+
+.research-program .rp-acfgm-arrow-label {
+  font-size: calc(0.62rem * var(--rp-acfgm-scale));
+  line-height: 1.3;
+  text-align: center;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-acfgm-arrow-label {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.research-program .rp-acfgm-line {
+  position: relative;
+  display: block;
+  background: var(--rp-rule-strong);
+}
+
+.research-program .rp-acfgm-line::after {
+  content: '';
+  position: absolute;
+}
+
+.research-program .rp-acfgm-arrow-h {
+  flex-direction: column;
+  padding: 0 0.15rem;
+}
+
+.research-program .rp-acfgm-arrow-h .rp-acfgm-line {
+  width: 100%;
+  height: 1.5px;
+}
+
+.research-program .rp-acfgm-arrow-h .rp-acfgm-line::after {
+  right: -1px;
+  top: -3.25px;
+  border-left: 6px solid var(--rp-rule-strong);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.research-program .rp-acfgm-arrow-v {
+  flex-direction: row;
+  padding: 0.15rem 0;
+}
+
+.research-program .rp-acfgm-arrow-v .rp-acfgm-line {
+  width: 1.5px;
+  height: 100%;
+  min-height: 2.25rem;
+  margin-left: 1.25rem;
+}
+
+.research-program .rp-acfgm-arrow-v .rp-acfgm-line::after {
+  bottom: -1px;
+  left: -3.25px;
+  border-top: 6px solid var(--rp-rule-strong);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.research-program .rp-acfgm-arrow-v .rp-acfgm-arrow-label {
+  text-align: left;
+}
+
+/* The matching lower bound closes the figure, as it does on the slide. */
+.research-program .rp-acfgm-bound {
+  margin: 1.1rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--rp-rule);
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-acfgm-bound {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* Narrow columns: the figure is a 2-D graph, so it keeps its shape and steps
+   the type down rather than linearising into an order the arrows contradict.
+   Keyed to the snap's own width, so a two-column desktop layout and a phone
+   both get the tier they need. Below roughly 300px it scrolls sideways
+   instead of shrinking past legibility. */
+@container rpsnap (max-width: 460px) {
+  .research-program .rp-acfgm {
+    --rp-acfgm-scale: 0.86;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .research-program .rp-acfgm-frame {
+    min-width: 18.5rem;
+    padding: 1.1rem 0.85rem 0.8rem;
+  }
+  .research-program .rp-acfgm-grid {
+    grid-template-columns: 1fr minmax(3.75rem, auto) 1fr;
+    gap: 0.35rem;
+  }
+  .research-program .rp-acfgm-arrow-v .rp-acfgm-line {
+    margin-left: 0.6rem;
+  }
+}
+
+@container rpsnap (max-width: 340px) {
+  .research-program .rp-acfgm {
+    --rp-acfgm-scale: 0.78;
+  }
+  .research-program .rp-acfgm-frame {
+    min-width: 15.5rem;
+    padding: 0.9rem 0.6rem 0.7rem;
+  }
+  .research-program .rp-acfgm-grid {
+    grid-template-columns: 1fr minmax(3.1rem, auto) 1fr;
+    gap: 0.25rem;
+  }
+  .research-program .rp-acfgm-node {
+    padding: 0.45rem 0.35rem;
+  }
+  .research-program .rp-acfgm-arrow-v .rp-acfgm-line {
+    margin-left: 0.35rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .research-program .rp-heading {
+    font-size: 1.625rem;
+  }
+  .research-program .rp-intro {
+    font-size: 1rem;
+  }
+  .research-program .rp-item {
+    padding-top: 2.25rem;
+  }
+  .research-program .rp-columns {
+    margin-top: 2.5rem;
+  }
+}
+
+/* ── Snap: accumulative regularization (AR) ───────────── */
+
+/* One card, two parts: what the framework does, then how. Same frame language
+   as the AC-FGM snap so the two built-in diagrams read as a set. */
+
+.research-program .rp-ar {
+  border: 1px solid var(--rp-rule-strong);
+  border-radius: 0.75rem;
+  background: var(--rp-tint);
+  overflow: hidden;
+}
+
+/* ── Part 1: the transformation ───────────────────────── */
+
+.research-program .rp-ar-pipe {
+  display: grid;
+  grid-template-columns: auto minmax(1.5rem, 1fr) auto minmax(1.5rem, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.35rem 1.1rem 1.25rem;
+}
+
+.research-program .rp-ar-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.research-program .rp-ar-sym {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-primary-700);
+}
+
+.dark .research-program .rp-ar-sym {
+  color: var(--color-primary-200);
+}
+
+.research-program .rp-ar-cap {
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* The box is the only filled element — it is the thing the figure is about. */
+.research-program .rp-ar-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--color-primary-600);
+  border-radius: 0.4rem;
+  background: color-mix(in oklch, var(--color-primary-500) 9%, var(--color-white, #fff));
+  text-align: center;
+}
+
+.dark .research-program .rp-ar-box {
+  border-color: var(--color-primary-300);
+  background: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
+}
+
+.research-program .rp-ar-box-name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-primary-700);
+}
+
+.dark .research-program .rp-ar-box-name {
+  color: #fff;
+}
+
+.research-program .rp-ar-box-cap {
+  font-size: 0.56rem;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-ar-box-cap {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+/* Same rule-plus-triangle arrow as the AC-FGM snap. */
+.research-program .rp-ar-arrow {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  background: var(--rp-rule-strong);
+}
+
+.research-program .rp-ar-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -3.25px;
+  border-left: 6px solid var(--rp-rule-strong);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.research-program .rp-ar-out {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 9.5rem;
+  text-align: left;
+}
+
+.research-program .rp-ar-out-main {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-ar-out-main {
+  color: #fff;
+}
+
+.research-program .rp-ar-out-sub {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-ar-out-sub {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Part 2: the algorithm ────────────────────────────── */
+
+/* Set like an algorithm float: rules above and below, numbered lines, no box
+   shading, so it reads as pseudocode rather than as a UI panel. */
+.research-program .rp-ar-algo {
+  padding: 1rem 1.1rem 1.1rem;
+  border-top: 1px dashed var(--rp-rule);
+  background: var(--color-white, #fff);
+}
+
+.dark .research-program .rp-ar-algo {
+  background: color-mix(in oklch, var(--color-gray-900, #111827) 70%, transparent);
+}
+
+.research-program .rp-ar-algo-title {
+  margin: 0 0 0.55rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--rp-rule);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-ar-algo-title {
+  color: #fff;
+}
+
+.research-program .rp-ar-algo-kicker {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.research-program .rp-ar-req {
+  margin: 0 0 0.45rem;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--color-gray-700, #374151);
+}
+
+.dark .research-program .rp-ar-req {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+.research-program .rp-ar-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rp-ar-step;
+  border-top: 1px solid var(--rp-rule);
+  padding-top: 0.45rem;
+}
+
+.research-program .rp-ar-steps > li {
+  position: relative;
+  margin: 0;
+  padding: 0.12rem 0 0.12rem 1.6rem;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--color-gray-700, #374151);
+}
+
+.dark .research-program .rp-ar-steps > li {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+/* Line numbers sit in the gutter, as in a printed algorithm environment. */
+.research-program .rp-ar-steps > li::before {
+  counter-increment: rp-ar-step;
+  content: counter(rp-ar-step) ':';
+  position: absolute;
+  left: 0;
+  width: 1.2rem;
+  text-align: right;
+  font-size: 0.66rem;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.research-program .rp-ar-steps > li.rp-ar-in1 {
+  padding-left: 2.6rem;
+}
+
+.research-program .rp-ar-kw {
+  font-weight: 700;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .research-program .rp-ar-kw {
+  color: #fff;
+}
+
+/* The subproblem is the widest thing in the snap; it scrolls rather than
+   forcing the whole column wider on a narrow screen. */
+.research-program .rp-ar-eq {
+  display: block;
+  margin: 0.15rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 0.86em;
+}
+
+.research-program .rp-ar-eq .katex-display {
+  margin: 0.35rem 0;
+}
+
+@container rpsnap (max-width: 460px) {
+  .research-program .rp-ar-pipe {
+    grid-template-columns: auto minmax(1rem, 1fr) auto minmax(1rem, 1fr) auto;
+    padding: 1rem 0.7rem;
+    gap: 0.35rem;
+  }
+  /* The subproblem cannot shrink to fit a phone without becoming unreadable,
+     so it scrolls — and a right-edge fade shows there is more to see. Scoped
+     to this width, where it always overflows, so the fade never appears on a
+     line that already fits. */
+  .research-program .rp-ar-eq {
+    mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  }
+  .research-program .rp-ar-out {
+    max-width: 7rem;
+  }
+  .research-program .rp-ar-out-main {
+    font-size: 0.78rem;
+  }
+  .research-program .rp-ar-out-sub {
+    font-size: 0.66rem;
+  }
+  .research-program .rp-ar-box {
+    padding: 0.45rem 0.6rem;
+  }
+  .research-program .rp-ar-algo {
+    padding: 0.85rem 0.7rem 0.9rem;
+  }
+}
+
+/* ── News feed in the bio column ──────────────────────── */
+
+/* The feed now occupies the slot the job-market callout used to hold, inside
+   the bio's right column rather than as a full-width section. The shared
+   view ships `max-w-4xl`, which is wider than this column — harmless, since
+   max-width only caps — but the top margin needs to match the column rhythm. */
+.resume-biography .bio-news {
+  width: 100%;
+}
+
+.resume-biography .bio-news .news-feed-scroll {
+  margin-top: 0;
+}
+
+/* The fade at the foot of the scroller is painted with --color-background.
+   Inside this column that is still the page background, so it continues to
+   blend correctly in both themes. */
+
+/* ── Pinned news callout ──────────────────────────────── */
+
+/* Sits above the scroll container, so it never scrolls away. Reads as an
+   announcement rather than a feed row: a faint tint, a status chip, and a
+   heavier title. Kept to the same restraint as the rest of the page — no
+   shadow, no saturated fill. */
+.news-pin {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.85rem 1rem 0.9rem;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 22%, transparent);
+  border-radius: 0.7rem;
+  background: color-mix(in oklch, var(--color-primary-500) 5%, transparent);
+  text-decoration: none;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.dark .news-pin {
+  border-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
+  background: color-mix(in oklch, var(--color-primary-400) 9%, transparent);
+}
+
+.news-pin:hover,
+.news-pin:focus-visible {
+  border-color: color-mix(in oklch, var(--color-primary-500) 42%, transparent);
+  background: color-mix(in oklch, var(--color-primary-500) 8%, transparent);
+}
+
+.dark .news-pin:hover,
+.dark .news-pin:focus-visible {
+  border-color: color-mix(in oklch, var(--color-primary-400) 52%, transparent);
+  background: color-mix(in oklch, var(--color-primary-400) 14%, transparent);
+}
+
+.news-pin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-primary-600);
+}
+
+.news-pin-badge svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.dark .news-pin-badge {
+  color: var(--color-primary-300);
+}
+
+.news-pin-title {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-gray-900, #111827);
+}
+
+.dark .news-pin-title {
+  color: #fff;
+}
+
+.news-pin:hover .news-pin-title,
+.news-pin:focus-visible .news-pin-title {
+  color: var(--color-primary-700);
+}
+
+.dark .news-pin:hover .news-pin-title,
+.dark .news-pin:focus-visible .news-pin-title {
+  color: var(--color-primary-200);
+}
+
+.news-pin-summary {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.dark .news-pin-summary {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+/* The scroller already carries its own top margin from the shared view; with
+   a pinned card above it, that gap doubles up. */
+.resume-biography .bio-news .news-pin + div {
+  margin-top: 0.75rem;
+}
+
+/* ── Item tags ────────────────────────────────────────── */
+
+/* Echo the interests listed at the top of the section, scoped to one work.
+   Outlined rather than filled, and deliberately unlike the link chips below
+   them — these are labels, and nothing here is clickable. */
+.research-program .rp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.research-program .rp-tag {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 24%, transparent);
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: var(--color-primary-600);
+}
+
+.dark .research-program .rp-tag {
+  border-color: color-mix(in oklch, var(--color-primary-400) 32%, transparent);
+  color: var(--color-primary-300);
+}
+
+/* The tag row already supplies the gap above the metadata. */
+.research-program .rp-tags + .rp-authors,
+.research-program .rp-tags + .rp-pending {
+  margin-top: 0.6rem;
+}
+
+/* ── Course footnote on hover / focus ─────────────────── */
+
+/* Same card language as the timeline's hover cards. The trigger is a button
+   rather than a bare span, so the note opens on keyboard focus as well as on
+   hover; `cursor: help` plus the dotted underline is what signals there is
+   anything to hover in the first place. */
+.teaching .tch-annot {
+  position: relative;
+  display: inline-block;
+}
+
+.teaching .tch-annot-trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in oklch, var(--color-primary-500) 45%, transparent);
+  transition: color 0.16s ease, text-decoration-color 0.16s ease;
+}
+
+.dark .teaching .tch-annot-trigger {
+  text-decoration-color: color-mix(in oklch, var(--color-primary-400) 55%, transparent);
+}
+
+.teaching .tch-annot-trigger:hover,
+.teaching .tch-annot-trigger:focus-visible {
+  color: var(--color-primary-700);
+  text-decoration-color: var(--color-primary-600);
+}
+
+.dark .teaching .tch-annot-trigger:hover,
+.dark .teaching .tch-annot-trigger:focus-visible {
+  color: var(--color-primary-200);
+  text-decoration-color: var(--color-primary-300);
+}
+
+/* Opens downward: this row sits near the top of its column, and opening
+   upward would cover the section heading. The card is a child of the hovered
+   element, so moving the pointer onto it keeps it open. */
+.teaching .tch-tip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 40;
+  width: max-content;
+  max-width: min(24rem, 72vw);
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.7rem;
+  background: var(--color-white, #fff);
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: left;
+  white-space: normal;
+  color: var(--color-gray-700, #374151);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.25rem);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.dark .teaching .tch-tip {
+  background: var(--color-gray-800, #1f2937);
+  border-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+  color: var(--color-gray-200, #e5e7eb);
+}
+
+.teaching .tch-annot:hover .tch-tip,
+.teaching .tch-annot:focus-within .tch-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* On a narrow screen the card would run off the right edge, so it anchors to
+   the column instead of to the word. */
+@media (max-width: 560px) {
+  .teaching .tch-tip {
+    left: 0;
+    max-width: min(20rem, 86vw);
+  }
 }

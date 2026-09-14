@@ -23,51 +23,10 @@ sections:
       avatar:
         size: xl
         shape: rectangle
-  - block: collection
-    id: papers
-    content:
-      title: Featured Publications
-      filters:
-        folders:
-          - publications
-        featured_only: true
-    design:
-      view: citation
-  - block: collection
-    id: presentations
-    content:
-      title: Presentations
-      filters:
-        folders:
-          - presentations
-    design:
-      view: citation
+  - block: research-program
+    id: research
   - block: teaching
     id: teaching
     content:
       title: Teaching
-  - block: collection
-    id: news
-    content:
-      title: Recent News
-      subtitle: ''
-      text: ''
-      page_type: blog
-      count: 0
-      filters:
-        author: ''
-        category: ''
-        tag: ''
-        exclude_featured: false
-        exclude_future: false
-        exclude_past: false
-        publication_type: ''
-      offset: 0
-      order: desc
-      archive:
-        enable: false
-    design:
-      view: news-feed
-      spacing:
-        padding: [0, 0, 0, 0]
 ---

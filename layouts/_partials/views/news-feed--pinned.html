@@ -1,0 +1,27 @@
+{{/* Pinned news item — rendered above the scroll container, not inside it, so
+     it cannot scroll away. Styled as a callout rather than a feed row: this is
+     an announcement that should hold the eye, not another dated entry.
+
+     `badge` in the post's front matter is optional; without it the card still
+     renders, just without the status chip. */}}
+
+{{ $item := .item }}
+{{ $summary := partial "functions/get_summary" $item }}
+{{ $badge := "" }}
+{{ with $item.Params.badge }}{{ $badge = printf "%v" . }}{{ end }}
+
+<a class="news-pin" href="{{ $item.RelPermalink }}">
+  {{ with $badge }}
+  <span class="news-pin-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="2.5" y="7" width="19" height="13" rx="2.2" />
+      <path d="M8.5 7V5.4A1.9 1.9 0 0 1 10.4 3.5h3.2a1.9 1.9 0 0 1 1.9 1.9V7" />
+      <path d="M2.5 12.4c3 1.4 6.2 2.1 9.5 2.1s6.5-.7 9.5-2.1" />
+    </svg>
+    {{ . }}
+  </span>
+  {{ end }}
+  <span class="news-pin-title">{{ $item.Title }}</span>
+  <span class="news-pin-summary">{{ $summary | plainify | truncate 150 }}</span>
+</a>

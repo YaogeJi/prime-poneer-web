@@ -1,0 +1,72 @@
+{{/* Research Snap — Stochastic AC-FGM "take-home" diagram.
+
+     A faithful HTML/CSS rebuild of the TikZ figure from the INFORMS
+     Optimization Society 2026 talk: a 2x2 comparison where horizontal arrows
+     add stochasticity and vertical arrows add adaptivity, with the matching
+     lower bound closing the frame. Rebuilt as real text (not an image) so the
+     complexity statements stay selectable, searchable and easy to edit.
+
+     role="img" + aria-label gives screen readers the relationships the arrows
+     encode, which the reading order alone would lose. */}}
+
+<div class="rp-acfgm" role="img"
+     aria-label="Diagram positioning stochastic AC-FGM. Top row: standard AGD (Nesterov 1983), order 1 over root epsilon iterations with the Lipschitz constant L known; adding stochasticity gives AC-SA (Lan 2012), order 1 over root epsilon plus sigma squared over epsilon squared, also with L known. Bottom row: removing line search and adding adaptivity to standard AGD gives AC-FGM (Li and Lan 2025), order 1 over root epsilon; adding stochasticity to AC-FGM, equivalently adding adaptivity to AC-SA, gives our stochastic AC-FGM, order 1 over root epsilon plus sigma squared over epsilon squared. This matches the lower bound of order 1 over root epsilon plus sigma squared over epsilon squared.">
+  <div class="rp-acfgm-frame">
+    <div class="rp-acfgm-grid">
+
+      {{/* Row 1 */}}
+      <div class="rp-acfgm-node">
+        <span class="rp-acfgm-name">Standard AGD</span>
+        <span class="rp-acfgm-cite">Nesterov ’83</span>
+        <span class="rp-acfgm-rate">$\mathcal{O}(1/\sqrt{\varepsilon})$, known $L$</span>
+      </div>
+
+      <div class="rp-acfgm-arrow rp-acfgm-arrow-h">
+        <span class="rp-acfgm-arrow-label">+ stochasticity</span>
+        <span class="rp-acfgm-line"></span>
+      </div>
+
+      <div class="rp-acfgm-node">
+        <span class="rp-acfgm-name">AC-SA</span>
+        <span class="rp-acfgm-cite">Lan ’12</span>
+        <span class="rp-acfgm-rate">$\mathcal{O}\!\left(\tfrac{1}{\sqrt{\varepsilon}} + \tfrac{\sigma^2}{\varepsilon^2}\right)$, known $L$</span>
+      </div>
+
+      {{/* Row 2 — vertical transitions */}}
+      <div class="rp-acfgm-arrow rp-acfgm-arrow-v">
+        <span class="rp-acfgm-line"></span>
+        <span class="rp-acfgm-arrow-label">+ adaptivity<br>− line search</span>
+      </div>
+
+      <div class="rp-acfgm-spacer" aria-hidden="true"></div>
+
+      <div class="rp-acfgm-arrow rp-acfgm-arrow-v">
+        <span class="rp-acfgm-line"></span>
+        <span class="rp-acfgm-arrow-label">+ adaptivity</span>
+      </div>
+
+      {{/* Row 3 */}}
+      <div class="rp-acfgm-node">
+        <span class="rp-acfgm-name">AC-FGM</span>
+        <span class="rp-acfgm-cite">Li &amp; Lan ’25</span>
+        <span class="rp-acfgm-rate">$\mathcal{O}(1/\sqrt{\varepsilon})$</span>
+      </div>
+
+      <div class="rp-acfgm-arrow rp-acfgm-arrow-h">
+        <span class="rp-acfgm-arrow-label">+ stochasticity</span>
+        <span class="rp-acfgm-line"></span>
+      </div>
+
+      <div class="rp-acfgm-node rp-acfgm-node-ours">
+        <span class="rp-acfgm-name">Stoch. AC-FGM <span class="rp-acfgm-star">★</span></span>
+        <span class="rp-acfgm-cite"><em>This paper</em></span>
+        <span class="rp-acfgm-rate">$\mathcal{O}\!\left(\tfrac{1}{\sqrt{\varepsilon}} + \tfrac{\sigma^2}{\varepsilon^2}\right)$</span>
+      </div>
+
+    </div>
+
+    <p class="rp-acfgm-bound">
+      Lower bound $\Omega(1/\sqrt{\varepsilon} + \sigma^2/\varepsilon^2)$
+    </p>
+  </div>
+</div>

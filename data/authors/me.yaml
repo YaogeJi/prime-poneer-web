@@ -18,7 +18,7 @@ bio: |
 
 # Rendered below the education / experience timeline
 bio_research: |
-  My current focus is on <span class="rterm" data-topic="parameter-free">optimal parameter-free methods</span> for stochastic optimization. I study <span class="rterm" data-topic="high-order">first- and higher-order methods</span> for convex and nonconvex problems in both deterministic and stochastic settings. I have worked on <span class="rterm" data-topic="gradient-min">gradient minimization</span>, <span class="rterm" data-topic="variational-inequalities">variational inequalities</span>, and <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, including <span class="rterm" data-topic="healthcare">applications in healthcare</span>.
+  My research develops optimization algorithms with optimal convergence rates for machine learning and reinforcement learning. My work centers on the design and complexity analysis of deterministic and stochastic optimization methods, with a current focus on <span class="rterm" data-topic="parameter-free">parameter-free algorithms</span> that adapt to unknown problem structure. For machine learning, I develop scalable stochastic methods that require no stepsize tuning. For <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, I develop efficient methods for online policy evaluation. <span class="rterm" data-topic="healthcare">Healthcare</span> is a major application domain for both research directions.
 
 # Time-limited notice rendered below the timeline; delete this key to remove it
 affiliations:
@@ -93,12 +93,6 @@ experience:
     topics:
       - name: Parameter-free
         slug: parameter-free
-      - name: First / Higher-order
-        slug: high-order
-      - name: Gradient Minimization
-        slug: gradient-min
-      - name: Variational Inequalities
-        slug: variational-inequalities
       - name: Reinforcement Learning
         slug: reinforcement-learning
       - name: Healthcare Applications

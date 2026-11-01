@@ -93,6 +93,12 @@ experience:
     topics:
       - name: Parameter-free
         slug: parameter-free
+      - name: First / Higher-order
+        slug: high-order
+      - name: Gradient Minimization
+        slug: gradient-min
+      - name: Variational Inequalities
+        slug: variational-inequalities
       - name: Reinforcement Learning
         slug: reinforcement-learning
       - name: Healthcare Applications

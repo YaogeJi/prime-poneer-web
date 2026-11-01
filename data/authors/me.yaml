@@ -52,8 +52,8 @@ education:
     institution_short: BNU
     focus: Probability and statistics foundation
     topics:
-      - name: Branching Process
-        slug: branching-process
+      - name: Galton–Watson Process
+        slug: galton-watson
     start: 2012-09-01
     end: 2016-06-30
   - degree: Thesis M.S. in Probability Theory and Stochastic Processes

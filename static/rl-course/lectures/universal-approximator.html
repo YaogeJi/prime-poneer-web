@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Universal Approximator · Lecture 7</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<style>
+:root{
+  --bg:#fef8f0;
+  --ink:#1f1d2b;
+  --paper:#ffffff;
+  --line:#1f1d2b;
+  --mint:#bff0d0;
+  --peach:#ffb4b4;
+  --lilac:#d8c8ff;
+  --sun:#ffe27a;
+  --dim:#6c6a7a;
+  --good:#22a544;
+  --bad:#c83434;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  padding:clamp(14px,2.4vw,28px);
+  line-height:1.45;
+}
+h1,h2,h3,h4{font-family:'Cabinet Grotesk','Inter',ui-sans-serif,system-ui,sans-serif;font-weight:800;letter-spacing:-.01em}
+
+.topbar{
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:1rem;margin-bottom:1.1rem;
+}
+.topbar .heading h1{
+  font-size:clamp(1.4rem,2.6vw,2rem);
+  line-height:1.05;
+  margin-bottom:.25rem;
+}
+.topbar .heading p{
+  color:var(--dim);
+  font-size:clamp(.85rem,1.1vw,1rem);
+  max-width:60ch;
+}
+.stage-tabs{
+  display:flex;gap:.55rem;flex-wrap:wrap;
+}
+.stage-tabs button{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:700;font-size:clamp(.78rem,1vw,.92rem);
+  letter-spacing:.04em;
+  padding:.55rem 1rem;
+  border:2.5px solid var(--line);
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:99px;
+  box-shadow:4px 4px 0 var(--line);
+  cursor:pointer;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease),background .2s var(--ease);
+}
+.stage-tabs button:hover:not(.active){
+  transform:translate(-1px,-1px);
+  box-shadow:5px 5px 0 var(--line);
+}
+.stage-tabs button.active{
+  background:var(--mint);
+  transform:translate(2px,2px);
+  box-shadow:1px 1px 0 var(--line);
+}
+
+main{
+  display:grid;
+  grid-template-columns:minmax(320px,400px) 1fr;
+  gap:clamp(.8rem,1.6vw,1.4rem);
+  align-items:stretch;
+}
+@media(max-width:880px){
+  main{grid-template-columns:1fr}
+}
+
+.panel{
+  background:var(--paper);
+  border:2.5px solid var(--line);
+  border-radius:14px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:clamp(.9rem,1.4vw,1.2rem);
+}
+
+.left-panel{display:flex;flex-direction:column;gap:.85rem}
+
+.stage-desc{
+  background:var(--lilac);
+  border:2.5px solid var(--line);
+  border-radius:12px;
+  padding:.7rem .9rem;
+  box-shadow:3px 3px 0 var(--line);
+}
+.stage-desc h3{
+  font-size:clamp(1rem,1.3vw,1.18rem);
+  margin-bottom:.25rem;
+  letter-spacing:-.005em;
+}
+.stage-desc p{
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  line-height:1.5;
+}
+
+.equation-box{
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .8rem;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:clamp(.82rem,1.05vw,.95rem);
+  letter-spacing:.02em;
+  line-height:1.6;
+  word-break:break-word;
+  max-height:120px;
+  overflow-y:auto;
+}
+.equation-box b{color:var(--ink)}
+.equation-box .lbl{
+  display:block;font-size:.7em;color:var(--dim);
+  letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:.25rem;
+}
+
+.mse-card{
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:14px;
+  padding:.8rem 1rem;
+  box-shadow:4px 4px 0 var(--line);
+  display:flex;align-items:baseline;gap:.6rem;
+  transition:background .35s var(--ease);
+}
+.mse-card.good{
+  background:var(--mint);
+  animation:pulse-good .55s var(--ease);
+}
+@keyframes pulse-good{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.04);box-shadow:6px 6px 0 var(--line)}
+  100%{transform:scale(1)}
+}
+.mse-card .mse-lbl{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:700;
+}
+.mse-card .mse-num{
+  font-family:'Cabinet Grotesk','Inter',sans-serif;
+  font-weight:800;
+  font-size:clamp(1.7rem,2.6vw,2.3rem);
+  margin-left:auto;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.mse-card .mse-tag{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);font-weight:700;
+}
+.mse-card.good .mse-tag{color:var(--good)}
+
+.controls-section{
+  display:flex;flex-direction:column;gap:.6rem;
+}
+.section-title{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+}
+
+.slider-row{
+  display:flex;flex-direction:column;gap:.25rem;
+}
+.slider-row .row-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.82rem;
+}
+.slider-row .row-head .name{font-weight:700;color:var(--ink)}
+.slider-row .row-head .val{
+  font-weight:700;color:var(--ink);
+  background:var(--sun);
+  border:1.5px solid var(--line);
+  padding:.05rem .45rem;border-radius:6px;
+  font-variant-numeric:tabular-nums;
+  min-width:3.5em;text-align:center;
+}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:24px;background:transparent;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:8px;background:var(--bg);
+  border:2px solid var(--line);border-radius:99px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;
+  background:var(--mint);
+  border:2.5px solid var(--line);border-radius:50%;
+  margin-top:-9px;
+  box-shadow:2px 2px 0 var(--line);
+  cursor:grab;
+  transition:transform .12s var(--ease);
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.08)}
+input[type=range]::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(.95)}
+input[type=range]::-moz-range-track{
+  height:8px;background:var(--bg);
+  border:2px solid var(--line);border-radius:99px;
+}
+input[type=range]::-moz-range-thumb{
+  width:22px;height:22px;
+  background:var(--mint);
+  border:2.5px solid var(--line);border-radius:50%;
+  box-shadow:2px 2px 0 var(--line);cursor:grab;
+}
+
+.neuron-card{
+  background:var(--bg);
+  border:2px solid var(--line);
+  border-radius:10px;
+  padding:.55rem .7rem;
+  display:flex;flex-direction:column;gap:.35rem;
+  position:relative;
+}
+.neuron-card .neuron-head{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.neuron-card .swatch{
+  display:inline-block;width:14px;height:14px;border-radius:3px;
+  border:1.5px solid var(--line);margin-right:.35rem;vertical-align:middle;
+}
+
+.btn-row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.2rem}
+button.action{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:700;
+  font-size:clamp(.76rem,.95vw,.88rem);
+  letter-spacing:.05em;
+  padding:.55rem .9rem;
+  border:2.5px solid var(--line);
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:10px;
+  box-shadow:3px 3px 0 var(--line);
+  cursor:pointer;
+  transition:transform .12s var(--ease),box-shadow .12s var(--ease),background .2s var(--ease);
+}
+button.action:hover{
+  transform:translate(-1px,-1px);
+  box-shadow:4px 4px 0 var(--line);
+}
+button.action:active{
+  transform:translate(2px,2px);
+  box-shadow:1px 1px 0 var(--line);
+}
+button.action.primary{background:var(--sun)}
+button.action.success{background:var(--mint)}
+button.action.danger{background:var(--peach)}
+button.action.brand{background:var(--lilac)}
+button.action[disabled]{opacity:.4;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--line)}
+
+.right-panel{
+  display:flex;flex-direction:column;
+  min-height:420px;
+}
+.canvas-wrap{
+  position:relative;
+  flex:1;min-height:380px;
+  background:var(--paper);
+}
+canvas{display:block;width:100%;height:100%;border-radius:11px}
+
+.legend{
+  display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;
+  padding:.6rem .9rem;border-top:2px dashed var(--line);
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.78rem;
+}
+.legend .swatch{
+  display:inline-block;width:16px;height:16px;
+  border:1.5px solid var(--line);border-radius:3px;
+  margin-right:.4rem;vertical-align:-3px;
+}
+.legend .swatch.line{height:6px;border-radius:99px;width:24px}
+.legend .swatch.dotted{
+  background:linear-gradient(90deg,var(--lilac) 0,var(--lilac) 50%,transparent 50%,transparent 100%);
+  background-size:6px 100%;
+  border-color:var(--line);
+}
+
+.dqn-modal{
+  position:fixed;inset:0;
+  background:rgba(31,29,43,0.55);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;padding:20px;
+  animation:fade-in .22s var(--ease);
+}
+.dqn-modal[hidden]{display:none!important}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.dqn-modal-card{
+  background:var(--paper);
+  border:3px solid var(--line);
+  border-radius:18px;
+  box-shadow:8px 8px 0 var(--line);
+  padding:1.4rem 1.6rem;
+  max-width:540px;
+  position:relative;
+  animation:pop .3s var(--ease);
+}
+@keyframes pop{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+.dqn-modal-card h2{
+  font-size:clamp(1.3rem,2.2vw,1.7rem);
+  margin-bottom:.5rem;line-height:1.1;
+}
+.dqn-modal-card .badge{
+  display:inline-block;
+  background:var(--sun);
+  border:2px solid var(--line);
+  padding:.2rem .65rem;border-radius:99px;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:.6rem;
+}
+.dqn-modal-card p{
+  font-size:clamp(.88rem,1.13vw,1rem);
+  line-height:1.55;
+  margin-bottom:.6rem;
+}
+.dqn-modal-card p b{background:var(--mint);padding:0 .25em;border-radius:3px}
+.dqn-modal-card .axis-pair{
+  display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem;
+  background:var(--bg);
+  border:1.5px solid var(--line);border-radius:8px;
+  padding:.55rem .75rem;
+  font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.85rem;
+  margin:.5rem 0 .8rem;
+}
+.dqn-modal-card .axis-pair span:nth-child(odd){color:var(--dim);font-weight:700}
+.dqn-modal-card .modal-close{
+  position:absolute;top:10px;right:10px;
+  width:32px;height:32px;
+  background:var(--peach);
+  border:2.5px solid var(--line);border-radius:50%;
+  font-weight:800;cursor:pointer;
+  font-size:1.1rem;
+  box-shadow:2px 2px 0 var(--line);
+}
+
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:99px;
+  box-shadow:4px 4px 0 var(--line);
+  padding:.55rem 1.2rem;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:700;font-size:.85rem;
+  z-index:120;
+  animation:toast-in .25s var(--ease);
+}
+.toast[hidden]{display:none}
+@keyframes toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+
+.dqn-mode-banner{
+  background:var(--sun);
+  border:2.5px solid var(--line);
+  border-radius:10px;
+  padding:.5rem .8rem;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:700;font-size:.78rem;letter-spacing:.05em;
+  display:flex;align-items:center;gap:.5rem;
+  margin-bottom:.6rem;
+}
+.dqn-mode-banner[hidden]{display:none}
+.dqn-mode-banner button{
+  margin-left:auto;
+  background:var(--paper);
+  border:2px solid var(--line);
+  border-radius:6px;
+  padding:.15rem .55rem;
+  font-family:inherit;font-size:.7rem;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="heading">
+    <h1>Universal Approximator <span style="color:var(--dim);font-weight:600;font-size:.7em">· Lecture 7</span></h1>
+    <p>From a stubborn straight line to a neural network — bend math until it fits the world. Same idea that lets a Deep Q-Network predict the future.</p>
+  </div>
+  <nav class="stage-tabs" id="stage-tabs">
+    <button data-stage="1" class="active">① Linear Fail</button>
+    <button data-stage="2">② ReLU Bend</button>
+    <button data-stage="3">③ Universal</button>
+  </nav>
+</div>
+
+<main>
+  <aside class="left-panel">
+    <div class="dqn-mode-banner" id="dqn-banner" hidden>
+      🤖 DQN MODE · axes are now (state, Q-value)
+      <button id="dqn-exit">exit</button>
+    </div>
+
+    <div class="stage-desc" id="stage-desc">
+      <h3 id="stage-title">Stage 1 · The Linear Fail</h3>
+      <p id="stage-text">A straight line is the simplest model: pick a slope <b>w</b> and an intercept <b>b</b>. Try to make it hug the curve. You'll find it can't — no matter how you tilt or shift, a line stays a line. Math demands more.</p>
+    </div>
+
+    <div class="equation-box">
+      <span class="lbl">Equation</span>
+      <span id="equation"></span>
+    </div>
+
+    <div class="mse-card" id="mse-card">
+      <span class="mse-lbl">MSE</span>
+      <span class="mse-num" id="mse-num">—</span>
+      <span class="mse-tag" id="mse-tag">high error</span>
+    </div>
+
+    <div class="controls-section">
+      <span class="section-title" id="controls-title">Sliders</span>
+      <div id="controls-host"></div>
+    </div>
+
+    <div class="btn-row" id="btn-row"></div>
+  </aside>
+
+  <section class="right-panel panel" style="padding:0;display:flex;flex-direction:column">
+    <div class="canvas-wrap">
+      <canvas id="plot"></canvas>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--peach)"></span>target points</span>
+      <span><span class="swatch line" style="background:var(--ink)"></span>predicted curve</span>
+      <span id="legend-relus" hidden><span class="swatch dotted"></span>individual ReLUs</span>
+      <span><span class="swatch" style="background:rgba(200,52,52,.3);border-color:rgba(200,52,52,.6)"></span>error bars</span>
+    </div>
+  </section>
+</main>
+
+<div class="dqn-modal" id="dqn-modal" hidden>
+  <div class="dqn-modal-card">
+    <button class="modal-close" id="modal-close">×</button>
+    <span class="badge">DQN reveal</span>
+    <h2>Congratulations — you just built a <span style="background:var(--mint);padding:0 .25em">Deep Q-Network</span>.</h2>
+    <p>You no longer <b>memorize a table</b> of \(Q\)-values. You <b>bend math</b> to predict them. Every state goes in; a value comes out.</p>
+    <div class="axis-pair">
+      <span>x →</span><span>State (e.g., <i>cart velocity</i>, pixel grid, joint angles)</span>
+      <span>y →</span><span>Predicted Q-Value of taking some action</span>
+    </div>
+    <p>The same neurons you just stacked are exactly what makes <b>Atari from pixels</b>, <b>AlphaGo</b>, and <b>RLHF</b> work. Replace 2 inputs with 84×84 pixels, replace 4 ReLUs with millions, and — same equation — Bellman target and squared error.</p>
+    <p style="color:var(--dim);font-size:.88rem"><i>Click "Auto-Fit" if you haven't already. Watch the curve snap. That's gradient descent in 1.5 seconds.</i></p>
+    <button class="action primary" style="width:100%;margin-top:.4rem" id="modal-ok">Got it →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* =========================================================
+   UNIVERSAL APPROXIMATOR · Lecture 7
+   Single-file widget; vanilla JS + canvas.
+   ========================================================= */
+
+// ---------- Target data: a U-shape with light noise ----------
+const X_MIN = 0, X_MAX = 4;
+const Y_MIN = -1, Y_MAX = 6;
+const TARGET = (function(){
+  const data = [];
+  const N = 21;
+  for(let i=0;i<N;i++){
+    const x = X_MIN + i*(X_MAX-X_MIN)/(N-1);
+    // deterministic, reproducible noise
+    const noise = ((Math.sin(i*17.13+1.2)*9301 + 49297)%1)*0.5 - 0.25;
+    const y = (x-2)*(x-2) + noise;
+    data.push({x, y});
+  }
+  return data;
+})();
+
+// ---------- State ----------
+const stage1 = { w:1.5, b:0 };
+const stage2 = { w:2, b:2 };
+const stage3 = {
+  bOut:0,
+  neurons:[
+    {w:1, b:2, wOut:1}
+  ]
+};
+const STATE = {1:stage1, 2:stage2, 3:stage3};
+
+let currentStage = 1;
+let dqnMode = false;
+let animFrame = null;
+let autoFitting = false;
+
+// Pre-computed optimal params for stage 3 (4 neurons + bOut)
+// Fits y = (x-2)^2 well on [0,4]:
+//   y = 4 - 3·max(0,x) + 2·max(0,x-1) + 2·max(0,x-2) + 2·max(0,x-3)
+const AUTOFIT_TARGET = {
+  bOut:4,
+  neurons:[
+    {w:1, b:0, wOut:-3},
+    {w:1, b:1, wOut: 2},
+    {w:1, b:2, wOut: 2},
+    {w:1, b:3, wOut: 2}
+  ]
+};
+
+const NEURON_COLORS = ['#d8c8ff','#bff0d0','#ffe27a','#ffb4b4','#a6dbff'];
+const MAX_NEURONS = 5;
+
+// ---------- Predictions ----------
+function predict(x){
+  if(currentStage===1) return stage1.w*x + stage1.b;
+  if(currentStage===2) return Math.max(0, stage2.w*(x - stage2.b));
+  // stage 3
+  let y = stage3.bOut;
+  for(const n of stage3.neurons){
+    y += n.wOut * Math.max(0, n.w*(x - n.b));
+  }
+  return y;
+}
+function neuronOutput(n, x){
+  return stage3.bOut + n.wOut*Math.max(0, n.w*(x - n.b));
+}
+
+function computeMSE(){
+  let s=0;
+  for(const p of TARGET){
+    const d = predict(p.x) - p.y;
+    s += d*d;
+  }
+  return s / TARGET.length;
+}
+
+// ---------- Canvas ----------
+const canvas = document.getElementById('plot');
+const ctx = canvas.getContext('2d');
+let pxRatio = 1;
+
+function resizeCanvas(){
+  pxRatio = Math.max(1, window.devicePixelRatio || 1);
+  const wrap = canvas.parentElement;
+  const r = wrap.getBoundingClientRect();
+  const w = Math.max(300, r.width);
+  const h = Math.max(360, r.height);
+  canvas.width = Math.round(w*pxRatio);
+  canvas.height = Math.round(h*pxRatio);
+  canvas.style.width = w+'px';
+  canvas.style.height = h+'px';
+  ctx.setTransform(pxRatio,0,0,pxRatio,0,0);
+  draw();
+}
+
+function draw(){
+  const W = canvas.width / pxRatio;
+  const H = canvas.height / pxRatio;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=58, padR=18, padT=22, padB=44;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const xToPx = x => padL + (x-X_MIN)/(X_MAX-X_MIN)*plotW;
+  const yToPx = y => padT + (Y_MAX-y)/(Y_MAX-Y_MIN)*plotH;
+
+  // plot bg
+  ctx.fillStyle = '#fafafa';
+  ctx.strokeStyle = '#1f1d2b';
+  ctx.lineWidth = 2;
+  ctx.fillRect(padL, padT, plotW, plotH);
+  ctx.strokeRect(padL, padT, plotW, plotH);
+
+  // gridlines
+  ctx.strokeStyle = 'rgba(31,29,43,0.07)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<=4;x++){
+    if(x===0||x===4) continue;
+    ctx.beginPath();ctx.moveTo(xToPx(x),padT);ctx.lineTo(xToPx(x),padT+plotH);ctx.stroke();
+  }
+  for(let y=Y_MIN;y<=Y_MAX;y++){
+    if(y===Y_MIN||y===Y_MAX) continue;
+    ctx.beginPath();ctx.moveTo(padL,yToPx(y));ctx.lineTo(padL+plotW,yToPx(y));ctx.stroke();
+  }
+
+  // y=0 axis
+  ctx.strokeStyle = 'rgba(31,29,43,0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();ctx.moveTo(padL,yToPx(0));ctx.lineTo(padL+plotW,yToPx(0));ctx.stroke();
+
+  // ticks
+  ctx.fillStyle = '#1f1d2b';
+  ctx.font = '500 11px "JetBrains Mono",ui-monospace,monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for(let x=0;x<=4;x++){
+    ctx.fillText(x.toString(), xToPx(x), padT+plotH+6);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for(let y=Y_MIN;y<=Y_MAX;y++){
+    ctx.fillText(y.toString(), padL-6, yToPx(y));
+  }
+
+  // axis labels
+  ctx.font = '700 13px "Cabinet Grotesk","Inter",sans-serif';
+  ctx.fillStyle = '#1f1d2b';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  const xLab = dqnMode ? 'STATE  (e.g., cart velocity)' : 'x';
+  const yLab = dqnMode ? 'PREDICTED Q-VALUE' : 'y';
+  ctx.fillText(xLab, padL + plotW/2, H - 14);
+  ctx.save();
+  ctx.translate(16, padT + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(yLab, 0, 0);
+  ctx.restore();
+
+  // error bars (target → prediction)
+  ctx.strokeStyle = 'rgba(200,52,52,0.32)';
+  ctx.lineWidth = 1.4;
+  for(const p of TARGET){
+    const yp = predict(p.x);
+    ctx.beginPath();
+    ctx.moveTo(xToPx(p.x), yToPx(p.y));
+    ctx.lineTo(xToPx(p.x), yToPx(yp));
+    ctx.stroke();
+  }
+
+  // individual ReLUs (stage 3)
+  if(currentStage===3){
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([3,5]);
+    stage3.neurons.forEach((n,i)=>{
+      ctx.strokeStyle = NEURON_COLORS[i%NEURON_COLORS.length];
+      ctx.beginPath();
+      const N = 240;
+      for(let j=0;j<=N;j++){
+        const x = X_MIN + j/N*(X_MAX-X_MIN);
+        const y = neuronOutput(n,x);
+        const px = xToPx(x), py = clamp(yToPx(y), padT-50, padT+plotH+50);
+        if(j===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  // predicted curve (thick)
+  ctx.strokeStyle = '#1f1d2b';
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const N = 400;
+  for(let i=0;i<=N;i++){
+    const x = X_MIN + i/N*(X_MAX-X_MIN);
+    const y = predict(x);
+    const px = xToPx(x), py = clamp(yToPx(y), padT-50, padT+plotH+50);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // target points
+  for(const p of TARGET){
+    ctx.fillStyle = '#ffb4b4';
+    ctx.strokeStyle = '#1f1d2b';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(xToPx(p.x), yToPx(p.y), 5.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+// ---------- UI generation ----------
+const controlsHost = document.getElementById('controls-host');
+const btnRow = document.getElementById('btn-row');
+const equationEl = document.getElementById('equation');
+const mseNum = document.getElementById('mse-num');
+const mseTag = document.getElementById('mse-tag');
+const mseCard = document.getElementById('mse-card');
+const stageTitle = document.getElementById('stage-title');
+const stageText = document.getElementById('stage-text');
+const legendRelus = document.getElementById('legend-relus');
+const dqnBanner = document.getElementById('dqn-banner');
+
+function makeSlider({label, min, max, step, value, get, set}){
+  const wrap = document.createElement('div');
+  wrap.className = 'slider-row';
+  wrap.innerHTML = `
+    <div class="row-head">
+      <span class="name">${label}</span>
+      <span class="val"></span>
+    </div>
+    <input type="range" min="${min}" max="${max}" step="${step}" value="${value}">
+  `;
+  const input = wrap.querySelector('input');
+  const valEl = wrap.querySelector('.val');
+  const refresh = ()=>{ valEl.textContent = (get()).toFixed(2); };
+  refresh();
+  input.addEventListener('input', ()=>{
+    set(parseFloat(input.value));
+    refresh();
+    onParamChanged();
+  });
+  // expose so we can update programmatically
+  wrap._setValue = (v)=>{
+    input.value = v;
+    set(v);
+    refresh();
+  };
+  return wrap;
+}
+
+function buildStage1(){
+  controlsHost.innerHTML='';
+  controlsHost.appendChild(makeSlider({
+    label:'w  (slope)', min:-5, max:5, step:0.01, value:stage1.w,
+    get:()=>stage1.w, set:v=>stage1.w=v
+  }));
+  controlsHost.appendChild(makeSlider({
+    label:'b  (intercept)', min:-5, max:5, step:0.01, value:stage1.b,
+    get:()=>stage1.b, set:v=>stage1.b=v
+  }));
+  btnRow.innerHTML='';
+}
+
+function buildStage2(){
+  controlsHost.innerHTML='';
+  controlsHost.appendChild(makeSlider({
+    label:'w  (slope)', min:-10, max:10, step:0.01, value:stage2.w,
+    get:()=>stage2.w, set:v=>stage2.w=v
+  }));
+  controlsHost.appendChild(makeSlider({
+    label:'b  (threshold / bend point)', min:-2, max:6, step:0.01, value:stage2.b,
+    get:()=>stage2.b, set:v=>stage2.b=v
+  }));
+  btnRow.innerHTML='';
+}
+
+function buildStage3(){
+  controlsHost.innerHTML='';
+  controlsHost.appendChild(makeSlider({
+    label:'output bias  b_out', min:-5, max:8, step:0.01, value:stage3.bOut,
+    get:()=>stage3.bOut, set:v=>stage3.bOut=v
+  }));
+
+  const neuronsWrap = document.createElement('div');
+  neuronsWrap.id = 'neurons-wrap';
+  neuronsWrap.style.display='flex';
+  neuronsWrap.style.flexDirection='column';
+  neuronsWrap.style.gap='.45rem';
+  controlsHost.appendChild(neuronsWrap);
+
+  rebuildNeuronCards();
+
+  btnRow.innerHTML='';
+  const addBtn = document.createElement('button');
+  addBtn.className='action success';
+  addBtn.textContent='+ Add Neuron';
+  addBtn.id='btn-add';
+  addBtn.addEventListener('click', addNeuron);
+  btnRow.appendChild(addBtn);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className='action danger';
+  removeBtn.textContent='– Remove';
+  removeBtn.id='btn-remove';
+  removeBtn.addEventListener('click', removeNeuron);
+  btnRow.appendChild(removeBtn);
+
+  const fitBtn = document.createElement('button');
+  fitBtn.className='action primary';
+  fitBtn.textContent='⚡ Auto-Fit (Train)';
+  fitBtn.addEventListener('click', autoFit);
+  btnRow.appendChild(fitBtn);
+
+  const dqnBtn = document.createElement('button');
+  dqnBtn.className='action brand';
+  dqnBtn.textContent='🤖 What does this have to do with RL?';
+  dqnBtn.addEventListener('click', showDQN);
+  btnRow.appendChild(dqnBtn);
+
+  updateAddRemoveDisabled();
+}
+function updateAddRemoveDisabled(){
+  const addBtn = document.getElementById('btn-add');
+  const remBtn = document.getElementById('btn-remove');
+  if(!addBtn||!remBtn) return;
+  addBtn.disabled = stage3.neurons.length>=MAX_NEURONS;
+  remBtn.disabled = stage3.neurons.length<=1;
+}
+
+function rebuildNeuronCards(){
+  const host = document.getElementById('neurons-wrap');
+  if(!host) return;
+  host.innerHTML='';
+  stage3.neurons.forEach((n,i)=>{
+    const card = document.createElement('div');
+    card.className='neuron-card';
+    card.innerHTML = `
+      <div class="neuron-head">
+        <span><span class="swatch" style="background:${NEURON_COLORS[i%NEURON_COLORS.length]}"></span>Neuron ${i+1}</span>
+        <span style="color:var(--dim);font-weight:600">w·max(0, w·(x − b))</span>
+      </div>
+    `;
+    const sliders = [
+      {label:'w_in  (slope)', min:-10, max:10, step:0.01, value:n.w, get:()=>n.w, set:v=>n.w=v},
+      {label:'b_in  (threshold)', min:-2, max:6, step:0.01, value:n.b, get:()=>n.b, set:v=>n.b=v},
+      {label:'w_out (output weight)', min:-6, max:6, step:0.01, value:n.wOut, get:()=>n.wOut, set:v=>n.wOut=v}
+    ];
+    sliders.forEach(s=>{
+      const sl = makeSlider(s);
+      card._sliders = card._sliders || [];
+      card._sliders.push(sl);
+      card.appendChild(sl);
+    });
+    host.appendChild(card);
+  });
+}
+
+function addNeuron(){
+  if(stage3.neurons.length>=MAX_NEURONS) return;
+  // sensible default: small ReLU at midpoint
+  stage3.neurons.push({w:1, b:2, wOut:1});
+  rebuildNeuronCards();
+  updateAddRemoveDisabled();
+  onParamChanged();
+}
+function removeNeuron(){
+  if(stage3.neurons.length<=1) return;
+  stage3.neurons.pop();
+  rebuildNeuronCards();
+  updateAddRemoveDisabled();
+  onParamChanged();
+}
+
+// ---------- Stage switching ----------
+const STAGE_INFO = {
+  1:{
+    title:'Stage 1 · The Linear Fail',
+    text:'A straight line is the simplest model: pick a slope <b>w</b> and an intercept <b>b</b>. Try to make it hug the U-shape. It can\'t — no matter how you tilt or shift, a line stays a line. <b>Math demands more.</b>'
+  },
+  2:{
+    title:'Stage 2 · The ReLU Bend',
+    text:'Add <b>one bend</b>. A <b>ReLU</b> turns linear at the threshold <b>b</b> and stays flat the other side. Better — you can match one arm of the U. But the other arm? Still missing.'
+  },
+  3:{
+    title:'Stage 3 · The Universal Approximator',
+    text:'Stack <b>multiple ReLUs</b>. Each one bends differently; their <b>sum</b> can match any shape. This is the <i>Universal Approximation Theorem</i>: a wide-enough one-hidden-layer net can approximate <b>any continuous function</b> as closely as you want.'
+  }
+};
+
+function setStage(n){
+  currentStage = n;
+  document.querySelectorAll('.stage-tabs button').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.stage,10)===n);
+  });
+  stageTitle.innerHTML = STAGE_INFO[n].title;
+  stageText.innerHTML = STAGE_INFO[n].text;
+  legendRelus.hidden = (n!==3);
+  if(n===1) buildStage1();
+  else if(n===2) buildStage2();
+  else buildStage3();
+  onParamChanged();
+}
+
+// ---------- Equation + MSE update ----------
+const GOOD_MSE = 0.5;
+
+function updateEquation(){
+  if(currentStage===1){
+    equationEl.innerHTML =
+      `y = <b>${fmt(stage1.w)}</b>·x + <b>${fmt(stage1.b)}</b>`;
+  } else if(currentStage===2){
+    equationEl.innerHTML =
+      `y = max(0, &nbsp;<b>${fmt(stage2.w)}</b>·(x − <b>${fmt(stage2.b)}</b>) )`;
+  } else {
+    const parts = stage3.neurons.map((n,i)=>
+      `<b>${fmt(n.wOut)}</b>·max(0, <b>${fmt(n.w)}</b>·(x − <b>${fmt(n.b)}</b>))`
+    );
+    equationEl.innerHTML = `y = <b>${fmt(stage3.bOut)}</b><br>&nbsp;&nbsp;&nbsp;&nbsp;+ ` + parts.join('<br>&nbsp;&nbsp;&nbsp;&nbsp;+ ');
+  }
+}
+function fmt(v){
+  const s = v.toFixed(2);
+  return (v>=0?' '+s:s);
+}
+
+let mseGoodFlashed = false;
+function updateMSE(){
+  const mse = computeMSE();
+  mseNum.textContent = mse.toFixed(3);
+  if(mse < GOOD_MSE){
+    mseTag.textContent = 'GREAT FIT ✓';
+    if(!mseCard.classList.contains('good')){
+      mseCard.classList.add('good');
+      // re-trigger animation
+      mseCard.style.animation='none';
+      void mseCard.offsetWidth;
+      mseCard.style.animation='';
+    }
+  } else if(mse < 2){
+    mseTag.textContent = 'getting closer';
+    mseCard.classList.remove('good');
+  } else {
+    mseTag.textContent = 'high error';
+    mseCard.classList.remove('good');
+  }
+}
+
+function onParamChanged(){
+  updateEquation();
+  updateMSE();
+  // schedule a single redraw per frame for smoothness
+  if(animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(draw);
+}
+
+// ---------- Auto-fit (train) ----------
+function autoFit(){
+  if(autoFitting) return;
+  autoFitting = true;
+  // ensure 4 neurons
+  while(stage3.neurons.length<4){
+    stage3.neurons.push({w:1, b:2, wOut:1});
+  }
+  while(stage3.neurons.length>4){
+    stage3.neurons.pop();
+  }
+  rebuildNeuronCards();
+  updateAddRemoveDisabled();
+
+  // capture starting params, animate to AUTOFIT_TARGET
+  const startSnapshot = {
+    bOut: stage3.bOut,
+    neurons: stage3.neurons.map(n=>({...n}))
+  };
+  const tgt = AUTOFIT_TARGET;
+  const dur = 1500;
+  const t0 = performance.now();
+
+  showToast('⚡ Training…');
+
+  function tick(now){
+    const t = Math.min(1, (now - t0)/dur);
+    const e = easeInOutCubic(t);
+    stage3.bOut = lerp(startSnapshot.bOut, tgt.bOut, e);
+    for(let i=0;i<4;i++){
+      const a = startSnapshot.neurons[i];
+      const b = tgt.neurons[i];
+      stage3.neurons[i].w = lerp(a.w, b.w, e);
+      stage3.neurons[i].b = lerp(a.b, b.b, e);
+      stage3.neurons[i].wOut = lerp(a.wOut, b.wOut, e);
+    }
+    syncNeuronSlidersToState();
+    onParamChanged();
+    if(t<1) requestAnimationFrame(tick);
+    else {
+      autoFitting = false;
+      hideToast();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+function lerp(a,b,t){return a+(b-a)*t}
+function easeInOutCubic(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+
+function syncNeuronSlidersToState(){
+  // update the slider values + label values without rebuilding cards
+  const host = document.getElementById('neurons-wrap');
+  if(!host) return;
+  // update output bias slider (first slider in controlsHost)
+  const allRows = controlsHost.querySelectorAll('.slider-row');
+  if(allRows[0]){
+    const inp = allRows[0].querySelector('input');
+    inp.value = stage3.bOut;
+    allRows[0].querySelector('.val').textContent = stage3.bOut.toFixed(2);
+  }
+  const cards = host.querySelectorAll('.neuron-card');
+  cards.forEach((card,i)=>{
+    const n = stage3.neurons[i];
+    if(!n) return;
+    const rows = card.querySelectorAll('.slider-row');
+    const vals = [n.w, n.b, n.wOut];
+    rows.forEach((row,k)=>{
+      const inp = row.querySelector('input');
+      inp.value = vals[k];
+      row.querySelector('.val').textContent = vals[k].toFixed(2);
+    });
+  });
+}
+
+// ---------- DQN reveal ----------
+const dqnModal = document.getElementById('dqn-modal');
+const modalClose = document.getElementById('modal-close');
+const modalOk = document.getElementById('modal-ok');
+function showDQN(){
+  dqnMode = true;
+  dqnBanner.hidden = false;
+  dqnModal.hidden = false;
+  draw();
+}
+function closeDQNModal(){ dqnModal.hidden = true; }
+modalClose.addEventListener('click', closeDQNModal);
+modalOk.addEventListener('click', closeDQNModal);
+document.getElementById('dqn-exit').addEventListener('click', ()=>{
+  dqnMode = false;
+  dqnBanner.hidden = true;
+  draw();
+});
+
+// ---------- Toast ----------
+const toast = document.getElementById('toast');
+let toastTimer=null;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.hidden = false;
+}
+function hideToast(){
+  toast.hidden = true;
+}
+
+// ---------- Wire stage tabs ----------
+document.getElementById('stage-tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-stage]');
+  if(!btn) return;
+  const n = parseInt(btn.dataset.stage,10);
+  setStage(n);
+});
+
+// ---------- Init ----------
+window.addEventListener('resize', ()=>{
+  if(animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(resizeCanvas);
+});
+window.addEventListener('load', ()=>{
+  setStage(1);
+  resizeCanvas();
+});
+
+// initial paint right now too (in case load already fired)
+setStage(1);
+requestAnimationFrame(()=>{ resizeCanvas(); });
+</script>
+
+</body>
+</html>

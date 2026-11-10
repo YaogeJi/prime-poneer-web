@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL · Lecture 8 — Function Approximation for Policy Iteration</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,600,700,800&f[]=general-sans@400,500,600,700&f[]=jetbrains-mono@400,500,700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+mjx-container[jax="SVG"]{color:var(--ink)}
+mjx-container{font-size:1em!important}
+
+.lead{max-width:none;font-size:clamp(.9rem,1.2vw,1.08rem);line-height:1.5}
+.note{font-size:clamp(.78rem,1.02vw,.93rem);color:var(--dim);line-height:1.48}
+
+.part{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.part .n{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--ink);color:var(--bg);font-size:.85rem}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(.8rem,2vw,1.5rem);margin-top:.45rem}
+.split .col{background:var(--paper);border:2.5px solid var(--line);border-radius:16px;box-shadow:5px 5px 0 var(--line);padding:.9rem 1rem}
+.split .col.a{background:var(--mint)}
+.split .col.b{background:var(--peach)}
+.split .col.warn{background:var(--rose)}
+.split .col .lab{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:.2rem}
+.split .col h3{font-family:var(--font-display);font-weight:700;font-size:clamp(.98rem,1.35vw,1.2rem);margin-bottom:.3rem}
+.split .col p{font-size:clamp(.8rem,1.02vw,.93rem);line-height:1.45}
+.split .col .mini{background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:.35rem .6rem;margin:.35rem 0;box-shadow:2px 2px 0 var(--line);text-align:center}
+.split .col ul{list-style:none;padding:0;margin:.15rem 0}
+.split .col li{font-size:clamp(.8rem,1.02vw,.93rem);line-height:1.42;padding:.18rem 0 .18rem 1.2rem;position:relative}
+.split .col li::before{content:'▸';position:absolute;left:0;font-weight:800}
+@media (max-width:820px){.split{grid-template-columns:1fr}}
+
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.6rem,1.5vw,1rem);margin-top:.45rem}
+.trio .c{border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.8rem .9rem}
+.trio .c:nth-child(1){background:var(--mint)}
+.trio .c:nth-child(2){background:var(--peach)}
+.trio .c:nth-child(3){background:var(--lilac)}
+.trio .c h4{font-family:var(--font-display);font-weight:800;font-size:clamp(.9rem,1.2vw,1.08rem);margin-bottom:.2rem}
+.trio .c p{font-size:clamp(.76rem,1vw,.9rem);line-height:1.45}
+.trio .c .mini{background:var(--paper);border:1.5px solid var(--line);border-radius:8px;padding:.3rem .45rem;margin:.3rem 0;box-shadow:2px 2px 0 var(--line);text-align:center}
+@media (max-width:820px){.trio{grid-template-columns:1fr}}
+
+.objtbl{border:2px solid var(--line);border-radius:10px;background:var(--paper);box-shadow:5px 5px 0 var(--line);margin-top:.45rem;overflow:hidden}
+.objrow{display:grid;grid-template-columns:172px 1fr;gap:clamp(.7rem,1.6vw,1.2rem);padding:.65rem 1.1rem;align-items:center}
+.objrow + .objrow{border-top:1.5px solid var(--line)}
+.objrow .nm{font-family:var(--font-display);font-weight:800;font-size:clamp(.98rem,1.35vw,1.28rem);line-height:1.05}
+.objrow .tg{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:.25rem;display:block}
+.objrow .eq{margin:.05rem 0;text-align:left}
+.objrow .eq mjx-container{margin:0!important}
+.objrow.a1{background:var(--mint)}
+.objrow.a2{background:var(--lilac)}
+.objrow.a3{background:var(--sky)}
+
+.notation{margin-top:.45rem;border:1.5px dashed var(--line);border-radius:10px;padding:.55rem .9rem;background:var(--paper)}
+.notation .hd{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem}
+.notation .grid{display:grid;grid-template-columns:1fr 1fr;gap:.24rem 1.5rem}
+.notation .nt{font-size:clamp(.74rem,.98vw,.9rem);line-height:1.38}
+.notation .nt .s{font-weight:600}
+@media (max-width:820px){.notation .grid{grid-template-columns:1fr}}
+
+.eqpanel{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.7rem 1.1rem;margin-top:.45rem;text-align:center}
+.eqpanel.tint{background:var(--sun)}
+.eqpanel .credit{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:.3rem}
+
+.callout{display:flex;gap:.85rem;align-items:flex-start;background:var(--sky);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.8rem 1rem;margin-top:.45rem}
+.callout .q-badge{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:8px;padding:.32rem .5rem;box-shadow:2px 2px 0 var(--line)}
+.callout .q-body{flex:1}
+.callout .q-body .q{font-family:var(--font-display);font-weight:700;font-size:clamp(.98rem,1.3vw,1.18rem);line-height:1.25;margin-bottom:.25rem}
+.callout .q-body .a{font-size:clamp(.8rem,1.02vw,.93rem);line-height:1.45;color:var(--ink)}
+@media (max-width:820px){.callout{flex-direction:column;gap:.45rem}}
+
+.mdet{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(.7rem,1.6vw,1.2rem);margin-top:.45rem;align-items:start}
+.mdet .eqcard{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.8rem .95rem}
+.mdet .eqcard .sub{font-family:var(--font-mono);font-size:var(--tiny-size);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:block;margin:.5rem 0 .15rem}
+.mdet ul{list-style:none;padding:0;margin:.1rem 0}
+.mdet li{font-size:clamp(.85rem,1.12vw,1.02rem);line-height:1.5;padding:.24rem 0 .24rem 1.3rem;position:relative}
+.mdet li::before{content:'▸';position:absolute;left:0;color:var(--ink);font-weight:800}
+@media (max-width:820px){.mdet{grid-template-columns:1fr}}
+.svgcard{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:5px 5px 0 var(--line);padding:.6rem .7rem}
+.svgcard > svg{display:block;width:100%;max-width:520px;height:auto;max-height:42vh;margin:0 auto}
+.svgcard .cap{font-size:clamp(.8rem,1.05vw,.95rem);color:var(--dim);line-height:1.45;margin-top:.3rem}
+
+.corr{display:grid;grid-template-columns:0.85fr 1.3fr 1.3fr;gap:.32rem;margin-top:.45rem}
+.corr .c{padding:.45rem .65rem;border-radius:9px;background:var(--paper);border:1.5px solid var(--line);font-size:clamp(.74rem,.98vw,.88rem);line-height:1.38;display:flex;align-items:center}
+.corr .c.h{font-family:var(--font-display);font-weight:800;font-size:clamp(.92rem,1.2vw,1.12rem);justify-content:center;text-align:center}
+.corr .c.h.go{background:var(--sun)}
+.corr .c.h.llm{background:var(--mint)}
+.corr .c.lbl{font-family:var(--font-mono);font-weight:700;font-size:var(--tiny-size);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);background:var(--bg);border:none}
+.corr .c.go{background:#fff6d6}
+.corr .c.llm{background:#e6f7ec}
+@media (max-width:820px){.corr{grid-template-columns:1fr}.corr .c.lbl{margin-top:.35rem}}
+
+.rs9{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.7rem,1.6vw,1.1rem);margin-top:.6rem}
+.rs9 .item{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.85rem}
+.rs9 .item:nth-child(1){background:var(--mint)}
+.rs9 .item:nth-child(2){background:var(--sun)}
+.rs9 .item:nth-child(3){background:var(--lilac)}
+.rs9 .item h5{font-family:var(--font-display);font-weight:800;font-size:clamp(.92rem,1.2vw,1.12rem);margin-bottom:.2rem}
+.rs9 .item p{font-size:clamp(.76rem,1vw,.9rem);color:var(--ink);line-height:1.42}
+@media (max-width:820px){.rs9{grid-template-columns:1fr}}
+
+.ag4{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(.55rem,1.3vw,.9rem);margin-top:0}
+.ag4 .item{background:var(--paper);border:2.5px solid var(--line);border-radius:14px;box-shadow:4px 4px 0 var(--line);padding:.75rem .8rem}
+.ag4 .item:nth-child(1){background:var(--peach)}
+.ag4 .item:nth-child(2){background:var(--sky)}
+.ag4 .item:nth-child(3){background:var(--lilac)}
+.ag4 .item:nth-child(4){background:var(--mint)}
+.ag4 .item h5{font-family:var(--font-display);font-weight:800;font-size:clamp(.85rem,1.1vw,1rem);margin-bottom:.2rem}
+.ag4 .item p{font-size:clamp(.72rem,.94vw,.85rem);color:var(--ink);line-height:1.38}
+@media (max-width:820px){.ag4{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="nav" id="nav"></nav>
+<div class="hint">← → / SPACE to navigate</div>
+
+<!-- SLIDE 1 — TITLE -->
+<section class="slide" data-name="Title">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:160px;height:160px;top:8%;right:8%"></span>
+  <span class="shape s-mint circle bordered anim-wobble-r" style="width:110px;height:110px;bottom:14%;right:18%"></span>
+  <span class="shape s-sun square bordered anim-spin-slow" style="width:80px;height:80px;top:18%;left:6%"></span>
+  <span class="shape s-peach pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner">
+    <span class="tag sky reveal">LECTURE 08 · FINALE · FUNCTION APPROXIMATION FOR POLICY ITERATION</span>
+    <h1 class="title reveal">Policy iteration, <span class="hl sky">approximated.</span></h1>
+    <p class="body reveal lead" style="max-width:none;margin-bottom:1rem">
+      Policy iteration is exact — <i>if you can touch every state</i>. Go has more positions than atoms in the universe, so the table is
+      impossible and the policy must become a <b>function</b> we fit from data. We'll follow one example — <b>AlphaGo</b> — from "why a table
+      fails" all the way to the move it missed against Lee&nbsp;Sedol, and to how the same recipe trained <b>ChatGPT</b>.
+    </p>
+
+    <div class="ag4 reveal">
+      <div class="item"><h5>① The tabular loop</h5><p>Policy iteration, and why Go breaks it.</p></div>
+      <div class="item"><h5>② Function approximation</h5><p>Store a function, not a table — the universal approximator.</p></div>
+      <div class="item"><h5>③ The catch</h5><p>It only works where data taught it (Game&nbsp;4).</p></div>
+      <div class="item"><h5>④ The update at scale</h5><p>PMD · TRPO · PPO, in AlphaGo &amp; ChatGPT.</p></div>
+    </div>
+    <p class="body dim reveal" style="max-width:none;font-style:italic;font-size:clamp(.8rem,1.02vw,.95rem);margin-top:.8rem">
+      References: Lan, <i>Optimization Methods for RL</i>, §2.4 · Cybenko (1989), Hornik (1991) · Schulman et&nbsp;al. (TRPO 2015, GAE 2016, PPO 2017) · Silver et&nbsp;al. (AlphaGo 2016).
+    </p>
+  </div>
+  <div class="slide-name">Title</div>
+  <div class="slide-num">01 / 11</div>
+</section>
+
+<!-- SLIDE 2 — POLICY ITERATION -->
+<section class="slide" data-name="Policy iteration">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:100px;height:100px;top:5%;right:6%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">1</span> The exact loop</span>
+    <h2 class="h2 reveal" style="margin-bottom:.25rem">Policy iteration: evaluate, then <span class="hl">improve.</span></h2>
+    <p class="note reveal">Alternate two steps until the policy stops changing. Improvement is <b>greedy</b>: at each state, move to the action with the largest advantage. When no action can beat the current average anywhere, we've reached the optimal policy \(\pi^\star\).</p>
+
+    <div class="split reveal">
+      <div class="col a">
+        <span class="lab">Step A · Policy evaluation</span>
+        <h3>Score the current policy \(\pi_k\).</h3>
+        <div class="mini formula" style="font-size:clamp(.8rem,1.05vw,.98rem)">\[ Q^{\pi_k}(s,a)=R(s,a)+\gamma\,\mathbb E_{s'}\big[V^{\pi_k}(s')\big] \]</div>
+        <p>Subtract the state's own average to get the <b>advantage</b> \(A^{\pi_k}=Q^{\pi_k}-V^{\pi_k}\): how much better than \(\pi_k\)'s average an action is. Averaged over \(\pi_k\)'s own actions it is \(0\).</p>
+      </div>
+      <div class="col b">
+        <span class="lab">Step B · Policy improvement</span>
+        <h3>Take the max-advantage action.</h3>
+        <div class="mini formula" style="font-size:clamp(.8rem,1.05vw,.98rem)">\[ \pi_{k+1}(\cdot\mid s)=\arg\max_{p\in\Delta}\ \big\langle A^{\pi_k}(s,\cdot),\,p\big\rangle \]</div>
+        <p>All the mass goes on \(\arg\max_a A^{\pi_k}(s,a)\), the biggest-advantage action. (Same as greedy on \(Q\) — subtracting \(V(s)\) never moves the max.)</p>
+      </div>
+    </div>
+
+    <div class="eqpanel tint reveal">
+      <span class="credit">The improvement each step buys</span>
+      <div class="formula" style="font-size:clamp(.9rem,1.22vw,1.12rem)">\[ \max_{a}\,A^{\pi_k}(s,a)\ \ge\ 0\ \ \text{for every } s,\qquad =0\ \ \text{only at } \pi^\star. \]</div>
+      <p class="note" style="margin-top:.3rem">That largest advantage is the room left to improve at \(s\). Grab it and the value can never drop — \(V^{\pi_{k+1}}(s)\ge V^{\pi_k}(s)\), the <b>improvement theorem</b>. Once it hits \(0\) everywhere, no action beats the average and the policy is optimal.</p>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem;font-style:italic">
+      Clean and exact — but the greedy max needs a stored advantage for <b>every</b> state, solved one at a time. Fine on a gridworld. Let's try it on Go.
+    </p>
+  </div>
+  <div class="slide-name">Policy iteration</div>
+  <div class="slide-num">02 / 11</div>
+</section>
+
+<!-- SLIDE 3 — COULD WE DO GO WITH A TABLE? -->
+<section class="slide" data-name="Go by table?">
+  <span class="shape s-sun blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">1</span> The tabular attempt</span>
+    <h2 class="h2 reveal" style="margin-bottom:.25rem">Could we solve Go with a <span class="hl">table?</span></h2>
+    <p class="body reveal lead" style="max-width:none">
+      The plan is exactly policy iteration: one row per board position, holding its value and its best move. Enumerate every position,
+      evaluate it, improve it, repeat. So — how big is that table?
+    </p>
+
+    <div class="split reveal">
+      <div class="col a">
+        <span class="lab">The tabular plan</span>
+        <h3>One row per position.</h3>
+        <ul>
+          <li>Store \(V(s)\) and a best move for each board \(s\)</li>
+          <li>Sweep all \(s\): evaluate, then greedy-improve</li>
+          <li>Repeat until nothing changes</li>
+        </ul>
+      </div>
+      <div class="col warn">
+        <span class="lab">Why it can't exist</span>
+        <h3>\(\sim 10^{172}\) legal positions.</h3>
+        <ul>
+          <li><b>Storage:</b> more rows than atoms in the universe</li>
+          <li><b>Visitation:</b> you'd see almost every position <b>zero</b> times — its value never learned</li>
+          <li>No two boards are "close" in a lookup table</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.45rem;font-style:italic">
+      The table can't be stored <b>and</b> can't be filled. The only way out: something that reads <i>any</i> position — even unseen ones — and returns a move. We need to <b>generalize</b>.
+    </p>
+  </div>
+  <div class="slide-name">Go by table?</div>
+  <div class="slide-num">03 / 11</div>
+</section>
+
+<!-- SLIDE 4 — FUNCTION APPROXIMATION -->
+<section class="slide" data-name="Function approximation">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">2</span> The fix</span>
+    <h2 class="h2 reveal" style="margin-bottom:.25rem">Store a <span class="hl">function</span>, not a table.</h2>
+    <p class="body reveal lead" style="max-width:none">
+      Don't memorize an answer per position. Learn one <b>function</b> \(\pi_\theta\) that <i>reads</i> a position and outputs a move
+      distribution. Then we keep only its parameters \(\theta\) — a fixed, modest list of numbers — instead of the whole table.
+    </p>
+
+    <div class="eqpanel reveal">
+      <div class="formula" style="font-size:clamp(.95rem,1.3vw,1.22rem)">\[ \pi_\theta(a\mid s)=\mathrm{softmax}\big(f_\theta(s,\cdot)\big)_a \qquad\Longrightarrow\qquad \text{store }\theta,\ \text{not the }|\mathcal S||\mathcal A|\text{ table} \]</div>
+    </div>
+
+    <div class="trio reveal">
+      <div class="c">
+        <h4>One function, any state</h4>
+        <p>Feed any board — including positions never seen in training — and get a move distribution out. That's <b>generalization</b>.</p>
+      </div>
+      <div class="c">
+        <h4>Storage collapses</h4>
+        <p>Go's \(\sim 10^{172}\)-row table becomes \(\sim 10^{8}\) weights. The count no longer grows with the number of states.</p>
+      </div>
+      <div class="c">
+        <h4>Similar in, similar out</h4>
+        <p>Nearby positions share weights, so one update nudges many at once. The table treated every row as unrelated.</p>
+      </div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem;font-style:italic">
+      The old table is just the special case where \(f_\theta\) is a plain lookup (one-hot features, no sharing). Function approximation is the same object with the states <b>tied together</b>.
+    </p>
+  </div>
+  <div class="slide-name">Function approximation</div>
+  <div class="slide-num">04 / 11</div>
+</section>
+
+<!-- SLIDE 5 — LEARN = FIT · UNIVERSAL APPROXIMATOR -->
+<section class="slide" data-name="Which function?">
+  <span class="shape s-lilac blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">2</span> choosing the form</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">What <span class="hl">function</span> should we choose?</h2>
+    <p class="body reveal lead" style="max-width:none">
+      We store a function \(f_\theta\) instead of a table — but which one? First we pick a <b>function class</b>: a family of candidate functions
+      that share one form and differ only by their parameters \(\theta\). Fitting then searches inside that class for the member closest to the data.
+    </p>
+
+    <div class="mdet reveal">
+      <div class="svgcard">
+        <svg viewBox="0 0 340 200" width="340" height="200" style="aspect-ratio:340/200" role="img" aria-label="Least-squares fit of a nonlinear curve to noisy data">
+          <line x1="38" y1="165" x2="322" y2="165" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="38" y1="165" x2="38" y2="18" stroke="#1f1d2b" stroke-width="1.5"/>
+          <!-- residuals (squared gaps) -->
+          <line x1="55" y1="98" x2="55" y2="106" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="85" y1="90" x2="85" y2="82" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="115" y1="60" x2="115" y2="68" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="145" y1="74" x2="145" y2="67" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="175" y1="70" x2="175" y2="79" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="205" y1="108" x2="205" y2="99" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="235" y1="110" x2="235" y2="117" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="265" y1="133" x2="265" y2="125" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="300" y1="114" x2="300" y2="122" stroke="#9a98a6" stroke-width="1" stroke-dasharray="3 2"/>
+          <!-- fitted curve f_theta -->
+          <polyline points="40,120 70,92 100,72 130,64 160,70 190,88 220,110 250,124 280,126 320,118" fill="none" stroke="#1f1d2b" stroke-width="3"/>
+          <!-- data points -->
+          <circle cx="55" cy="98" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="85" cy="90" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="115" cy="60" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="145" cy="74" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="175" cy="70" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="205" cy="108" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="235" cy="110" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="265" cy="133" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="300" cy="114" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <text x="150" y="55" fill="#1f1d2b" font-family="JetBrains Mono" font-size="11">f_θ</text>
+          <text x="238" y="150" fill="#158a45" font-family="JetBrains Mono" font-size="10">data</text>
+        </svg>
+        <div class="cap">Green dots = data; dashed = the gaps. Least squares picks \(\theta\) so the curve \(f_\theta\) minimizes the <b>sum of squared gaps</b>.</div>
+      </div>
+      <div>
+        <div class="eqcard">
+          <span class="sub">a function class: one form, many members</span>
+          <div class="formula" style="font-size:clamp(.76rem,1vw,.95rem)">\[ \mathcal F_{\text{lin}}=\big\{\,f_\theta(x)=w^\top x+b\ :\ \theta=(w,b)\,\big\} \]</div>
+          <span class="sub">learning = pick the best member</span>
+          <div class="formula" style="font-size:clamp(.76rem,1vw,.95rem)">\[ \theta^\star=\arg\min_{\theta}\ \tfrac{1}{N}\sum_{i=1}^{N}\big(f_\theta(x_i)-y_i\big)^2 \]</div>
+        </div>
+        <ul>
+          <li><b>The class sets what's reachable.</b> The linear class holds only lines and planes — if the truth curves, no member fits well.</li>
+          <li><b>Bigger class, more shapes.</b> Polynomials, then kernels, add curvature — but you still hand-pick the class (the degree, the kernel).</li>
+          <li><b>Neural network</b> — a class so rich it is a <b>universal approximator</b> (Cybenko '89, Hornik '91): enough neurons hold a match to <i>any</i> continuous function, so we stop choosing the form. Cost: <b>data hunger</b>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout reveal">
+      <span class="q-badge">❓ Ask the class</span>
+      <div class="q-body">
+        <div class="q">In an MDP, what is \(f_\theta\) actually approximating?</div>
+        <div class="a">The very objects the table used to hold — the <b>policy</b> \(\pi_\theta(a\mid s)\) and the <b>value</b> \(V_\theta(s),\,Q_\theta(s,a)\) (the advantage follows). All functions of the state, with far too many states to tabulate — so we fit.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-name">Which function?</div>
+  <div class="slide-num">05 / 11</div>
+</section>
+
+<!-- SLIDE 6 — THE TRADE-OFF · ON vs OFF SUPPORT -->
+<section class="slide" data-name="On vs off support">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">3</span> The trade-off</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">Great <span class="hl">where data taught it</span> — lost where it didn't.</h2>
+    <p class="note reveal">Fitting \(\theta\) pins the function down only where training data lives (the <b>support</b>). Off that support it must guess — and a flexible net can guess wildly.</p>
+
+    <div class="mdet reveal">
+      <div class="svgcard">
+        <svg viewBox="0 0 340 190" width="340" height="190" style="aspect-ratio:340/190" role="img" aria-label="Fit on support vs extrapolation off support">
+          <rect x="70" y="22" width="120" height="138" fill="rgba(34,170,85,0.12)" stroke="none"/>
+          <line x1="40" y1="160" x2="326" y2="160" stroke="#1f1d2b" stroke-width="1.5"/>
+          <line x1="40" y1="160" x2="40" y2="22" stroke="#1f1d2b" stroke-width="1.5"/>
+          <!-- true function -->
+          <polyline points="40,120 70,95 100,70 130,66 160,82 190,104 220,120 250,126 290,126 326,124" fill="none" stroke="#6c6a7a" stroke-width="2" stroke-dasharray="5 4"/>
+          <!-- learned fit: matches on support, drifts smoothly off it -->
+          <polyline points="40,120 70,95 100,70 130,66 160,82 190,104 220,99 252,105 284,90 308,98 326,82" fill="none" stroke="#1f1d2b" stroke-width="3"/>
+          <!-- data points on support -->
+          <circle cx="80" cy="88" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="108" cy="68" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="138" cy="68" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="168" cy="88" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <circle cx="188" cy="102" r="3.4" fill="#22aa55" stroke="#1f1d2b" stroke-width="1"/>
+          <!-- move 78 marker -->
+          <line x1="258" y1="182" x2="240" y2="103" stroke="#e23e3e" stroke-width="1.6"/>
+          <text x="262" y="188" fill="#e23e3e" font-family="JetBrains Mono" font-size="9">move 78</text>
+          <text x="130" y="176" fill="#158a45" font-family="JetBrains Mono" font-size="9" text-anchor="middle">seen in training</text>
+          <text x="285" y="176" fill="#e23e3e" font-family="JetBrains Mono" font-size="9" text-anchor="middle">no data → guesses</text>
+        </svg>
+        <div class="cap">Dashed = truth · solid = learned \(f_\theta\). Inside the data band they agree; outside, the fit peels off.</div>
+      </div>
+      <ul>
+        <li><b>On support</b> — dense data, the fit tracks the truth. Interpolation is where deep RL shines.</li>
+        <li><b>Off support</b> — no data to constrain it, so \(f_\theta\) extrapolates, often badly. Capacity becomes a liability.</li>
+        <li><b>AlphaGo vs. Lee&nbsp;Sedol, Game&nbsp;4:</b> Lee's move&nbsp;78 was one the team reported AlphaGo rated near <b>1-in-10,000</b>. The position it created was off the distribution its networks had learned — its value estimates went astray, and it lost that game.</li>
+        <li>The fix is never "more capacity" — it's <b>more relevant data</b>, and staying near where you have it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-name">On vs off support</div>
+  <div class="slide-num">06 / 11</div>
+</section>
+
+<!-- SLIDE 7 — ONE θ MOVES EVERY STATE -->
+<section class="slide" data-name="Improve the function">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">4</span> Step B on \(\theta\)</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">Improving a function: <span class="hl">one sampled objective.</span></h2>
+    <p class="note reveal">In a table, Step&nbsp;B is an <b>exact</b> per-state \(\arg\max\): you hold the true \(A^{\pi_k}\) for every \((s,a)\) and solve each state on its own. A function has neither — no per-state knob, and only a <b>finite-sample</b> estimate \(\hat A\) from rollouts. So Step&nbsp;B becomes a single objective maximized over \(\theta\).</p>
+
+    <div class="split reveal">
+      <div class="col b">
+        <span class="lab">Tabular PI · exact, per state</span>
+        <h3>Solve each state on its own.</h3>
+        <div class="mini formula" style="font-size:clamp(.72rem,.96vw,.9rem)">\[ \pi_{k+1}(\cdot\mid s)=\arg\max_{p\in\Delta}\ \langle A^{\pi_k}(s,\cdot),\,p\rangle \]</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:.5rem 0">
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--sun);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--sun);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+          <span style="height:20px;background:var(--paper);border:1.6px solid var(--line);border-radius:4px"></span>
+        </div>
+        <p>You hold the true \(A^{\pi_k}\) for every state — a closed-form \(\arg\max\), solved <b>one state at a time</b>, a full sweep each round.</p>
+      </div>
+      <div class="col a">
+        <span class="lab">Function · policy mirror descent</span>
+        <h3>Push toward \(\hat A\), stay near \(\pi_k\).</h3>
+        <div class="mini formula" style="font-size:clamp(.58rem,.82vw,.78rem)">\[ \max_{\theta}\ \frac{1}{N}\sum_{i=1}^{N}\Big[\ \eta\,\big\langle \hat A(s_i,\cdot),\,\pi_\theta(\cdot\mid s_i)\big\rangle-\mathrm{KL}\big(\pi_\theta(\cdot\mid s_i)\,\|\,\pi_k(\cdot\mid s_i)\big)\ \Big] \]</div>
+        <p>Roll out \(\pi_k\), estimate the advantages \(\hat A\), then a <b>gradient step</b> on the shared \(\theta\). Same \(\langle \hat A,\pi_\theta\rangle\) as the left — averaged over sampled states, plus a \(-\mathrm{KL}\) <b>leash</b> to \(\pi_k\).</p>
+      </div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem">
+      Function approximation is needed precisely because we <b>can't enumerate</b> every state and action. So \(\hat A\) (and \(Q\)) is reliable only around the states and actions the current policy visits often, and can be far off where the data never reached. A greedy jump can land the policy right in that untrusted region — betting on numbers that are wrong. So we move <b>gradually</b>: small step (the \(-\mathrm{KL}\) leash), collect new experience, re-estimate \(\hat A\), repeat.
+    </p>
+
+    <div class="eqpanel tint reveal">
+      <div style="font-family:var(--font-display);font-weight:700;font-size:clamp(1rem,1.4vw,1.28rem);line-height:1.28">Don't jump beyond the part of the state space where your value estimates are <span class="hl">trustworthy</span>.</div>
+    </div>
+  </div>
+  <div class="slide-name">Improve the function</div>
+  <div class="slide-num">07 / 11</div>
+</section>
+
+<!-- SLIDE 9 — LLM AS AN RL PROBLEM -->
+<section class="slide" data-name="LLM as RL">
+  <span class="shape s-mint blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">5</span> LLMs as RL &middot; the modeling</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">A language model <span class="hl">is a policy.</span></h2>
+    <p class="note reveal">Generating a response is an episode: choose tokens one at a time. That maps exactly onto the RL objects we have used all along.</p>
+
+    <div class="objtbl reveal">
+      <div class="objrow a1"><div class="lhs"><div class="nm">State</div><span class="tg">prompt + tokens so far</span></div><div class="rhs"><div class="eq formula" style="font-size:clamp(.82rem,1.1vw,1.02rem)">\[ s_t=(x,\ y_1,\dots,y_{t-1}) \]</div></div></div>
+      <div class="objrow a2"><div class="lhs"><div class="nm">Action</div><span class="tg">the next token</span></div><div class="rhs"><div class="eq formula" style="font-size:clamp(.82rem,1.1vw,1.02rem)">\[ a_t=y_t\ \in\ \mathcal V\ \ \text{(vocabulary)} \]</div></div></div>
+      <div class="objrow a3"><div class="lhs"><div class="nm">Policy</div><span class="tg">the model itself</span></div><div class="rhs"><div class="eq formula" style="font-size:clamp(.82rem,1.1vw,1.02rem)">\[ \pi_\theta(a_t\mid s_t)\ \text{— next-token distribution} \]</div></div></div>
+      <div class="objrow a1" style="background:var(--peach)"><div class="lhs"><div class="nm">Kernel</div><span class="tg">dynamics &mdash; deterministic</span></div><div class="rhs"><div class="eq formula" style="font-size:clamp(.82rem,1.1vw,1.02rem)">\[ P(s_{t+1}\mid s_t,a_t)=1,\ \ s_{t+1}=s_t\!\oplus\! a_t \]</div></div></div>
+      <div class="objrow a2" style="background:var(--rose)"><div class="lhs"><div class="nm">Reward</div><span class="tg">terminal &mdash; whole response</span></div><div class="rhs"><div class="eq formula" style="font-size:clamp(.82rem,1.1vw,1.02rem)">\[ R=r(x,y)\ \text{at the end};\ \ 0\ \text{before} \]</div></div></div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem;font-style:italic">
+      The transition <b>kernel is trivial</b> — appending a token is deterministic. All the difficulty moves into the <b>reward</b> and the <b>advantage</b>.
+    </p>
+  </div>
+  <div class="slide-name">LLM as RL</div>
+  <div class="slide-num">08 / 11</div>
+</section>
+
+<!-- SLIDE 10 — TRAINING AN LLM WITH RL -->
+<section class="slide" data-name="LLM training">
+  <span class="shape s-sky blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">5</span> LLMs as RL &middot; training</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">Fine-tune by <span class="hl">trial and reward.</span></h2>
+    <p class="note reveal">The same evaluate &rarr; improve loop as policy iteration, now on language — with the small, careful steps from two slides ago.</p>
+
+    <div class="trio reveal">
+      <div class="c"><h4>&#9312; Roll out</h4><p>For each prompt \(x\), sample responses \(y\sim\pi_\theta(\cdot\mid x)\) — the model answers.</p></div>
+      <div class="c"><h4>&#9313; Score</h4><p>Rate each finished response with a reward \(R(x,y)\); the advantage is how much better than the model's typical answer.</p></div>
+      <div class="c"><h4>&#9314; Update</h4><p>Take a <b>small</b> step raising the probability of above-average responses — then resample and repeat.</p></div>
+    </div>
+
+    <div class="eqpanel reveal">
+      <div class="formula" style="font-size:clamp(.82rem,1.12vw,1.05rem)">\[ \theta\ \leftarrow\ \theta+\alpha\,\mathbb E\big[\,\nabla_\theta\log\pi_\theta(y\mid x)\,\cdot\,A(x,y)\,\big] \]</div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem;font-style:italic">
+      This is RLHF (and RL with verifiable rewards). Clean in principle — but it needs a <b>reward</b> \(R\) and an <b>advantage</b> \(A\), and getting each is genuinely hard.
+    </p>
+  </div>
+  <div class="slide-name">LLM training</div>
+  <div class="slide-num">09 / 11</div>
+</section>
+
+<!-- SLIDE 11 — THE TWO CHALLENGES -->
+<section class="slide" data-name="Challenges">
+  <span class="shape s-rose blob bordered anim-wobble" style="width:110px;height:110px;top:5%;right:5%"></span>
+
+  <div class="slide-inner">
+    <span class="part reveal"><span class="n">5</span> LLMs as RL &middot; what's hard</span>
+    <h2 class="h2 reveal" style="margin-bottom:.2rem">Two things stand in the way.</h2>
+
+    <div class="split reveal">
+      <div class="col warn">
+        <span class="lab">Challenge 1</span>
+        <h3>Reward is hard to get.</h3>
+        <ul>
+          <li>There is no formula for "a good answer."</li>
+          <li>Learn one from <b>human preferences</b> — a reward model — but it is noisy and can be <b>gamed</b> (reward hacking).</li>
+          <li><b>Verifiable</b> rewards (math, code, unit tests) are trustworthy, but exist only in narrow domains.</li>
+          <li>One signal for a whole response: <b>sparse</b>.</li>
+        </ul>
+      </div>
+      <div class="col b">
+        <span class="lab">Challenge 2</span>
+        <h3>Advantage is hard to calculate.</h3>
+        <ul>
+          <li>Advantage = reward &minus; baseline; the baseline \(V(s)\) must be <b>estimated</b> for language states — high variance.</li>
+          <li>Reward arrives only at the <b>end</b>, so credit must be spread over hundreds of tokens (credit assignment).</li>
+          <li>Practical fixes: a learned <b>critic</b>, or <b>group-relative</b> — sample many answers, score against their mean.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note reveal" style="text-align:center;margin-top:.4rem;font-style:italic">
+      The kernel was free and the policy is just the model. Nearly all the engineering in modern LLM RL goes into <b>estimating \(R\) and \(A\)</b> well enough to take a good step.
+    </p>
+  </div>
+  <div class="slide-name">Challenges</div>
+  <div class="slide-num">10 / 11</div>
+</section>
+
+<!-- SLIDE 12 — YOUR TURN -->
+<section class="slide" data-name="Your turn">
+  <span class="shape s-peach blob bordered anim-wobble" style="width:130px;height:130px;top:8%;right:8%"></span>
+  <span class="shape s-sun circle bordered anim-wobble-r" style="width:90px;height:90px;bottom:14%;right:18%"></span>
+  <span class="shape s-lilac pill bordered anim-wobble" style="width:140px;height:60px;bottom:10%;left:14%"></span>
+
+  <div class="slide-inner center-all">
+    <span class="tag sky reveal">YOUR TURN</span>
+    <h2 class="h2 reveal">Now <span class="hl">you</span> model an RL problem.</h2>
+
+    <p class="body reveal lead" style="max-width:900px;margin:0 auto .4rem">
+      Pick a problem you care about and cast it into the objects we've used all lecture. Name these five and you can hand it to policy iteration.
+    </p>
+
+    <div class="notation reveal" style="max-width:960px;margin:.2rem auto 0;text-align:left">
+      <div class="hd">Name these five</div>
+      <div class="grid">
+        <div class="nt"><span class="s">State \(s\)</span> — what the agent sees before it decides</div>
+        <div class="nt"><span class="s">Action \(a\)</span> — what it gets to choose</div>
+        <div class="nt"><span class="s">Policy \(\pi_\theta(a\mid s)\)</span> — the function from state to action</div>
+        <div class="nt"><span class="s">Reward \(R(s,a)\)</span> — the outcome you actually want</div>
+        <div class="nt"><span class="s">Transition \(P(s'\mid s,a)\)</span> — how the world responds</div>
+        <div class="nt"><span class="s">Advantage \(A^\pi(s,a)\)</span> — is this action better than average?</div>
+      </div>
+    </div>
+
+    <p class="body reveal" style="max-width:860px;margin:.75rem auto 0;text-align:center;font-style:italic;font-size:clamp(.85rem,1.1vw,1rem)">
+      Then run the loop you now know: <b>evaluate</b> \(V^\pi\), <b>improve</b> toward the max-advantage action, keep each step on a <b>short leash</b> — and repeat.
+    </p>
+
+    <div class="lecture-nav reveal" style="margin-top:.9rem">
+      <a class="prev" href="lecture-7.html">← Lecture 7</a>
+      <a class="home" href="../index.html">Home</a>
+    </div>
+  </div>
+  <div class="slide-name">Your turn</div>
+  <div class="slide-num">11 / 11</div>
+</section>
+
+<script src="shared.js"></script>
+</body>
+</html>

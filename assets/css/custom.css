@@ -239,7 +239,9 @@ html {
 .resume-biography .bio-text a:hover,
 .resume-biography .bio-text a:focus-visible,
 .resume-biography .affiliation-line a:hover,
-.resume-biography .affiliation-line a:focus-visible {
+.resume-biography .affiliation-line a:focus-visible,
+.teaching .tch-course a:hover,
+.teaching .tch-course a:focus-visible {
   color: var(--hl-fg);
   background: var(--hl-bg);
 }
@@ -247,7 +249,8 @@ html {
 /* Inline links carry no underline — the accent colour marks them — and they
    take the same tint on hover as every other interactive element. */
 .resume-biography .bio-text a,
-.resume-biography .affiliation-line a {
+.resume-biography .affiliation-line a,
+.teaching .tch-course a {
   color: var(--color-primary-600);
   font-weight: 500;
   text-decoration: none;
@@ -258,7 +261,8 @@ html {
 }
 
 .dark .resume-biography .bio-text a,
-.dark .resume-biography .affiliation-line a {
+.dark .resume-biography .affiliation-line a,
+.dark .teaching .tch-course a {
   color: var(--color-primary-300);
 }
 

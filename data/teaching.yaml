@@ -58,6 +58,7 @@ outreach:
   items:
     - kind: Instructor
       name: Pre-College Reinforcement Learning Course for High School Students, Georgia Tech
+      url: /rl-course/
       term: Summer 2026
     - kind: Judge
       name: "STEM Spark: INFORMS K–12 Poster Competition"

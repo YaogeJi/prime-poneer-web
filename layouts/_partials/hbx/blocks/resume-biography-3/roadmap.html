@@ -1,0 +1,116 @@
+{{/* Research roadmap — replaces the B.S. / M.S. / Ph.D. / Postdoc timeline.
+
+     The fishbone from the job-talk slides, drawn in its final, fully built
+     state (without the per-slide narration or the closing "Thank you" page).
+     Geometry is the TikZ figure's, converted 1 cm -> 100 user units with y
+     flipped; colours come from CSS custom properties (.rm-* in custom.css),
+     so the figure follows the site palette and dark mode.
+
+     Branch groups carry data-topic where the research paragraph above has a
+     matching .rterm: hovering either end dims the rest of the roadmap and
+     lights the term, same pairing the old timeline tags had.
+
+     The closing question and answer sit under the figure as real HTML text,
+     so they wrap on narrow screens instead of shrinking with the drawing. */}}
+
+<figure class="rm bio-section-gap">
+  <div class="rm-scroll">
+    <svg class="rm-svg" viewBox="0 0 1368 532" role="img" aria-labelledby="rm-title rm-desc"
+         xmlns="http://www.w3.org/2000/svg">
+      <title id="rm-title">Research roadmap</title>
+      <desc id="rm-desc">A fishbone roadmap whose spine is optimization for machine learning and reinforcement learning. Where it starts: distributed statistical learning (Ji et al., 2023, 2023, 2024). The core, parameter-free optimization: high-order methods (Ji and Lan, 2025), stochastic AC-FGM (Ji and Lan, 2026), and strong solutions to variational inequalities (Ji, Lan and Zhu, 2026), which branches into long-horizon policy evaluation. In progress: nonconvexity and stochasticity, and optimizer design for machine learning with Siri at Apple. Applications: machine learning and reinforcement learning for healthcare with Cleveland Clinic and Stanford Medicine (Ji, Li, Lan et al., 2026), next extending beyond acute kidney injury and perioperative procedures. Next: structural refinement, optimization for reinforcement learning, and large-scale post-training.</desc>
+      <g class="rm-fish" aria-hidden="true">
+      <path d="M150 325C105 299 65 275 25 257C48 290 62 309 80 325C62 341 48 360 25 393C65 375 105 351 150 325Z" class="rm-fin"/>
+      <path d="M150 325L1110 325" class="rm-spine"/>
+      <path d="M1090 245C1270 230 1360 275 1360 325C1360 375 1270 420 1090 405C1125 360 1125 290 1090 245Z" class="rm-fin"/>
+      <path d="M1355 336C1345 347 1330 347 1320 338" class="rm-smile"/>
+      <circle cx="1270" cy="302" r="24" class="rm-eye"/>
+      <circle cx="1276" cy="305" r="16" class="rm-pupil"/>
+      <circle cx="1281" cy="298" r="6" class="rm-glint"/>
+      <circle cx="1270" cy="312" r="2.5" class="rm-glint"/>
+      <path d="M1291.8 291.9A24 24 0 0 0 1246.8 295.8" class="rm-lid"/>
+      <path d="M1265.8 278.4C1264.4 270.5 1262.1 268 1260.6 265.4" class="rm-lash"/>
+      <path d="M1256.2 282.3C1251.6 275.8 1247.8 275.3 1245.5 273.3" class="rm-lash"/>
+      <path d="M1249.2 290C1243.2 286.5 1239.3 288.3 1236.5 287.3" class="rm-lash"/>
+      </g>
+      <g class="rm-bubble-g">
+      <path d="M1126 122H1341Q1355 122 1355 136V206Q1355 220 1341 220H1335L1350 278L1305 220H1126Q1112 220 1112 206V136Q1112 122 1126 122Z" class="rm-bubble"/>
+      <text x="1233.5" y="160.6" class="rm-t-strong" text-anchor="middle"><tspan class="rm-fs-n">Optimization</tspan><tspan x="1233.5" dy="38.4" class="rm-fs-n">for ML and RL</tspan></text>
+      </g>
+      <g class="rm-branch">
+      <path d="M160 325C155 240 100 170 60 145" class="rm-bone rm-k-past"/>
+      <circle cx="60" cy="145" r="8" class="rm-dot rm-k-past"/>
+      <text x="45" y="151.9" class="rm-t-past" text-anchor="end"><tspan class="rm-fs-f">&#8217;23</tspan></text>
+      <circle cx="99" cy="180" r="8" class="rm-dot rm-k-past"/>
+      <text x="84" y="186.9" class="rm-t-past" text-anchor="end"><tspan class="rm-fs-f">&#8217;23</tspan></text>
+      <circle cx="128" cy="220" r="8" class="rm-dot rm-k-past"/>
+      <text x="113" y="226.9" class="rm-t-past" text-anchor="end"><tspan class="rm-fs-f">&#8217;24</tspan></text>
+      <text x="20" y="105.6" class="rm-t-past"><tspan class="rm-fs-n">Distributed Statistical Learning</tspan><tspan dx="9" class="rm-fs-f">Ji et al.</tspan></text>
+      </g>
+      <g class="rm-branch" data-topic="parameter-free">
+      <text x="165" y="253.2" class="rm-t-strong"><tspan class="rm-fs-n">Parameter-free</tspan><tspan x="165" dy="38.4" class="rm-fs-n">optimization</tspan></text>
+      <circle cx="180" cy="325" r="9" class="rm-dot rm-k-blue"/>
+      <text x="173" y="366.8" class="rm-t"><tspan class="rm-fs-s">High-order</tspan><tspan x="173" dy="36" class="rm-fs-f rm-t-strong">Ji, Lan &#8217;25</tspan></text>
+      <circle cx="365" cy="325" r="9" class="rm-dot rm-k-blue"/>
+      <text x="358" y="366.8" class="rm-t"><tspan class="rm-fs-s">Stochastic AC-FGM</tspan><tspan x="358" dy="36" class="rm-fs-f rm-t-strong">Ji, Lan &#8217;26</tspan></text>
+      <circle cx="690" cy="325" r="9" class="rm-dot rm-k-blue"/>
+      <text x="683" y="366.8" class="rm-t"><tspan class="rm-fs-s">Strong solutions to VI</tspan><tspan x="683" dy="36" class="rm-fs-f rm-t-strong">Ji, Lan, Zhu &#8217;26</tspan></text>
+      </g>
+      {{/* Reinforcement learning: three separate branches sharing one topic,
+           so pointing at one in the figure lights only that one, while the
+           paragraph's "reinforcement learning" term lights all three. */}}
+      <g class="rm-branch" data-topic="reinforcement-learning">
+      <path d="M690 325C695 300 700 285 710 278" class="rm-bone rm-bone-thin rm-k-blue"/>
+      <text x="718" y="270.9" class="rm-t"><tspan class="rm-fs-f">long-horizon</tspan><tspan x="718" dy="28" class="rm-fs-f">policy evaluation</tspan></text>
+      </g>
+      <g class="rm-branch" data-topic="reinforcement-learning">
+      <path d="M1080 337L1080 433" class="rm-stem"/>
+      <circle cx="1080" cy="325" r="11" class="rm-ring rm-k-blue"/>
+      <text x="1073" y="464" class="rm-t-blue"><tspan class="rm-fs-n">Optimization for RL</tspan></text>
+      </g>
+      <g class="rm-branch" data-topic="reinforcement-learning">
+      <path d="M1080 314C1080 260 1076 225 1070 200" class="rm-bone rm-bone-big rm-k-ml"/>
+      <text x="1060" y="204" class="rm-t-ml" text-anchor="end"><tspan class="rm-fs-s">Large-scale</tspan><tspan x="1060" dy="31" class="rm-fs-s">post-training</tspan></text>
+      </g>
+      <g class="rm-branch">
+      <path d="M330 337L330 433" class="rm-stem"/>
+      <circle cx="330" cy="325" r="11" class="rm-shade rm-k-blue"/>
+      <text x="323" y="464" class="rm-t-strong"><tspan class="rm-fs-n">Nonconvexity and</tspan><tspan x="323" dy="35" class="rm-fs-n">stochasticity</tspan></text>
+      </g>
+      <g class="rm-branch">
+      <path d="M416 325C416 240 401 200 381 180" class="rm-bone rm-bone-big rm-k-ml"/>
+      <text x="335" y="165.6" class="rm-t-ml"><tspan class="rm-fs-n">Optimization for ML</tspan></text>
+      <circle cx="396.4" cy="202" r="8" class="rm-shade rm-shade-sm rm-k-ml"/>
+      <text x="416.4" y="209.9" class="rm-t"><tspan class="rm-fs-s">Optimizer design</tspan></text>
+      <text x="431" y="242.9" class="rm-t-dim"><tspan class="rm-fs-f">Siri at Apple</tspan></text>
+      </g>
+      <g class="rm-branch" data-topic="healthcare">
+      <path d="M620 325C620 260 685 190 655 55" class="rm-bone rm-bone-big rm-k-app"/>
+      <text x="590" y="38.6" class="rm-t-app"><tspan class="rm-fs-n">ML and RL for healthcare</tspan></text>
+      <text x="684" y="78.9" class="rm-t-dim"><tspan class="rm-fs-f">Cleveland Clinic, Stanford Medicine</tspan></text>
+      <circle cx="662.1" cy="102" r="8" class="rm-dot rm-k-app"/>
+      <text x="682.1" y="108.9" class="rm-t-app"><tspan class="rm-fs-f">Ji, Li, Lan et al. &#8217;26</tspan></text>
+      <path d="M665.8 132L681.8 132" class="rm-bone rm-bone-thin rm-k-app"/>
+      <circle cx="689.8" cy="132" r="8" class="rm-ring rm-ring-sm rm-k-app"/>
+      <text x="709.8" y="136.8" class="rm-t"><tspan class="rm-fs-f">Beyond acute kidney injury</tspan><tspan x="709.8" dy="28" class="rm-fs-f">and perioperative procedures</tspan></text>
+      </g>
+      <g class="rm-branch">
+      <path d="M650 337L650 433" class="rm-stem"/>
+      <circle cx="650" cy="325" r="11" class="rm-ring rm-k-blue"/>
+      <text x="643" y="464" class="rm-t-blue"><tspan class="rm-fs-n">Structural refinement</tspan></text>
+      </g>
+      <g class="rm-legend" aria-hidden="true">
+      <circle cx="32" cy="448" r="8" class="rm-dot rm-k-blue"/>
+      <text x="52" y="454.9" class="rm-t-dim"><tspan class="rm-fs-f">Completed</tspan></text>
+      <circle cx="32" cy="480" r="8" class="rm-shade rm-shade-sm rm-k-blue"/>
+      <text x="52" y="486.9" class="rm-t-dim"><tspan class="rm-fs-f">In progress</tspan></text>
+      <circle cx="32" cy="512" r="8" class="rm-ring rm-ring-sm rm-k-blue"/>
+      <text x="52" y="518.9" class="rm-t-dim"><tspan class="rm-fs-f">Next</tspan></text>
+      </g>
+    </svg>
+  </div>
+  <figcaption class="rm-caption">
+    <p class="rm-question">How much global information does an optimization algorithm really need?</p>
+    <p class="rm-answer">Observe partially, perform optimally.</p>
+  </figcaption>
+</figure>

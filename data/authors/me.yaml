@@ -16,11 +16,12 @@ role: H. Milton Stewart Postdoctoral Fellow
 bio: |
   I am an H. Milton Stewart Postdoctoral Fellow in the [H. Milton Stewart School of Industrial and Systems Engineering](https://www.isye.gatech.edu/) at [Georgia Tech](https://www.gatech.edu/) mentored by [Prof. Guanghui (George) Lan](https://sites.gatech.edu/guanghui-lan/).
 
-# Rendered below the education / experience timeline
+# Rendered above the research roadmap. Each .rterm's data-topic pairs it with
+# the roadmap branch of the same name (parameter-free, reinforcement-learning,
+# healthcare): hovering either one highlights the other.
 bio_research: |
   My research develops optimization algorithms with optimal convergence rates for machine learning and reinforcement learning. My work centers on the design and complexity analysis of deterministic and stochastic optimization methods, with a current focus on <span class="rterm" data-topic="parameter-free">parameter-free algorithms</span> that adapt to unknown problem structure. For machine learning, I develop scalable stochastic methods that require no stepsize tuning. For <span class="rterm" data-topic="reinforcement-learning">reinforcement learning</span>, I develop efficient methods for online policy evaluation. <span class="rterm" data-topic="healthcare">Healthcare</span> is a major application domain for both research directions.
 
-# Time-limited notice rendered below the timeline; delete this key to remove it
 affiliations:
   - name: H. Milton Stewart School of Industrial and Systems Engineering
     url: https://www.isye.gatech.edu/

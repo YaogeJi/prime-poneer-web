@@ -45,168 +45,11 @@ html {
   gap: clamp(0.75rem, 2dvh, 1.25rem);
 }
 
-.resume-biography .bio-timeline-gap {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.5rem, 1.5dvh, 1rem);
-}
+/* ── Research terms and shared hover look ─────────────── */
 
-/* ── Horizontal education / experience timeline ───────── */
-
-.bio-timeline-h {
-  --btl-dot: 2.25rem;
-  display: flex;
-  align-items: stretch;
-  list-style: none;
-  margin: 0;
-  padding: 0.25rem 0 0;
-}
-
-.bio-timeline-h .btl-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-/* Connector spans the gap between two circles, stopping short of each edge */
-.bio-timeline-h .btl-item + .btl-item::before {
-  content: '';
-  position: absolute;
-  top: calc(var(--btl-dot) / 2 - 1px);
-  right: calc(50% + var(--btl-dot) / 2 + 0.35rem);
-  width: calc(100% - var(--btl-dot) - 0.7rem);
-  height: 2px;
-  background: color-mix(in oklch, var(--color-primary-500) 35%, transparent);
-}
-
-/* Anchors the hover card to the node header only, so the card still opens
-   just under the labels rather than below the whole scroll. */
-.bio-timeline-h .btl-head {
-  position: relative;
-}
-
-.bio-timeline-h .btl-node {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0 0.25rem;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  text-align: center;
-  color: inherit;
-}
-
-.bio-timeline-h .btl-dot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: var(--btl-dot);
-  height: var(--btl-dot);
-  border-radius: 9999px;
-  border: 2px solid var(--color-primary-500);
-  background: var(--color-white, #fff);
-  color: var(--color-primary-600);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.bio-timeline-h .btl-dot svg {
-  width: 55%;
-  height: 55%;
-}
-
-/* The tam is drawn with more padding inside its viewBox than the Phosphor
-   glyphs, so it needs a nudge to carry the same visual weight. */
-.bio-timeline-h .btl-dot svg.btl-ico-tam {
-  width: 66%;
-  height: 66%;
-}
-
-.dark .bio-timeline-h .btl-dot {
-  background: var(--color-gray-900, #111827);
-  border-color: var(--color-primary-400);
-  color: var(--color-primary-300);
-}
-
-/* Dark mode: primary-500/600 sit too close to the page background,
-   so the axis and nodes step up to the lighter end of the ramp. */
-.dark .bio-timeline-h .btl-item + .btl-item::before {
-  background: color-mix(in oklch, var(--color-primary-400) 70%, transparent);
-}
-
-/* The header takes the shared tint; the dot no longer scales or rings, so a
-   node hover looks the same as a topic or a prose term. */
-.bio-timeline-h .btl-head {
-  border-radius: var(--hl-radius);
-  padding-bottom: 0.15rem;
-  transition: color 0.16s ease, background 0.16s ease;
-}
-
-.bio-timeline-h .btl-label {
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--color-gray-900, #111827);
-}
-
-/* School name carries the node's identity, so it takes the accent colour —
-   the topic captions below stay grey, which keeps the three tiers distinct:
-   degree (near-black, bold) > school (navy) > topics (grey). */
-.bio-timeline-h .btl-org {
-  font-size: 0.78rem;
-  font-weight: 500;
-  line-height: 1.25;
-  color: var(--color-primary-600);
-}
-
-.dark .bio-timeline-h .btl-label {
-  color: #fff;
-}
-
-.dark .bio-timeline-h .btl-org {
-  color: var(--color-primary-300);
-}
-
-/* ── Layer 2: research-topic branches ─────────────────── */
-
-/* One light rule above the whole group, not one per row — nine hairlines
-   read as a table; a single divider plus spacing carries the same grouping. */
-.bio-timeline-h .btl-topics {
-  margin: 0.85rem 0.3rem 0;
-  padding: 0.6rem 0 0;
-  border-top: 1px solid color-mix(in oklch, var(--color-primary-500) 15%, transparent);
-  list-style: none;
-  text-align: center;
-}
-
-.bio-timeline-h .btl-topic {
-  padding: 0.26rem 0.4rem;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  text-wrap: balance;
-  color: var(--color-gray-500, #6b7280);
-}
-
-.dark .bio-timeline-h .btl-topics {
-  border-top-color: color-mix(in oklch, var(--color-primary-400) 22%, transparent);
-}
-
-.dark .bio-timeline-h .btl-topic {
-  color: var(--color-gray-400, #9ca3af);
-}
-
-/* ── Layer 3: prose ⇄ timeline cross-reference ────────── */
-
-/* Research terms in the prose. The paired highlight itself is generated per
-   topic in the block partial (a :has() rule for each slug, both directions). */
-/* Styled exactly like the inline links in the paragraph above: accent colour,
-   weight 500, no underline. */
+/* Research terms in the prose. Their pairing with the roadmap branches is in
+   the Research roadmap section below. Styled exactly like the inline links in
+   the paragraph above: accent colour, weight 500, no underline. */
 .rterm {
   color: var(--color-primary-600);
   font-weight: 500;
@@ -221,21 +64,10 @@ html {
   color: var(--color-primary-300);
 }
 
-.bio-timeline-h .btl-topic[data-topic] {
-  border-radius: 0.3rem;
-  cursor: default;
-  transition: color 0.16s ease, background 0.16s ease;
-}
-
-/* The generated :has() rules light the *other* end of a pair, so the element
-   under the cursor got no mark of its own. This gives each end a faint
-   selected trace when pointed at directly. */
-.bio-timeline-h .btl-topic[data-topic]:hover,
+/* One selected trace for everything pointed at directly. */
 .rterm:hover,
 .text-link:hover,
 .text-link:focus-visible,
-.bio-timeline-h .btl-head:hover,
-.bio-timeline-h .btl-head:focus-within,
 .resume-biography .bio-text a:hover,
 .resume-biography .bio-text a:focus-visible,
 .resume-biography .affiliation-line a:hover,
@@ -266,123 +98,209 @@ html {
   color: var(--color-primary-300);
 }
 
-/* Hover card — the only place time / thesis / advisor appear.
-   Opens upward: downward it would cover the topic branches below the node.
-   Triggered by .btl-head only (icon + degree + school), so pointing at a
-   topic caption underneath does not pop the card. */
-.bio-timeline-h .btl-tip {
-  position: absolute;
-  bottom: calc(100% + 0.6rem);
-  left: 50%;
-  transform: translateX(-50%) translateY(0.25rem);
-  z-index: 40;
-  width: max-content;
-  max-width: min(20rem, 70vw);
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.75rem;
-  background: var(--color-white, #fff);
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
-  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
-  text-align: left;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-}
+/* ── Research roadmap (fishbone) ──────────────────────── */
 
-.dark .bio-timeline-h .btl-tip {
-  background: var(--color-gray-800, #1f2937);
-  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
-}
-
-.bio-timeline-h .btl-head:hover .btl-tip,
-.bio-timeline-h .btl-head:focus-within .btl-tip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Keep the end cards inside the column */
-.bio-timeline-h .btl-item:first-child .btl-tip {
-  left: 0;
-  transform: translateX(0) translateY(0.25rem);
-}
-
-.bio-timeline-h .btl-item:first-child:hover .btl-tip,
-.bio-timeline-h .btl-item:first-child:focus-within .btl-tip {
-  transform: translateX(0) translateY(0);
-}
-
-.bio-timeline-h .btl-item:last-child .btl-tip {
-  left: auto;
-  right: 0;
-  transform: translateX(0) translateY(0.25rem);
-}
-
-.bio-timeline-h .btl-item:last-child:hover .btl-tip,
-.bio-timeline-h .btl-item:last-child:focus-within .btl-tip {
-  transform: translateX(0) translateY(0);
-}
-
-.bio-timeline-h .btl-tip-title {
+/* The slide's TikZ figure as inline SVG. Every colour is a custom property:
+   the five hues of the slide (blue core, orange origin, green healthcare,
+   purple ML) mapped onto the site palette, and the slide's "!55"-style tints
+   mixed toward the page colour, so the figure reads the same in dark mode. */
+.rm {
+  --rm-mix: #fff;
+  --rm-paper: #fff;
+  --rm-ink: var(--color-gray-900, #111827);
+  --rm-dim: var(--color-gray-500, #6b7280);
+  --rm-blue: var(--color-primary-500);
+  --rm-past: #c2410c;
+  --rm-app: #15803d;
+  --rm-ml: #6f4e9b;
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--color-gray-900, #111827);
 }
 
-.bio-timeline-h .btl-tip-org {
-  margin: 0.1rem 0 0;
-  font-size: 0.82rem;
-  font-weight: 500;
+.dark .rm {
+  --rm-mix: #1a3a5c;
+  --rm-paper: #1e4670;
+  --rm-ink: var(--color-gray-100, #f3f4f6);
+  --rm-dim: var(--color-gray-400, #9ca3af);
+  --rm-blue: var(--color-primary-300);
+  --rm-past: #fb923c;
+  --rm-app: #4ade80;
+  --rm-ml: #b79ce6;
+}
+
+/* The drawing keeps its proportions; on a phone it scrolls sideways rather
+   than shrinking its labels below legibility. */
+.rm-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rm-svg {
+  display: block;
+  width: 100%;
+  min-width: 34rem;
+  height: auto;
+  font-family: inherit;
+}
+
+/* Strokes and fills */
+.rm-svg .rm-fin {
+  fill: color-mix(in oklch, var(--rm-blue) 14%, var(--rm-mix));
+  stroke: color-mix(in oklch, var(--rm-blue) 55%, var(--rm-mix));
+  stroke-width: 2.8;
+}
+
+.rm-svg .rm-spine {
+  fill: none;
+  stroke: color-mix(in oklch, var(--rm-blue) 60%, var(--rm-mix));
+  stroke-width: 8.5;
+  stroke-linecap: round;
+}
+
+.rm-svg .rm-smile,
+.rm-svg .rm-lid,
+.rm-svg .rm-lash {
+  fill: none;
+  stroke: var(--rm-blue);
+  stroke-linecap: round;
+}
+
+.rm-svg .rm-smile { stroke: color-mix(in oklch, var(--rm-blue) 80%, var(--rm-mix)); stroke-width: 3.2; }
+.rm-svg .rm-lid { stroke-width: 4.6; }
+.rm-svg .rm-lash { stroke-width: 3.2; }
+.rm-svg .rm-eye { fill: #fff; stroke: var(--rm-blue); stroke-width: 2.8; }
+.rm-svg .rm-pupil { fill: var(--color-primary-600); }
+.rm-svg .rm-glint { fill: #fff; }
+
+.rm-svg .rm-bubble {
+  fill: var(--rm-paper);
+  stroke: color-mix(in oklch, var(--rm-blue) 55%, var(--rm-mix));
+  stroke-width: 2.8;
+  stroke-linejoin: round;
+}
+
+/* One hue per branch, set once with rm-k-*; bones, dots and rings read it. */
+.rm-svg .rm-k-blue { --rm-k: var(--rm-blue); }
+.rm-svg .rm-k-past { --rm-k: var(--rm-past); }
+.rm-svg .rm-k-app { --rm-k: var(--rm-app); }
+.rm-svg .rm-k-ml { --rm-k: var(--rm-ml); }
+
+.rm-svg .rm-bone {
+  fill: none;
+  stroke: color-mix(in oklch, var(--rm-k) 55%, var(--rm-mix));
+  stroke-width: 4.2;
+  stroke-linecap: round;
+}
+
+.rm-svg .rm-bone-big { stroke-width: 5.6; }
+.rm-svg .rm-bone-thin { stroke-width: 3.2; }
+
+.rm-svg .rm-stem {
+  fill: none;
+  stroke: color-mix(in oklch, var(--rm-blue) 55%, var(--rm-mix));
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+/* Filled = completed, shaded = in progress, hollow = next. */
+.rm-svg .rm-dot { fill: var(--rm-k); }
+.rm-svg .rm-ring { fill: var(--rm-paper); stroke: var(--rm-k); stroke-width: 4.2; }
+.rm-svg .rm-ring-sm { stroke-width: 3.5; }
+.rm-svg .rm-shade {
+  fill: color-mix(in oklch, var(--rm-k) 35%, var(--rm-mix));
+  stroke: var(--rm-k);
+  stroke-width: 4.2;
+}
+.rm-svg .rm-shade-sm { stroke-width: 3.5; }
+
+/* Type: sizes are in drawing units (normal / small / footnote). */
+.rm-svg .rm-fs-n { font-size: 30px; }
+.rm-svg .rm-fs-s { font-size: 28px; }
+.rm-svg .rm-fs-f { font-size: 25px; }
+
+.rm-svg .rm-t { fill: var(--rm-ink); }
+.rm-svg .rm-t-dim { fill: var(--rm-dim); }
+.rm-svg .rm-t-blue { fill: var(--rm-blue); }
+.rm-svg .rm-t-strong { fill: var(--rm-blue); font-weight: 600; }
+.rm-svg .rm-t-past { fill: var(--rm-past); }
+.rm-svg .rm-t-app { fill: var(--rm-app); }
+.rm-svg .rm-t-ml { fill: var(--rm-ml); }
+
+/* The closing question and its answer, as text under the drawing. */
+.rm-caption {
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+.rm-question {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-wrap: balance;
   color: var(--color-primary-600);
 }
 
-.bio-timeline-h .btl-tip-date {
-  margin: 0.25rem 0 0;
-  font-size: 0.78rem;
-  color: var(--color-gray-500, #6b7280);
-}
-
-.bio-timeline-h .btl-tip-row {
-  margin: 0.4rem 0 0;
-  font-size: 0.78rem;
+.rm-answer {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  font-style: italic;
   line-height: 1.45;
   color: var(--color-gray-600, #4b5563);
 }
 
-.bio-timeline-h .btl-tip-key {
-  display: block;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
-}
-
-.dark .bio-timeline-h .btl-tip-title {
-  color: #fff;
-}
-
-.dark .bio-timeline-h .btl-tip-org {
+.dark .rm-question {
   color: var(--color-primary-300);
 }
 
-.dark .bio-timeline-h .btl-tip-date,
-.dark .bio-timeline-h .btl-tip-row {
+.dark .rm-answer {
   color: var(--color-gray-300, #d1d5db);
 }
 
-@media (max-width: 640px) {
-  .bio-timeline-h {
-    --btl-dot: 1.85rem;
-  }
-  .bio-timeline-h .btl-label {
-    font-size: 0.82rem;
-  }
-  .bio-timeline-h .btl-org {
-    font-size: 0.68rem;
-  }
+/* Pairing with the research paragraph, two ways:
+   - pointing at a term dims every branch outside its topic, so "reinforcement
+     learning" lights all three RL branches at once;
+   - pointing at a branch in the figure keeps only that branch lit (whatever
+     its topic) and lights the paragraph term it belongs to, if any. */
+.rm-svg .rm-branch {
+  transition: opacity 0.16s ease;
+}
+
+/* Only labels and dots answer the pointer. Bones and stems are long and cross
+   other branches' territory; painted later in the DOM, one would otherwise
+   steal the hover from a label it passes near. */
+.rm-svg .rm-bone,
+.rm-svg .rm-stem {
+  pointer-events: none;
+}
+
+.resume-biography:has(.rterm[data-topic="parameter-free"]:hover) .rm-branch:not([data-topic~="parameter-free"]),
+.resume-biography:has(.rterm[data-topic="reinforcement-learning"]:hover) .rm-branch:not([data-topic~="reinforcement-learning"]),
+.resume-biography:has(.rterm[data-topic="healthcare"]:hover) .rm-branch:not([data-topic~="healthcare"]),
+.rm-svg:has(.rm-branch:hover) .rm-branch:not(:hover) {
+  opacity: 0.22;
+}
+
+/* Pointing at a branch mirrors the figure's dimming in the prose: the other
+   research terms become plain paragraph text — colour *and* weight, since a
+   500-weight term in body colour reads as bold emphasis — and the paired
+   term keeps its accent and gains the tint. */
+.resume-biography:has(.rm-branch[data-topic]:hover) .rterm {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.resume-biography:has(.rm-branch[data-topic~="parameter-free"]:hover) .rterm[data-topic="parameter-free"],
+.resume-biography:has(.rm-branch[data-topic~="reinforcement-learning"]:hover) .rterm[data-topic="reinforcement-learning"],
+.resume-biography:has(.rm-branch[data-topic~="healthcare"]:hover) .rterm[data-topic="healthcare"] {
+  color: var(--color-primary-600);
+  font-weight: 500;
+  background: var(--hl-bg);
+}
+
+.dark .resume-biography:has(.rm-branch[data-topic~="parameter-free"]:hover) .rterm[data-topic="parameter-free"],
+.dark .resume-biography:has(.rm-branch[data-topic~="reinforcement-learning"]:hover) .rterm[data-topic="reinforcement-learning"],
+.dark .resume-biography:has(.rm-branch[data-topic~="healthcare"]:hover) .rterm[data-topic="healthcare"] {
+  color: var(--color-primary-300);
 }
 
 /* Custom avatar size */

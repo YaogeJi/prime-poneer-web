@@ -4,7 +4,7 @@ heading: Teaching Experience
 groups:
   - institution: Georgia Institute of Technology, ISyE
     roles:
-      - role: Instructor
+      - role: Advisor
         courses:
           - name: "ISyE 4106: Senior Design"
             term: Fall 2026

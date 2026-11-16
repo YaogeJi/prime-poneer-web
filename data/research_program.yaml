@@ -1,7 +1,18 @@
 # Research Program — single source for the homepage section.
 #
-# Every item renders as: Research Snap → label → title → contribution →
-# authors / venue → links. Edit text and links here; no template changes needed.
+# Every item renders as a faint card: Research Snap → title → contribution →
+# tags → authors → links, with a venue bar across the foot of the card. Edit
+# text and links here; no template changes needed.
+#
+# The venue bar:
+#   venue:   the journal or meeting, name only — `Mathematical Programming, Series A`
+#   detail:  the rest of the citation, small under the venue — volume and pages,
+#            or the arXiv number while under review
+#   status:  where the paper stands there, shown as a pill on the right —
+#            `Major revision`, `Under review`, `Poster`. Leave it out once
+#            published; the year then takes its place.
+#   year:    publication year, shown when there is no status
+#   label:   optional small-caps eyebrow above the title (`Selected work`)
 #
 # Research Snap options, checked in this order:
 #   snap:          name of a built-in hand-drawn diagram (`acfgm` or `ar`)
@@ -15,8 +26,9 @@
 # `tags:` is a short list of current-focus areas the item belongs to. They are
 # labels, not links — there is no tag index to point at.
 #
-# `pending: true` suppresses the authors / venue / links row and prints a short
-# "details to come" note instead — used where metadata is not settled yet.
+# `pending: true` suppresses the authors / links rows and the venue bar, and
+# prints a short "details to come" note instead — used where metadata is not
+# settled yet.
 
 heading: Research Interests and Selected Works
 
@@ -35,8 +47,7 @@ current_focus:
 sections:
   - title: Foundation
     items:
-      - label: Selected work
-        title: Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates
+      - title: Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates
         # The title overflows the column by about 10px, so it wraps to two lines;
         # left alone, balancing splits the method name. This binds it together.
         keep_together:
@@ -46,9 +57,9 @@ sections:
           - Stochastic Optimization
         contribution: Optimal iteration and sample complexities for parameter-free stochastic acceleration.
         authors: Yao Ji and Guanghui Lan
-        venue: 'arXiv:2604.06525'
-        year: '2026'
-        status: Under review, Mathematical Programming
+        venue: Mathematical Programming, Series A
+        status: Major revision
+        detail: 'arXiv:2604.06525, 2026'
         snap: acfgm
         links:
           - text: Paper
@@ -56,8 +67,7 @@ sections:
           - text: Slides
             url: /slides/informs-os-2026-stochastic-acfgm.pdf
 
-      - label: Selected work
-        title: Computation of Strong Solutions to Stochastic Variational Inequalities
+      - title: Computation of Strong Solutions to Stochastic Variational Inequalities
         # Fits on one line on a wide desktop, but strands "to" once the
         # column narrows.
         keep_together:
@@ -67,9 +77,9 @@ sections:
           - Reinforcement Learning
         contribution: Optimal residual complexity for computing strong solutions to stochastic variational inequalities.
         authors: Yao Ji, Guanghui Lan, and Jason Zhu
-        venue: 'arXiv:2609.04188'
-        year: '2026'
-        status: Under review, Mathematical Programming
+        venue: Mathematical Programming, Series A
+        status: Under review
+        detail: 'arXiv:2609.04188, 2026'
         figure_pages:
           - file: research/strong-solutions-vi-1.jpg
             alt: >-
@@ -100,8 +110,7 @@ sections:
           - text: Paper
             url: https://arxiv.org/abs/2609.04188
 
-      - label: Selected work
-        title: High-Order Accumulative Regularization for Gradient Minimization in Convex Programming
+      - title: High-Order Accumulative Regularization for Gradient Minimization in Convex Programming
         # Keeps the prepositions off the end of a line — balancing otherwise
         # strands "for" there, and "in" once the column narrows.
         keep_together:
@@ -112,9 +121,9 @@ sections:
           - Higher-Order Optimization
         contribution: Optimal gradient complexity for finding points with small gradients.
         authors: Yao Ji and Guanghui Lan
-        venue: 'arXiv:2511.03723'
-        year: '2025'
-        status: R&R 2nd round review, SIAM Journal on Optimization
+        venue: SIAM Journal on Optimization
+        status: R&R 2nd round review
+        detail: 'arXiv:2511.03723, 2025'
         snap: ar
         links:
           - text: Paper
@@ -124,8 +133,7 @@ sections:
 
   - title: Learning and Decision-Making
     items:
-      - label: Selected presentation
-        title: >-
+      - title: >-
           Transformer-Based Patient Response Modeling Across All Perioperative Phases
           for Cardiac Surgery-Associated Acute Kidney Injury Management
         tags:
@@ -146,16 +154,16 @@ sections:
         authors: >-
           Yao Ji, Yan Li, Guanghui Lan, Zehua Dong, Shuoling Li, Ilker Guven,
           Xiaoyu Chen, Lihui Bai, and Jiapeng Huang
-        venue: Society of Cardiovascular Anesthesiologists Annual Meeting — poster
-        year: '2026'
+        venue: Society of Cardiovascular Anesthesiologists Annual Meeting
+        status: Poster
+        detail: Nashville, TN, 2026
         snap_alt: >-
           Research Snap for perioperative patient-response modeling in cardiac
           surgery-associated acute kidney injury.
         links:
           - text: Poster
             url: https://yaoji-academic.com/posters/sts-poster.pdf
-      - label: Selected work
-        title: Distributed Sparse Regression via Penalization
+      - title: Distributed Sparse Regression via Penalization
         tags:
           - Distributed Optimization
         contribution: >-
@@ -163,8 +171,9 @@ sections:
           network of agents, formulated as local LASSO losses plus a quadratic penalty
           on the consensus constraint.
         authors: Yao Ji, Gesualdo Scutari, Ying Sun, and Harsha Honnappa
-        venue: Journal of Machine Learning Research, 24(272):1–62
+        venue: Journal of Machine Learning Research
         year: '2023'
+        detail: Vol. 24(272), pp. 1–62
         figure: research/distributed-cta.jpg
         figure_alt: >-
           Two motivating settings for distributed optimization. Left: a swarm of
@@ -176,8 +185,7 @@ sections:
           - text: Paper
             url: https://www.jmlr.org/papers/v24/21-1333.html
 
-      - label: Selected work
-        title: Distributed (ATC) Gradient Descent for High Dimension Sparse Regression
+      - title: Distributed (ATC) Gradient Descent for High Dimension Sparse Regression
         # Same: stops "for" being left hanging at a line end.
         keep_together:
           - for High
@@ -188,8 +196,9 @@ sections:
           showing linear convergence to centralized statistical precision with
           communication growing only logarithmically in the ambient dimension.
         authors: Yao Ji, Gesualdo Scutari, Ying Sun, and Harsha Honnappa
-        venue: 'IEEE Transactions on Information Theory, 69(8):5253–5276'
+        venue: IEEE Transactions on Information Theory
         year: '2023'
+        detail: Vol. 69(8), pp. 5253–5276
         figure: research/distributed-atc.svg
         figure_alt: >-
           Test mean squared error against the number of communications. ATC-DGD

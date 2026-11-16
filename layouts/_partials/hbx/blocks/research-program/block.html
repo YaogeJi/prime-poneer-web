@@ -1,8 +1,9 @@
 {{/* Hugo Blox: Research Program (custom block)
 
      Renders data/research_program.yaml as a single vertical column: each
-     selected work shown in full, Research Snap first, then label, title,
-     contribution, metadata and links.
+     selected work shown in full as a faint card — Research Snap first, then
+     title, contribution, tags, authors and links, with the venue in a bar
+     across the foot of the card.
 
      Snap resolution order per item: `snap` (built-in diagram partial) →
      `figure` (image under assets/media/) → sized placeholder. */}}
@@ -67,7 +68,8 @@
             {{ partial "hbx/blocks/research-program/snap.html" (dict
                  "page" $page "item" $item "title" $title) }}
 
-            {{/* 2. Label */}}
+            {{/* 2. Label — optional generic eyebrow; the venue lives in the
+                 card's footer bar instead (step 7). */}}
             {{ with index $item "label" }}
               <p class="rp-label">{{ printf "%v" . }}</p>
             {{ end }}
@@ -102,24 +104,14 @@
               </ul>
             {{ end }}
 
-            {{/* 6. Authors, venue / year, links */}}
+            {{/* 6. Authors and links. */}}
             {{ if $pending }}
               <p class="rp-pending">
                 {{ index $item "pending_note" | default "Details to follow." }}
               </p>
             {{ else }}
-              {{ $venue := printf "%v" (index $item "venue" | default "") }}
-              {{ $year := printf "%v" (index $item "year" | default "") }}
               {{ with index $item "authors" }}
                 <p class="rp-authors">{{ printf "%v" . }}</p>
-              {{ end }}
-              {{ if or $venue $year }}
-                <p class="rp-venue">
-                  <em>{{ $venue }}</em>{{ if and $venue $year }}, {{ end }}{{ $year }}
-                </p>
-              {{ end }}
-              {{ with index $item "status" }}
-                <p class="rp-status">{{ printf "%v" . }}</p>
               {{ end }}
 
               {{ $links := index $item "links" }}
@@ -141,6 +133,28 @@
                     {{ end }}
                   {{ end }}
                 </ul>
+              {{ end }}
+
+              {{/* 7. Venue bar — the foot of the card, full bleed, a shade
+                   deeper than the card itself. Journal name first, the rest
+                   of the citation (`detail`) under it, and the status as a
+                   pill on the right; published works show the year there. */}}
+              {{ $venue := strings.TrimSpace (printf "%v" (index $item "venue" | default "")) }}
+              {{ $detail := strings.TrimSpace (printf "%v" (index $item "detail" | default "")) }}
+              {{ $status := strings.TrimSpace (printf "%v" (index $item "status" | default "")) }}
+              {{ $year := strings.TrimSpace (printf "%v" (index $item "year" | default "")) }}
+              {{ if or $venue $detail }}
+                <footer class="rp-venue-bar">
+                  <div class="rp-venue-text">
+                    {{ with $venue }}<p class="rp-venue-name">{{ . }}</p>{{ end }}
+                    {{ with $detail }}<p class="rp-venue-detail">{{ . }}</p>{{ end }}
+                  </div>
+                  {{ with $status }}
+                    <p class="rp-venue-status">{{ . }}</p>
+                  {{ else }}
+                    {{ with $year }}<p class="rp-venue-year">{{ . }}</p>{{ end }}
+                  {{ end }}
+                </footer>
               {{ end }}
             {{ end }}
 

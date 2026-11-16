@@ -1016,21 +1016,40 @@ html {
 
 /* ── Research Program ─────────────────────────────────── */
 
-/* One vertical column: Research Snap, then label, title, contribution and
-   metadata. Same type scale and accent language as Teaching and the
-   citation views — this section adds no new colours of its own. */
+/* Each work is a faint card: Research Snap, title, contribution, tags,
+   authors and links, with the venue in a bar across its foot. Same type scale
+   and accent language as Teaching and the citation views — this section adds
+   no new colours of its own. */
 
 .research-program {
   width: 100%;
   --rp-rule: color-mix(in oklch, var(--color-primary-500) 16%, transparent);
   --rp-rule-strong: color-mix(in oklch, var(--color-primary-500) 40%, transparent);
   --rp-tint: color-mix(in oklch, var(--color-primary-500) 4%, transparent);
+  /* Work cards: a light fill and edge, with the venue bar one shade deeper
+     so the foot of the card reads as its base. */
+  --rp-card: color-mix(in oklch, var(--color-primary-500) 4.5%, transparent);
+  --rp-card-rule: color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  --rp-card-bar: color-mix(in oklch, var(--color-primary-500) 9.5%, transparent);
+  --rp-card-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 1px rgb(15 23 42 / 0.03);
+  --rp-card-pad: 1.5rem;
+  --rp-card-radius: 1rem;
 }
 
 .dark .research-program {
   --rp-rule: color-mix(in oklch, var(--color-primary-400) 24%, transparent);
   --rp-rule-strong: color-mix(in oklch, var(--color-primary-400) 55%, transparent);
   --rp-tint: color-mix(in oklch, var(--color-primary-400) 7%, transparent);
+  --rp-card: color-mix(in oklch, var(--color-primary-400) 7%, transparent);
+  --rp-card-rule: color-mix(in oklch, var(--color-primary-400) 26%, transparent);
+  --rp-card-bar: color-mix(in oklch, var(--color-primary-400) 14%, transparent);
+  --rp-card-shadow: none;
+}
+
+@media (max-width: 639px) {
+  .research-program {
+    --rp-card-pad: 1.15rem;
+  }
 }
 
 /* Visually hidden, still announced. Defined locally rather than relying on a
@@ -1150,30 +1169,15 @@ html {
 }
 
 @media (min-width: 1024px) {
+  /* The cards already separate the two columns, so there is no centre rule
+     and the gap can be tighter than the old open layout needed. */
   .research-program .rp-columns {
-    position: relative;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 4rem;
+    column-gap: 2.5rem;
     align-items: start;
   }
   .research-program .rp-columns > .rp-section {
     max-width: none;
-  }
-  /* The two columns rarely end level, so the rule fades out rather than
-     running on past the shorter one. */
-  .research-program .rp-columns::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 1px;
-    background: linear-gradient(
-      to bottom,
-      var(--rp-rule) 0%,
-      var(--rp-rule) 55%,
-      transparent 100%
-    );
   }
 }
 
@@ -1191,15 +1195,16 @@ html {
   color: #fff;
 }
 
-/* Generous whitespace between works; a hairline only between siblings, so a
-   section never opens with a doubled rule. */
+/* Each work is a light card: a soft accent fill, a hairline edge and a
+   shadow just deep enough to lift it off the page. The venue bar (below)
+   runs across its foot. */
 .research-program .rp-item {
-  padding-top: 2.75rem;
-  padding-bottom: 0.5rem;
-}
-
-.research-program .rp-item + .rp-item {
-  border-top: 1px solid var(--rp-rule);
+  margin-top: 1.5rem;
+  padding: var(--rp-card-pad);
+  border: 1px solid var(--rp-card-rule);
+  border-radius: var(--rp-card-radius);
+  background: var(--rp-card);
+  box-shadow: var(--rp-card-shadow);
 }
 
 /* ── Research Snap ────────────────────────────────────── */
@@ -1446,35 +1451,93 @@ html {
   color: var(--color-gray-400, #9ca3af);
 }
 
-/* Venue matches the citation views: italic, grey, never competing with the
-   title. */
-.research-program .rp-venue {
-  margin: 0.1rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: var(--color-gray-500, #6b7280);
-}
-
-.research-program .rp-venue em {
-  font-style: italic;
-}
-
-.research-program .rp-status,
 .research-program .rp-pending {
   margin: 0.35rem 0 0;
   font-size: 0.82rem;
+  font-style: italic;
   line-height: 1.5;
   color: var(--color-gray-500, #6b7280);
 }
 
-.research-program .rp-pending {
-  font-style: italic;
-}
-
-.dark .research-program .rp-venue,
-.dark .research-program .rp-status,
 .dark .research-program .rp-pending {
   color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Venue bar ────────────────────────────────────────── */
+
+/* The foot of the card, bled to its edges: one shade deeper than the card and
+   set off by a hairline, so the venue reads as where the work stands rather
+   than as small print. The journal name is plain sentence case at body
+   weight-plus; the status is the only pill on the card with a solid fill. */
+.research-program .rp-venue-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin: 1.35rem calc(-1 * var(--rp-card-pad)) calc(-1 * var(--rp-card-pad));
+  padding: 0.9rem var(--rp-card-pad) 1rem;
+  border-top: 1px solid var(--rp-card-rule);
+  border-radius: 0 0 calc(var(--rp-card-radius) - 1px) calc(var(--rp-card-radius) - 1px);
+  background: var(--rp-card-bar);
+}
+
+.research-program .rp-venue-text {
+  min-width: 0;
+}
+
+.research-program .rp-venue-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-gray-900, #111827);
+}
+
+.research-program .rp-venue-detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-venue-status {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.22rem 0.7rem;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 32%, transparent);
+  border-radius: 9999px;
+  background: var(--color-white, #fff);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: var(--color-primary-700);
+}
+
+.research-program .rp-venue-year {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-venue-name {
+  color: #fff;
+}
+
+.dark .research-program .rp-venue-detail,
+.dark .research-program .rp-venue-year {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .research-program .rp-venue-status {
+  border-color: color-mix(in oklch, var(--color-primary-400) 45%, transparent);
+  background: var(--color-gray-900, #111827);
+  color: var(--color-primary-200);
 }
 
 /* ── Item links ───────────────────────────────────────── */
@@ -1522,28 +1585,85 @@ html {
   border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
 }
 
-/* ── Snap: stochastic AC-FGM take-home diagram ────────── */
+/* ── Snap: stochastic AC-FGM — four decades of acceleration ── */
 
-/* 3x3 grid: nodes on the corners, arrow cells between them. Kept as text so
-   it scales, reflows and stays readable in dark mode. */
+/* A 2x2 map in the manner of a textbook figure: a title, four nodes of
+   identical anatomy and size, labelled arrows, and the classical lower bound
+   as a footnote across the foot. One accent, used sparingly — years, the two
+   converging arrows, and the light tint on the corner where they meet. Kept
+   as text so it scales, reflows and stays readable in dark mode. */
 
 .research-program .rp-acfgm {
   --rp-acfgm-scale: 1;
+  /* Node edges: one hairline for every node, a slightly deeper one for the
+     meeting corner. */
+  --rp-acfgm-edge: color-mix(in oklch, var(--color-primary-500) 30%, transparent);
+  --rp-acfgm-edge-meet: color-mix(in oklch, var(--color-primary-500) 55%, transparent);
   width: 100%;
 }
 
-.research-program .rp-acfgm-frame {
-  padding: 1.5rem 1.25rem 1rem;
-  border: 1px dashed var(--rp-rule-strong);
-  border-radius: 0.75rem;
-  background: var(--rp-tint);
+.dark .research-program .rp-acfgm {
+  --rp-acfgm-edge: color-mix(in oklch, var(--color-primary-400) 38%, transparent);
+  --rp-acfgm-edge-meet: color-mix(in oklch, var(--color-primary-400) 65%, transparent);
 }
 
+/* A plain white panel with a hairline edge — the same frame the image snaps
+   use — so the figure sits on the card rather than nesting a second tinted
+   card inside it. */
+.research-program .rp-acfgm-frame {
+  padding: 1.25rem 1.25rem 1rem;
+  border: 1px solid var(--rp-rule);
+  border-radius: 0.6rem;
+  background: var(--color-white, #fff);
+}
+
+.dark .research-program .rp-acfgm-frame {
+  background: color-mix(in oklch, var(--color-gray-950, #030712) 40%, transparent);
+}
+
+/* ── Title ── */
+
+.research-program .rp-acfgm-head {
+  margin-bottom: 1.15rem;
+  text-align: center;
+}
+
+.research-program .rp-acfgm-heading {
+  margin: 0;
+  font-size: calc(0.92rem * var(--rp-acfgm-scale));
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+  color: var(--color-gray-900, #111827);
+}
+
+.research-program .rp-acfgm-sub {
+  margin: 0.2rem 0 0;
+  font-size: calc(0.72rem * var(--rp-acfgm-scale));
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .research-program .rp-acfgm-heading {
+  color: #fff;
+}
+
+.dark .research-program .rp-acfgm-sub {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* ── Grid and nodes ── */
+
+/* The two node rows are both `1fr`: with the grid's height left to content,
+   flexible rows resolve to the tallest of them, so all four nodes come out
+   the same size whatever their text. */
 .research-program .rp-acfgm-grid {
   display: grid;
-  grid-template-columns: 1fr minmax(4.5rem, auto) 1fr;
-  grid-template-rows: auto minmax(2.75rem, auto) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(4.5rem, auto) minmax(0, 1fr);
+  grid-template-rows: 1fr minmax(2.75rem, auto) 1fr;
+  align-items: stretch;
   justify-items: stretch;
   gap: 0.5rem;
 }
@@ -1551,30 +1671,38 @@ html {
 .research-program .rp-acfgm-node {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
-  height: 100%;
-  padding: 0.55rem 0.6rem;
-  border: 1px solid var(--rp-rule-strong);
+  gap: 0.1rem;
+  padding: 0.6rem 0.6rem 0.65rem;
+  border: 1px solid var(--rp-acfgm-edge);
   border-radius: 0.4rem;
   background: var(--color-white, #fff);
   text-align: center;
 }
 
 .dark .research-program .rp-acfgm-node {
-  background: color-mix(in oklch, var(--color-gray-900, #111827) 70%, transparent);
+  background: transparent;
 }
 
-/* Our method carries the only filled panel and the only heavier border, which
-   is the whole point of the figure. */
-.research-program .rp-acfgm-node-ours {
-  border-width: 2px;
-  border-color: var(--color-primary-600);
-  background: color-mix(in oklch, var(--color-primary-500) 9%, var(--color-white, #fff));
+/* Where the two lines of work meet: a light tint and a slightly deeper
+   hairline — no heavier border, no mark. */
+.research-program .rp-acfgm-node-meet {
+  border-color: var(--rp-acfgm-edge-meet);
+  background: color-mix(in oklch, var(--color-primary-500) 8%, var(--color-white, #fff));
 }
 
-.dark .research-program .rp-acfgm-node-ours {
-  border-color: var(--color-primary-300);
-  background: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
+.dark .research-program .rp-acfgm-node-meet {
+  background: color-mix(in oklch, var(--color-primary-400) 14%, transparent);
+}
+
+/* The year leads each node: the figure's time axis. */
+.research-program .rp-acfgm-year {
+  margin-bottom: 0.15rem;
+  font-size: calc(0.8rem * var(--rp-acfgm-scale));
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary-700);
 }
 
 .research-program .rp-acfgm-name {
@@ -1584,72 +1712,86 @@ html {
   color: var(--color-gray-900, #111827);
 }
 
+.research-program .rp-acfgm-cite {
+  font-size: calc(0.7rem * var(--rp-acfgm-scale));
+  line-height: 1.3;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.research-program .rp-acfgm-rate {
+  margin-top: 0.25rem;
+  font-size: calc(0.72rem * var(--rp-acfgm-scale));
+  line-height: 1.4;
+  color: var(--color-gray-800, #1f2937);
+}
+
+.dark .research-program .rp-acfgm-year {
+  color: var(--color-primary-200);
+}
+
 .dark .research-program .rp-acfgm-name {
   color: #fff;
-}
-
-.research-program .rp-acfgm-node-ours .rp-acfgm-name {
-  color: var(--color-primary-700);
-}
-
-.dark .research-program .rp-acfgm-node-ours .rp-acfgm-name {
-  color: #fff;
-}
-
-.research-program .rp-acfgm-star {
-  color: var(--color-primary-600);
-}
-
-.dark .research-program .rp-acfgm-star {
-  color: var(--color-primary-300);
-}
-
-.research-program .rp-acfgm-cite {
-  font-size: calc(0.68rem * var(--rp-acfgm-scale));
-  line-height: 1.3;
-  color: var(--color-gray-500, #6b7280);
 }
 
 .dark .research-program .rp-acfgm-cite {
   color: var(--color-gray-400, #9ca3af);
 }
 
-.research-program .rp-acfgm-rate {
-  margin-top: 0.18rem;
-  font-size: calc(0.72rem * var(--rp-acfgm-scale));
-  line-height: 1.4;
-  color: var(--color-gray-800, #1f2937);
-}
-
 .dark .research-program .rp-acfgm-rate {
   color: var(--color-gray-200, #e5e7eb);
 }
 
-/* Arrows: a rule plus a CSS triangle head, so no image or SVG is needed and
-   both orientations stay hairline-crisp at any zoom. */
+/* ── Arrows ── */
+
+/* A rule plus a CSS triangle head, so no image or SVG is needed and both
+   orientations stay crisp at any zoom. `--rp-acfgm-ink` and
+   `--rp-acfgm-stroke` drive shaft and head together. The two arrows that
+   converge on the corner are a touch heavier and take the accent; the rest
+   stay quiet. */
 .research-program .rp-acfgm-arrow {
+  --rp-acfgm-ink: var(--rp-rule-strong);
+  --rp-acfgm-stroke: 1.5px;
+  --rp-acfgm-head: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  height: 100%;
+}
+
+.research-program .rp-acfgm-arrow-into {
+  --rp-acfgm-ink: var(--color-primary-600);
+  --rp-acfgm-stroke: 2px;
+  --rp-acfgm-head: 7px;
+}
+
+.dark .research-program .rp-acfgm-arrow-into {
+  --rp-acfgm-ink: var(--color-primary-300);
 }
 
 .research-program .rp-acfgm-arrow-label {
-  font-size: calc(0.62rem * var(--rp-acfgm-scale));
+  font-size: calc(0.64rem * var(--rp-acfgm-scale));
   line-height: 1.3;
   text-align: center;
   color: var(--color-gray-500, #6b7280);
+}
+
+.research-program .rp-acfgm-arrow-into .rp-acfgm-arrow-label {
+  font-weight: 600;
+  color: var(--color-primary-700);
 }
 
 .dark .research-program .rp-acfgm-arrow-label {
   color: var(--color-gray-400, #9ca3af);
 }
 
+.dark .research-program .rp-acfgm-arrow-into .rp-acfgm-arrow-label {
+  color: var(--color-primary-200);
+}
+
 .research-program .rp-acfgm-line {
   position: relative;
   display: block;
-  background: var(--rp-rule-strong);
+  background: var(--rp-acfgm-ink);
 }
 
 .research-program .rp-acfgm-line::after {
@@ -1664,48 +1806,58 @@ html {
 
 .research-program .rp-acfgm-arrow-h .rp-acfgm-line {
   width: 100%;
-  height: 1.5px;
+  height: var(--rp-acfgm-stroke);
 }
 
 .research-program .rp-acfgm-arrow-h .rp-acfgm-line::after {
   right: -1px;
-  top: -3.25px;
-  border-left: 6px solid var(--rp-rule-strong);
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: var(--rp-acfgm-head) solid var(--rp-acfgm-ink);
+  border-top: calc(var(--rp-acfgm-head) * 0.66) solid transparent;
+  border-bottom: calc(var(--rp-acfgm-head) * 0.66) solid transparent;
 }
 
 .research-program .rp-acfgm-arrow-v {
   flex-direction: row;
+  justify-content: flex-start;
   padding: 0.15rem 0;
 }
 
 .research-program .rp-acfgm-arrow-v .rp-acfgm-line {
-  width: 1.5px;
-  height: 100%;
+  flex-shrink: 0;
+  width: var(--rp-acfgm-stroke);
+  align-self: stretch;
   min-height: 2.25rem;
   margin-left: 1.25rem;
 }
 
 .research-program .rp-acfgm-arrow-v .rp-acfgm-line::after {
   bottom: -1px;
-  left: -3.25px;
-  border-top: 6px solid var(--rp-rule-strong);
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top: var(--rp-acfgm-head) solid var(--rp-acfgm-ink);
+  border-left: calc(var(--rp-acfgm-head) * 0.66) solid transparent;
+  border-right: calc(var(--rp-acfgm-head) * 0.66) solid transparent;
 }
 
 .research-program .rp-acfgm-arrow-v .rp-acfgm-arrow-label {
   text-align: left;
 }
 
-/* The matching lower bound closes the figure, as it does on the slide. */
+/* ── Lower bound ── */
+
+/* The theoretical baseline: a footnote across the full width of the
+   figure, under a hairline. */
 .research-program .rp-acfgm-bound {
   margin: 1.1rem 0 0;
   padding-top: 0.7rem;
-  border-top: 1px dashed var(--rp-rule);
-  font-size: 0.72rem;
+  border-top: 1px solid var(--rp-rule);
+  font-size: calc(0.7rem * var(--rp-acfgm-scale));
+  font-style: italic;
+  line-height: 1.5;
   text-align: center;
+  text-wrap: balance;
   color: var(--color-gray-500, #6b7280);
 }
 
@@ -1720,16 +1872,16 @@ html {
    instead of shrinking past legibility. */
 @container rpsnap (max-width: 460px) {
   .research-program .rp-acfgm {
-    --rp-acfgm-scale: 0.86;
+    --rp-acfgm-scale: 0.88;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
   .research-program .rp-acfgm-frame {
     min-width: 18.5rem;
-    padding: 1.1rem 0.85rem 0.8rem;
+    padding: 1.05rem 0.85rem 0.85rem;
   }
   .research-program .rp-acfgm-grid {
-    grid-template-columns: 1fr minmax(3.75rem, auto) 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(3.75rem, auto) minmax(0, 1fr);
     gap: 0.35rem;
   }
   .research-program .rp-acfgm-arrow-v .rp-acfgm-line {
@@ -1739,18 +1891,18 @@ html {
 
 @container rpsnap (max-width: 340px) {
   .research-program .rp-acfgm {
-    --rp-acfgm-scale: 0.78;
+    --rp-acfgm-scale: 0.8;
   }
   .research-program .rp-acfgm-frame {
     min-width: 15.5rem;
-    padding: 0.9rem 0.6rem 0.7rem;
+    padding: 0.9rem 0.6rem 0.75rem;
   }
   .research-program .rp-acfgm-grid {
-    grid-template-columns: 1fr minmax(3.1rem, auto) 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(3.1rem, auto) minmax(0, 1fr);
     gap: 0.25rem;
   }
   .research-program .rp-acfgm-node {
-    padding: 0.45rem 0.35rem;
+    padding: 0.5rem 0.35rem;
   }
   .research-program .rp-acfgm-arrow-v .rp-acfgm-line {
     margin-left: 0.35rem;
@@ -1764,9 +1916,6 @@ html {
   .research-program .rp-intro {
     font-size: 1rem;
   }
-  .research-program .rp-item {
-    padding-top: 2.25rem;
-  }
   .research-program .rp-columns {
     margin-top: 2.5rem;
   }
@@ -1774,14 +1923,19 @@ html {
 
 /* ── Snap: accumulative regularization (AR) ───────────── */
 
-/* One card, two parts: what the framework does, then how. Same frame language
-   as the AC-FGM snap so the two built-in diagrams read as a set. */
+/* One panel, two parts: what the framework does, then how. Same white,
+   hairline-edged frame as the AC-FGM snap, so the two built-in diagrams read
+   as a set and neither nests a tinted card inside the work card. */
 
 .research-program .rp-ar {
-  border: 1px solid var(--rp-rule-strong);
-  border-radius: 0.75rem;
-  background: var(--rp-tint);
+  border: 1px solid var(--rp-rule);
+  border-radius: 0.6rem;
+  background: var(--color-white, #fff);
   overflow: hidden;
+}
+
+.dark .research-program .rp-ar {
+  background: color-mix(in oklch, var(--color-gray-950, #030712) 40%, transparent);
 }
 
 /* ── Part 1: the transformation ───────────────────────── */

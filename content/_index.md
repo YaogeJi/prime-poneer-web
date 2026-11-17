@@ -28,5 +28,5 @@ sections:
   - block: teaching
     id: teaching
     content:
-      title: Teaching
+      title: Teaching and Service
 ---

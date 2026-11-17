@@ -8,7 +8,6 @@
 #
 # Per direction:
 #   name:   heading on the card
-#   hue:    past | blue | ml | app — the branch colour, reused for the heading
 #   state:  Completed | In progress | Future direction — named on the card,
 #           and drawn as the branch's mark on the spine (filled, shaded,
 #           hollow)
@@ -22,7 +21,6 @@
 directions:
   distributed:
     name: Distributed statistical learning
-    hue: past
     state: Completed
     works:
       - title: Distributed Sparse Regression via Penalization
@@ -30,7 +28,6 @@ directions:
 
   parameter-free:
     name: Parameter-free optimization
-    hue: blue
     state: Completed
     works:
       - title: Computation of Strong Solutions to Stochastic Variational Inequalities
@@ -39,7 +36,6 @@ directions:
 
   nonconvex:
     name: Nonconvexity and stochasticity
-    hue: blue
     state: In progress
     # The CV's "Work in Progress" entries.
     works:
@@ -50,13 +46,11 @@ directions:
 
   opt-ml:
     name: Optimization for ML
-    hue: ml
     state: In progress
     note: Optimizer design, with Siri at Apple.
 
   healthcare:
     name: ML and RL for healthcare
-    hue: app
     state: Completed
     note: >-
       With Cleveland Clinic and Stanford Medicine. Future direction: beyond
@@ -74,22 +68,18 @@ directions:
 
   policy-evaluation:
     name: Long-horizon policy evaluation
-    hue: blue
     state: Completed
     works:
       - title: Computation of Strong Solutions to Stochastic Variational Inequalities
 
   structural:
     name: Structural refinement
-    hue: blue
     state: Future direction
 
   opt-rl:
     name: Optimization for RL
-    hue: blue
     state: Future direction
 
   post-training:
     name: Large-scale post-training
-    hue: ml
     state: Future direction

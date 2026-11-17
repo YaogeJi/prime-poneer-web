@@ -178,18 +178,18 @@ html {
 /* ── Research roadmap (fishbone) ──────────────────────── */
 
 /* The slide's TikZ figure as inline SVG. Every colour is a custom property:
-   the five hues of the slide (blue core, orange origin, green healthcare,
-   purple ML) mapped onto the site palette, and the slide's "!55"-style tints
-   mixed toward the page colour, so the figure reads the same in dark mode. */
+   one accent for every direction (the slide gave each group its own hue; with
+   the papers gone, the directions need no colour coding), plus the slide's
+   "!55"-style tints mixed toward the page colour, so the figure reads the
+   same in dark mode. */
 .rm {
   --rm-mix: #fff;
   --rm-paper: #fff;
   --rm-ink: var(--color-gray-900, #111827);
   --rm-dim: var(--color-gray-500, #6b7280);
   --rm-blue: var(--color-primary-500);
-  --rm-past: #c2410c;
-  --rm-app: #15803d;
-  --rm-ml: #6f4e9b;
+  /* The branch colour that bones, marks and the works cards read. */
+  --rm-k: var(--rm-blue);
   --rm-focus: var(--color-primary-600);
   margin: 0;
 }
@@ -200,9 +200,6 @@ html {
   --rm-ink: var(--color-gray-100, #f3f4f6);
   --rm-dim: var(--color-gray-400, #9ca3af);
   --rm-blue: var(--color-primary-300);
-  --rm-past: #fb923c;
-  --rm-app: #4ade80;
-  --rm-ml: #b79ce6;
   --rm-focus: var(--color-primary-300);
 }
 
@@ -302,13 +299,6 @@ html {
   stroke-linejoin: round;
 }
 
-/* One hue per branch, set once with rm-k-*; bones, dots and rings read it,
-   and so does the works card the branch opens. */
-.rm .rm-k-blue { --rm-k: var(--rm-blue); }
-.rm .rm-k-past { --rm-k: var(--rm-past); }
-.rm .rm-k-app { --rm-k: var(--rm-app); }
-.rm .rm-k-ml { --rm-k: var(--rm-ml); }
-
 .rm-svg .rm-bone {
   fill: none;
   stroke: color-mix(in oklch, var(--rm-k) 55%, var(--rm-mix));
@@ -334,9 +324,6 @@ html {
 .rm-svg .rm-t-dim { fill: var(--rm-dim); }
 .rm-svg .rm-t-blue { fill: var(--rm-blue); }
 .rm-svg .rm-t-strong { fill: var(--rm-blue); font-weight: 600; }
-.rm-svg .rm-t-past { fill: var(--rm-past); }
-.rm-svg .rm-t-app { fill: var(--rm-app); }
-.rm-svg .rm-t-ml { fill: var(--rm-ml); }
 
 /* The closing line, as text under the drawing, in the accent voice the
    talk's question used to have. */

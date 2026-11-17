@@ -1,0 +1,87 @@
+# "Beyond research" coins, in the bio's left column. Rendered by
+# layouts/_partials/hbx/blocks/resume-biography-3/block.html; every image is a
+# file in assets/media/badges/ (see the README there for where each came from
+# and how it was processed: photos are cropped and stripped of metadata).
+#
+# A coin has an `icon` (its front), a `label` (the full sentence, read out as
+# the button's name) and one kind of back:
+#   kicker + lines (+ big)   a short inscription; `big` makes the first line large
+#   photo + kicker + lines   the same, over a photo filling the coin
+#   photos (+ caption)       one photo per turn, never the same one twice in a
+#                            row, captioned with its own `name` or else `caption`
+#
+# Photos may carry a `tier`. A coin whose photos have tiers draws a tier first,
+# by `odds`, then a photo within that tier. Rare, epic and legendary photos get
+# a coloured frame on the coin (blue, purple, orange). A rare pull also lifts
+# the coin a little larger, with no card. Epic and legendary pulls open a
+# reveal card: epic shows the photo larger, legendary shows `full`,
+# the uncropped photo. `alt` describes the photo on that card; `note` is the
+# line under it.
+
+odds:            # percent of turns; a tier with no photos is skipped
+  common: 70
+  rare: 20
+  epic: 8
+  legendary: 2
+
+tiers:           # the small tag on the coin, per tier (common has none)
+  rare: Rare
+  epic: Epic
+  legendary: Legendary
+
+reveal:
+  epic:
+    tag: Epic pull
+    title: Ooh, an epic cat!
+    close: Yay!
+  legendary:
+    tag: Legendary
+    title: Legendary cat unlocked!
+    close: Purr-fect!
+
+coins:
+  - icon: bouldering-flat.png
+    label: Bouldering. Let's go climbing sometime!
+    caption: Let's go climbing!
+    photos:
+      - file: climb-1.jpg
+      - file: climb-2.jpg
+      - file: climb-3.jpg
+      - file: climb-4.jpg
+
+  - icon: running-flat.png
+    label: Half marathon, 2 hours 3 minutes 49 seconds, at the Columbus Marathon
+    kicker: Half marathon
+    lines: ["2:03:49"]
+    big: true
+    photo: photo-medals.jpg
+
+  - icon: cats-flat.png
+    label: "Mother of three naughty cats: Doggy, Oreo and Dove"
+    photos:
+      # Common, 70%
+      - { file: cat-doggy.jpg, name: Doggy, tier: common }
+      - { file: cat-oreo.jpg, name: Oreo, tier: common }
+      - { file: cat-dove.jpg, name: Dove, tier: common }
+      - { file: cat-oreo-2.jpg, name: Oreo, tier: common }
+      # Rare, 20%
+      - { file: cat-doggy-2.jpg, name: Doggy, tier: rare }
+      - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
+      # Epic, 8%
+      - file: cat-picnic.jpg
+        name: Dove & Oreo
+        tier: epic
+        alt: Dove, a black cat, and Oreo, a black-and-white cat, in red collars on the grass under a blue sky
+        note: Dove and Oreo, dressed up for a picnic. Lucky paws! 🐾
+      - file: cat-sink.jpg
+        name: Oreo
+        tier: epic
+        alt: Oreo, a black-and-white cat, curled up in a bathroom sink and looking up
+        note: Oreo has claimed the sink. Please wash your hands elsewhere. 🐾
+      # Legendary, 2%
+      - file: cat-legend.jpg
+        full: cat-legend-full.jpg
+        name: Don Oreo
+        tier: legendary
+        alt: Oreo, a black-and-white cat, in soft window light against a dark wall, glancing over a shoulder
+        note: Congratulations! You've found a legendary, ridiculously good-looking Don Oreo. ✨

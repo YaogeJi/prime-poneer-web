@@ -340,45 +340,34 @@
              timeline, sized for this column. */}}
         {{ partial "hbx/blocks/resume-biography-3/path.html" $profile }}
 
-        {{/* Off-duty badges, as coins. The front is `icon`, a file in
-             assets/media/badges/ (see the README there): an SVG is inlined so a
-             one-colour icon takes the accent colour; a picture (PNG, JPEG) is
-             resized to a small WebP and clipped to the circle. The back is one
-             of three: a short inscription, `kicker` over `lines` (`big` sets
-             the first line large); the same over a `photo` filling the coin;
-             or `pets`, one photo at a time with its name, a different one
-             (picked at random) each time the coin is turned. Coins with photos
-             lift further when turned, so the pictures can be seen.
-             A click turns the coin over; pointing away, moving focus, Escape or
-             a tap elsewhere turns it back (script below). `label` is the full
-             sentence, the button's accessible name, so nothing is lost to a
-             screen reader by keeping the back short. Photos here were cropped
-             and stripped of their metadata (location, date, device) first. */}}
-        {{ $badges := slice
-          (dict "icon" "bouldering-flat.png"
-                "label" "Bouldering at The Overlook Boulder + Fitness"
-                "kicker" "Bouldering" "lines" (slice "The Overlook"))
-          (dict "icon" "running-flat.png"
-                "label" "Half marathon, 2 hours 3 minutes 49 seconds, at the Columbus Marathon"
-                "kicker" "Half marathon" "lines" (slice "2:03:49") "big" true
-                "photo" "photo-medals.jpg")
-          (dict "icon" "cats-flat.png"
-                "label" "Mother of three naughty cats: Doggy, Oreo and Dove"
-                "pets" (slice
-                  (dict "name" "Doggy" "photo" "cat-doggy.jpg")
-                  (dict "name" "Oreo" "photo" "cat-oreo.jpg")
-                  (dict "name" "Dove" "photo" "cat-dove.jpg")))
-        }}
+        {{/* Off-duty badges, as coins: data/badges.yaml says what each one
+             holds (front, back, photos, tiers and odds) and how to add more.
+             A click turns a coin over; pointing away, moving focus, Escape or a
+             tap elsewhere turns it back (script below). The front is an SVG
+             (inlined, so a one-colour icon takes the accent colour) or a
+             picture (a small WebP clipped to the circle). Coins with photos
+             lift further when turned, so the pictures can be seen. `label` is
+             the button's accessible name, so a screen reader gets the full
+             sentence whatever the back shows. */}}
+        {{ $bd := site.Data.badges }}
+        {{ $tierNames := $bd.tiers | default dict }}
+        {{ $hasReveal := false }}
         <div class="hobby-block">
         <span class="hobby-heading">Beyond research</span>
         <div class="hobby-row">
-          {{ range $badges }}
+          {{ range $bd.coins }}
           {{ $icon := resources.Get (printf "media/badges/%s" .icon) }}
           {{ if not $icon }}{{ errorf "bio badges: %q not found under assets/media/badges/" .icon }}{{ end }}
           {{ $big := .big }}
-          {{ $kind := cond (gt (len (.pets | default slice)) 0) "pets" (cond (ne (.photo | default "") "") "photo" "text") }}
+          {{ $kind := cond (gt (len (.photos | default slice)) 0) "photos" (cond (ne (.photo | default "") "") "photo" "text") }}
+          {{/* A coin draws by tier when any of its photos has one. */}}
+          {{ $tiered := false }}
+          {{ range .photos }}{{ if .tier }}{{ $tiered = true }}{{ end }}{{ end }}
+          {{ $odds := slice }}
+          {{ if $tiered }}{{ range $t, $w := $bd.odds }}{{ $odds = $odds | append (printf "%s:%v" $t $w) }}{{ end }}{{ end }}
           <div class="hobby-item">
-            <button type="button" class="hobby-badge hobby-badge--{{ $kind }}" aria-pressed="false" aria-label="{{ .label }}">
+            <button type="button" class="hobby-badge hobby-badge--{{ $kind }}" aria-pressed="false" aria-label="{{ .label }}"
+                    {{ with $odds }}data-odds="{{ delimit . "," }}"{{ end }}>
               <span class="hobby-coin" aria-hidden="true">
                 <span class="hobby-face hobby-face--front">
                   {{ if eq $icon.MediaType.SubType "svg" }}
@@ -397,7 +386,7 @@
                     {{ $ph = $ph.Fill "420x420 Center webp q82 Lanczos" }}
                     <img class="hobby-back-photo" src="{{ $ph.RelPermalink }}" alt="" width="{{ $ph.Width }}" height="{{ $ph.Height }}" loading="lazy" decoding="async">
                   {{ end }}
-                  {{ if ne $kind "pets" }}
+                  {{ if ne $kind "photos" }}
                   <span class="hobby-back-text">
                     {{ with .kicker }}<span class="hobby-back-kicker">{{ . }}</span>{{ end }}
                     {{ range $j, $line := .lines }}
@@ -405,16 +394,32 @@
                     {{ end }}
                   </span>
                   {{ end }}
-                  {{ $kicker := .kicker }}
-                  {{ range $k, $pet := .pets }}
-                    {{ $pp := resources.Get (printf "media/badges/%s" $pet.photo) }}
-                    {{ if not $pp }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $pet.photo }}{{ end }}
-                    {{ $pp = $pp.Fill "420x420 Center webp q82 Lanczos" }}
-                    <span class="hobby-pet{{ if eq $k 0 }} is-shown{{ end }}">
-                      <img src="{{ $pp.RelPermalink }}" alt="" width="{{ $pp.Width }}" height="{{ $pp.Height }}" loading="lazy" decoding="async">
-                      <span class="hobby-pet-caption">
-                        {{ with $kicker }}<span class="hobby-back-kicker">{{ . }}</span>{{ end }}
-                        <span class="hobby-pet-name">{{ $pet.name }}</span>
+                  {{ $caption := .caption }}
+                  {{ range $k, $shot := .photos }}
+                    {{ $src := resources.Get (printf "media/badges/%s" $shot.file) }}
+                    {{ if not $src }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.file }}{{ end }}
+                    {{ $sp := $src.Fill "420x420 Center webp q82 Lanczos" }}
+                    {{ $tier := $shot.tier | default "" }}
+                    {{/* Epic and legendary pulls open the reveal card, which
+                         needs a larger picture: the square photo for epic, the
+                         uncropped `full` one for legendary. */}}
+                    {{ $large := "" }}
+                    {{ if eq $tier "epic" }}{{ $large = $src.Fill "720x720 Center webp q84 Lanczos" }}{{ end }}
+                    {{ if eq $tier "legendary" }}
+                      {{ $full := resources.Get (printf "media/badges/%s" ($shot.full | default $shot.file)) }}
+                      {{ if not $full }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.full }}{{ end }}
+                      {{ $large = $full.Resize "x1200 webp q84 Lanczos" }}
+                    {{ end }}
+                    {{ if $large }}{{ $hasReveal = true }}{{ end }}
+                    <span class="hobby-shot{{ if eq $k 0 }} is-shown{{ end }}"
+                          {{ with $tier }}data-tier="{{ . }}"{{ end }}
+                          {{ with $large }}data-large="{{ .RelPermalink }}" data-large-w="{{ .Width }}" data-large-h="{{ .Height }}"
+                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}"{{ end }}>
+                      <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async">
+                      <span class="hobby-shot-caption">
+                        {{ with index $tierNames $tier }}<span class="hobby-shot-tier">{{ . }}</span>{{ end }}
+                        {{ with $shot.name }}<span class="hobby-shot-name">{{ . }}</span>
+                        {{ else }}{{ with $caption }}<span class="hobby-shot-note">{{ . }}</span>{{ end }}{{ end }}
                       </span>
                     </span>
                   {{ end }}
@@ -425,6 +430,34 @@
           {{ end }}
         </div>
         </div>
+
+        {{/* The reveal card for epic and legendary pulls: one modal dialog,
+             filled in by the script from the photo that was drawn. It closes
+             on its button, Escape, or a click outside (`closedby="any"`, with a
+             small fallback in the script). */}}
+        {{ if $hasReveal }}
+        {{ $rv := $bd.reveal }}
+        <dialog class="cat-reveal" closedby="any" aria-labelledby="cat-reveal-title" data-reveal
+                data-tag-epic="{{ $rv.epic.tag }}" data-title-epic="{{ $rv.epic.title }}" data-close-epic="{{ $rv.epic.close }}"
+                data-tag-legendary="{{ $rv.legendary.tag }}" data-title-legendary="{{ $rv.legendary.title }}" data-close-legendary="{{ $rv.legendary.close }}">
+          <div class="cat-reveal-card">
+            <p class="cat-reveal-tag" data-reveal-tag></p>
+            <h2 class="cat-reveal-title" id="cat-reveal-title" data-reveal-title></h2>
+            <div class="cat-reveal-figure">
+              <img data-reveal-img alt="" decoding="async">
+              <span class="cat-reveal-spark cat-reveal-spark--1" aria-hidden="true">✦</span>
+              <span class="cat-reveal-spark cat-reveal-spark--2" aria-hidden="true">✦</span>
+              <span class="cat-reveal-spark cat-reveal-spark--3" aria-hidden="true">✧</span>
+              <span class="cat-reveal-spark cat-reveal-spark--4" aria-hidden="true">✦</span>
+            </div>
+            <p class="cat-reveal-note" data-reveal-note></p>
+            <form method="dialog">
+              <button type="submit" class="cat-reveal-close" autofocus data-reveal-close></button>
+            </form>
+          </div>
+          <div class="cat-reveal-confetti" aria-hidden="true" data-reveal-confetti></div>
+        </dialog>
+        {{ end }}
       </div>
       <div class="md:col-span-7">
 
@@ -608,36 +641,114 @@
      the mouse leaves, focus moves on, Escape is pressed, or the page is tapped
      elsewhere. A finger lifting also "leaves", so touch waits for a tap
      elsewhere instead. Without the script the coins simply stay face up; the
-     button's name still carries the full sentence. */}}
+     button's name still carries the full sentence.
+
+     A coin with several photos shows one per turn, swapped while its back
+     still faces away. With tiers (`data-odds` on the coin, `data-tier` on each
+     photo) a tier is drawn first, by its odds, then a photo within it; never
+     the same photo twice in a row where there is a choice. An epic or
+     legendary pull opens the reveal card once the coin has landed. */}}
 <script>
 (function () {
   var coins = document.querySelectorAll('.hobby-badge[aria-pressed]');
   if (!coins.length) { return; }
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var dialog = document.querySelector('[data-reveal]');
+  var revealTimer;
+
   function turn(coin, over) { coin.setAttribute('aria-pressed', over ? 'true' : 'false'); }
-  // A coin with several pets shows one per turn: a random one the first
-  // time, then always a different one from last time. It is swapped while
-  // the back still faces away, so the change itself is never seen.
-  function nextPet(coin) {
-    var pets = coin.querySelectorAll('.hobby-pet');
-    if (pets.length < 2) { return; }
-    var current = -1;
-    Array.prototype.forEach.call(pets, function (pet, k) {
-      if (pet.classList.contains('is-shown')) { current = k; }
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  // "common:70,rare:20,..." -> a tier, among the tiers that have photos.
+  function drawTier(oddsAttr, byTier) {
+    var odds = [], total = 0;
+    oddsAttr.split(',').forEach(function (pair) {
+      var kv = pair.split(':'), w = parseFloat(kv[1]);
+      if (byTier[kv[0]] && w > 0) { odds.push([kv[0], w]); total += w; }
     });
-    var next = Math.floor(Math.random() * pets.length);
-    if (coin.hasAttribute('data-turned')) {
-      next = (current + 1 + Math.floor(Math.random() * (pets.length - 1))) % pets.length;
+    var r = Math.random() * total;
+    for (var i = 0; i < odds.length; i++) {
+      r -= odds[i][1];
+      if (r < 0) { return odds[i][0]; }
     }
-    coin.setAttribute('data-turned', '');
-    Array.prototype.forEach.call(pets, function (pet, k) {
-      pet.classList.toggle('is-shown', k === next);
-    });
+    return odds.length ? odds[odds.length - 1][0] : null;
   }
+
+  function nextShot(coin) {
+    var shots = Array.prototype.slice.call(coin.querySelectorAll('.hobby-shot'));
+    if (shots.length < 2) { return null; }
+    var current = -1;
+    shots.forEach(function (shot, k) { if (shot.classList.contains('is-shown')) { current = k; } });
+    var pool = shots.map(function (shot, k) { return k; });
+    var odds = coin.getAttribute('data-odds');
+    if (odds) {
+      var byTier = {};
+      shots.forEach(function (shot, k) {
+        var t = shot.getAttribute('data-tier') || 'common';
+        (byTier[t] = byTier[t] || []).push(k);
+      });
+      pool = byTier[drawTier(odds, byTier)] || pool;
+    }
+    if (coin.hasAttribute('data-turned') && pool.length > 1) {
+      pool = pool.filter(function (k) { return k !== current; });
+    }
+    var next = pick(pool);
+    coin.setAttribute('data-turned', '');
+    shots.forEach(function (shot, k) { shot.classList.toggle('is-shown', k === next); });
+    // The coin takes the photo's tier, which sets the colour of its frame.
+    var tier = shots[next].getAttribute('data-tier');
+    if (tier) { coin.setAttribute('data-tier', tier); } else { coin.removeAttribute('data-tier'); }
+    return shots[next];
+  }
+
+  // The reveal card: filled from the drawn photo, then shown as a modal.
+  function reveal(shot) {
+    if (!dialog || dialog.open) { return; }
+    var tier = shot.getAttribute('data-tier');
+    var q = function (sel) { return dialog.querySelector(sel); };
+    dialog.className = 'cat-reveal cat-reveal--' + tier;
+    q('[data-reveal-tag]').textContent = dialog.getAttribute('data-tag-' + tier);
+    q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier);
+    q('[data-reveal-note]').textContent = shot.getAttribute('data-note');
+    q('[data-reveal-close]').textContent = dialog.getAttribute('data-close-' + tier);
+    var img = q('[data-reveal-img]');
+    img.width = +shot.getAttribute('data-large-w');
+    img.height = +shot.getAttribute('data-large-h');
+    img.alt = shot.getAttribute('data-alt');
+    img.src = shot.getAttribute('data-large');
+    // Confetti for the legendary one, fresh each time; none with reduced motion.
+    var confetti = q('[data-reveal-confetti]');
+    confetti.textContent = '';
+    if (tier === 'legendary' && !reduced.matches) {
+      var colours = ['#f59e0b', '#fbbf24', '#f97316', '#a855f7', '#3b82f6', '#ec4899', '#10b981'];
+      for (var i = 0; i < 36; i++) {
+        var bit = document.createElement('span');
+        bit.style.setProperty('--x', (Math.random() * 640 - 320).toFixed(0) + 'px');
+        bit.style.setProperty('--y', (Math.random() * 420 + 120).toFixed(0) + 'px');
+        bit.style.setProperty('--r', (Math.random() * 900 - 450).toFixed(0) + 'deg');
+        bit.style.setProperty('--d', (Math.random() * 0.3).toFixed(2) + 's');
+        bit.style.setProperty('--c', pick(colours));
+        confetti.appendChild(bit);
+      }
+    }
+    dialog.showModal();
+  }
+
+  if (dialog && !('closedBy' in HTMLDialogElement.prototype)) {
+    // Light dismiss where closedby="any" is not supported: a click that lands
+    // on the dialog element itself is a click on its backdrop.
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) { dialog.close(); } });
+  }
+
   Array.prototype.forEach.call(coins, function (coin) {
     coin.addEventListener('click', function () {
       var over = coin.getAttribute('aria-pressed') !== 'true';
-      if (over) { nextPet(coin); }
+      var shot = over ? nextShot(coin) : null;
       turn(coin, over);
+      if (shot && /^(epic|legendary)$/.test(shot.getAttribute('data-tier') || '')) {
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(function () { reveal(shot); }, reduced.matches ? 0 : 700);
+      }
     });
     coin.addEventListener('pointerleave', function (e) {
       if (e.pointerType !== 'touch') { turn(coin, false); }

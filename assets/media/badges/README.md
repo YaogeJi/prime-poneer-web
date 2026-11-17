@@ -1,7 +1,7 @@
 # "Beyond research" badge icons
 
-One file per badge, listed in the bio block
-(`layouts/_partials/hbx/blocks/resume-biography-3/block.html`, `$badges`).
+Images for the "Beyond research" coins, listed in `data/badges.yaml` and
+rendered by `layouts/_partials/hbx/blocks/resume-biography-3/block.html`.
 
 - **SVG** is inlined into the page. A one-colour icon drawn with
   `currentColor` (fill or stroke) takes the site's accent colour and follows
@@ -14,11 +14,14 @@ navy-and-sage designs supplied by the site owner (Nov 2026). Each was cropped
 to its cream disc (504 px square, 2 px inside the disc edge, so no white
 shows when the page clips it to a circle); Hugo serves them as small WebPs.
 
-Coin backs (photos supplied by the site owner, Nov 2026): `photo-medals.jpg`
-behind the half-marathon coin; `cat-doggy.jpg`, `cat-oreo.jpg`, `cat-dove.jpg`
-for the cats coin, one shown per turn. Each was squared on its subject and
-re-encoded with no metadata (the originals carried GPS location, capture
-date and device); keep it that way for any photo added here.
+Coin backs (photos supplied by the site owner, Nov 2026). Which coin uses
+which photo, each photo's tier and the odds are all in `data/badges.yaml`:
+`photo-medals.jpg` (half marathon); `climb-1.jpg` to `climb-4.jpg`
+(bouldering); `cat-*.jpg` (cats: common, rare, epic and legendary pulls).
+`cat-legend-full.jpg` is the uncropped legendary photo for its reveal card.
+Each photo was squared on its subject (the `-full` one kept whole) and
+re-encoded with no metadata: the originals carried GPS location, capture date
+and device. Keep it that way for any photo added here.
 
 Kept for switching back: `bouldering.svg`, `running.svg`, `cats.svg`, the
 site's original one-colour line drawings.

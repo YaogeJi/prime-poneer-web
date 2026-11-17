@@ -931,6 +931,10 @@ html {
 .bio-path .bp-list {
   --bp-dot: 2rem;
   --bp-gap: 0.75rem;
+  /* The dot is centred on the first two lines (degree and school), not on
+     the whole text block, so it stays level with the title however many
+     lines the title and department wrap to. */
+  --bp-dot-top: 0.115rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -952,7 +956,7 @@ html {
   content: '';
   position: absolute;
   left: calc(var(--bp-dot) / 2 - 1px);
-  top: calc(var(--bp-dot) + 0.3rem);
+  top: calc(var(--bp-dot) + var(--bp-dot-top) + 0.3rem);
   bottom: 0.3rem;
   width: 2px;
   border-radius: 1px;
@@ -968,7 +972,7 @@ html {
    the dot off the rail. */
 .bio-path .bp-node {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--bp-gap);
   width: calc(100% + 0.8rem);
   margin: -0.2rem -0.4rem;
@@ -991,6 +995,7 @@ html {
 .bio-path .bp-dot {
   display: flex;
   flex: none;
+  margin-top: var(--bp-dot-top);
   align-items: center;
   justify-content: center;
   width: var(--bp-dot);
@@ -1423,35 +1428,36 @@ html {
   color: rgb(255 255 255 / 0.88);
 }
 
-/* Pets back: one photo at a time, filling the coin, with its name on a
-   soft scrim across the foot. The script picks which one each turn. */
-.hobby-badge--pets {
+/* Photos back: one photo at a time, filling the coin, captioned on a soft
+   scrim across its foot: a name (the cats) or a short note (climbing). The
+   script picks which photo each turn. */
+.hobby-badge--photos {
   --lift: 2;
 }
 
-.hobby-face--pets {
+.hobby-face--photos {
   padding: 0;
   background: #24303c;
 }
 
-.hobby-pet {
+.hobby-shot {
   position: absolute;
   inset: 0;
   display: none;
 }
 
-.hobby-pet.is-shown {
+.hobby-shot.is-shown {
   display: block;
 }
 
-.hobby-pet img {
+.hobby-shot img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.hobby-face--pets::after {
+.hobby-face--photos::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1459,12 +1465,12 @@ html {
   background: linear-gradient(to top, rgb(22 32 44 / 0.88) 0%, rgb(22 32 44 / 0.55) 28%, transparent 48%);
 }
 
-.hobby-face--pets::before {
+.hobby-face--photos::before {
   z-index: 2;
   border-color: rgb(255 255 255 / 0.55);
 }
 
-.hobby-pet-caption {
+.hobby-shot-caption {
   position: absolute;
   right: 0;
   bottom: 0.45rem;
@@ -1473,20 +1479,97 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0 0.85rem;
+  text-align: center;
   color: #fff;
 }
 
-.hobby-pet-caption .hobby-back-kicker {
-  margin: 0;
-  font-size: 0.3rem;
-  letter-spacing: 0.06em;
-  color: rgb(255 255 255 / 0.88);
-}
-
-.hobby-pet-name {
+.hobby-shot-name {
   font-size: 0.6rem;
   font-weight: 700;
   line-height: 1.15;
+}
+
+.hobby-shot-note {
+  font-size: 0.4rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* Tiers. Rare, epic and legendary photos are framed in their colour on the
+   coin (blue, purple, orange, the usual order) with a soft glow, and tagged
+   above the name. The coin takes the tier of the photo it is showing. */
+.hobby-badge[data-tier='rare'],
+.hobby-shot[data-tier='rare'] { --tier: #3b82f6; }
+
+.hobby-badge[data-tier='epic'],
+.hobby-shot[data-tier='epic'] { --tier: #a855f7; }
+
+.hobby-badge[data-tier='legendary'],
+.hobby-shot[data-tier='legendary'] { --tier: #f59e0b; }
+
+.hobby-badge:is([data-tier='rare'], [data-tier='epic'], [data-tier='legendary']) .hobby-face--back {
+  box-shadow:
+    0 0 0 2px var(--tier),
+    0 0 14px 2px color-mix(in oklab, var(--tier) 55%, transparent),
+    0 5px 12px -6px rgb(0 0 0 / 0.28);
+}
+
+.hobby-badge:is([data-tier='rare'], [data-tier='epic'], [data-tier='legendary']) .hobby-face--photos::before {
+  border-color: color-mix(in oklab, var(--tier) 70%, #fff);
+}
+
+.hobby-shot-tier {
+  margin-bottom: 0.08rem;
+  padding: 0.04rem 0.22rem;
+  border-radius: 9999px;
+  font-size: 0.26rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--tier);
+}
+
+/* Rare: no reveal card, but the coin comes up a little further than the
+   others (2.5 against 2). Its caption is scaled back by the same 2/2.5, so on
+   screen it reads at the usual size and the bigger photo is what grows; the
+   name keeps to one line ("Oreo & Dove" fits) and the scrim is shorter, so
+   the cats stay clear. */
+.hobby-badge--photos[data-tier='rare'] {
+  --lift: 2.5;
+}
+
+.hobby-badge--photos[data-tier='rare'] .hobby-face--photos::after {
+  background: linear-gradient(to top, rgb(22 32 44 / 0.85) 0%, rgb(22 32 44 / 0.5) 22%, transparent 38%);
+}
+
+.hobby-badge--photos[data-tier='rare'] .hobby-shot-caption {
+  bottom: 0.5rem;
+  padding: 0 0.4rem;
+}
+
+.hobby-badge--photos[data-tier='rare'] .hobby-shot-name {
+  font-size: 0.46rem;
+  white-space: nowrap;
+}
+
+.hobby-badge--photos[data-tier='rare'] .hobby-shot-tier {
+  margin-bottom: 0.06rem;
+  padding: 0.03rem 0.18rem;
+  font-size: 0.21rem;
+}
+
+/* Legendary: "Don Oreo" just overruns the usual caption width, so it gets a
+   little more room and stays on one line instead of covering the photo. */
+.hobby-badge--photos[data-tier='legendary'] .hobby-shot-caption {
+  padding: 0 0.5rem;
+}
+
+.hobby-badge--photos[data-tier='legendary'] .hobby-shot-name {
+  white-space: nowrap;
 }
 
 /* The turn. With motion allowed the coin rotates (with a little overshoot,
@@ -1494,7 +1577,9 @@ html {
    that it turns. With reduced motion the faces cross-fade in place. */
 @media (prefers-reduced-motion: no-preference) {
   .hobby-coin {
-    transition: transform 0.65s cubic-bezier(0.34, 1.3, 0.64, 1);
+    transition:
+      transform 0.65s cubic-bezier(0.34, 1.3, 0.64, 1),
+      translate 0.65s cubic-bezier(0.34, 1.3, 0.64, 1);
   }
 
   /* Belt and braces for backface-visibility, which some renderers ignore:
@@ -1519,6 +1604,12 @@ html {
 
   .hobby-badge[aria-pressed='true'] .hobby-coin {
     transform: rotateY(180deg) scale(var(--lift));
+  }
+
+  /* The first coin grows rightward, keeping its left edge, so on a phone it
+     never runs off the screen edge. */
+  .hobby-item:first-child .hobby-badge[aria-pressed='true'] .hobby-coin {
+    translate: calc(var(--coin) * (var(--lift) - 1) / 2) 0;
   }
 }
 
@@ -1582,17 +1673,318 @@ html {
 }
 
 .dark .hobby-face--photo,
-.dark .hobby-face--pets {
+.dark .hobby-face--photos {
   background: #24303c;
 }
 
 .dark .hobby-back-photo,
-.dark .hobby-pet img {
+.dark .hobby-shot img {
   filter: brightness(0.9);
 }
 
 .dark .hobby-badge:focus-visible {
   outline-color: var(--color-primary-300);
+}
+
+/* ── Cat reveal card (epic and legendary pulls) ──────── */
+
+/* A modal dialog, filled in by the coin script. Cream card, framed and lit in
+   the tier's colour. Epic: the photo larger, in a round frame, with twinkling
+   sparks. Legendary: the whole uncropped photo, a bigger title, a pulsing
+   glow and a burst of confetti. It pops in from the top layer; with reduced
+   motion it only fades, and nothing sparkles, pulses or falls. */
+.cat-reveal {
+  --tier: #a855f7;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  /* The browser centres a modal with margin: auto; the theme's reset sets
+     margin: 0 on everything, which pinned the card to the top left. */
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 1.5rem;
+  color: var(--color-gray-800, #1f2937);
+  background: radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--tier) 12%, #fffdf8) 0%, #fffdf8 60%);
+  box-shadow:
+    0 0 0 3px var(--tier),
+    0 0 44px 8px color-mix(in oklab, var(--tier) 40%, transparent),
+    0 26px 60px -20px rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.35s;
+  transition-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+  transition-behavior: allow-discrete;
+}
+
+.cat-reveal--legendary {
+  --tier: #f59e0b;
+  width: min(34rem, calc(100vw - 2rem));
+}
+
+.cat-reveal[open] {
+  opacity: 1;
+}
+
+@starting-style {
+  .cat-reveal[open] {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cat-reveal {
+    transform: scale(0.9);
+  }
+
+  .cat-reveal[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .cat-reveal[open] {
+      transform: scale(0.55) rotate(-8deg);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-reveal {
+    transition-duration: 0.12s;
+  }
+}
+
+/* Stop the page scrolling behind the open card. */
+.cat-reveal:modal {
+  overscroll-behavior: contain;
+}
+
+.cat-reveal::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(15 23 42 / 0);
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.35s;
+  transition-behavior: allow-discrete;
+}
+
+.cat-reveal[open]::backdrop {
+  background: rgb(15 23 42 / 0.62);
+}
+
+@starting-style {
+  .cat-reveal[open]::backdrop {
+    background: rgb(15 23 42 / 0);
+  }
+}
+
+.cat-reveal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 1.4rem 1.4rem 1.25rem;
+  text-align: center;
+}
+
+.cat-reveal-tag {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--tier);
+}
+
+.cat-reveal-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--color-gray-900, #111827);
+}
+
+.cat-reveal--legendary .cat-reveal-title {
+  font-size: clamp(1.6rem, 1.1rem + 2vw, 2.2rem);
+  background: linear-gradient(90deg, #f97316, #f59e0b 40%, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cat-reveal-figure {
+  position: relative;
+  margin: 0.3rem 0;
+}
+
+.cat-reveal-figure img {
+  display: block;
+}
+
+.cat-reveal--epic .cat-reveal-figure img {
+  width: min(15rem, 70vw);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 4px #fff,
+    0 0 0 7px var(--tier),
+    0 12px 30px -10px color-mix(in oklab, var(--tier) 70%, #000);
+}
+
+.cat-reveal--legendary .cat-reveal-figure img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(62dvh, 40rem);
+  border-radius: 1rem;
+  object-fit: contain;
+  box-shadow:
+    0 0 0 4px var(--tier),
+    0 0 30px 6px color-mix(in oklab, var(--tier) 45%, transparent);
+}
+
+.cat-reveal-spark {
+  position: absolute;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--tier);
+  pointer-events: none;
+}
+
+.cat-reveal-spark--1 { top: -0.4rem; left: -0.6rem; }
+.cat-reveal-spark--2 { top: 12%; right: -1rem; font-size: 1rem; }
+.cat-reveal-spark--3 { bottom: 8%; left: -1rem; font-size: 1.1rem; }
+.cat-reveal-spark--4 { bottom: -0.5rem; right: -0.3rem; font-size: 1.5rem; }
+
+.cat-reveal-note {
+  margin: 0;
+  max-width: 26rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-wrap: balance;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.cat-reveal-close {
+  margin-top: 0.3rem;
+  padding: 0.55rem 1.5rem;
+  border: 0;
+  border-radius: 9999px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--tier);
+  cursor: pointer;
+  box-shadow: 0 6px 16px -8px color-mix(in oklab, var(--tier) 80%, #000);
+}
+
+.cat-reveal-close:hover {
+  background: color-mix(in oklab, var(--tier) 85%, #000);
+}
+
+.cat-reveal-close:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--tier) 55%, #fff);
+  outline-offset: 3px;
+}
+
+.cat-reveal-confetti {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.cat-reveal-confetti span {
+  position: absolute;
+  width: 0.55rem;
+  height: 0.3rem;
+  border-radius: 1px;
+  background: var(--c);
+  opacity: 0;
+}
+
+/* The motion itself, only when it is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .cat-reveal[open] .cat-reveal-figure img {
+    animation: cat-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+  }
+
+  .cat-reveal[open] .cat-reveal-spark {
+    animation: cat-twinkle 1.6s ease-in-out infinite;
+  }
+
+  .cat-reveal[open] .cat-reveal-spark--2 { animation-delay: 0.4s; }
+  .cat-reveal[open] .cat-reveal-spark--3 { animation-delay: 0.8s; }
+  .cat-reveal[open] .cat-reveal-spark--4 { animation-delay: 1.2s; }
+
+  .cat-reveal--legendary[open] .cat-reveal-figure img {
+    animation:
+      cat-pop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both,
+      cat-glow 2.4s ease-in-out 1s infinite;
+  }
+
+  .cat-reveal--legendary[open] .cat-reveal-title {
+    animation: cat-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .cat-reveal[open] .cat-reveal-confetti span {
+    animation: cat-confetti 1.7s cubic-bezier(0.2, 0.7, 0.3, 1) var(--d) forwards;
+  }
+}
+
+@keyframes cat-pop {
+  from { transform: scale(0.6) rotate(-6deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes cat-twinkle {
+  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.25; }
+  50% { transform: scale(1.15) rotate(20deg); opacity: 1; }
+}
+
+@keyframes cat-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 4px var(--tier), 0 0 30px 6px color-mix(in oklab, var(--tier) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--tier), 0 0 48px 14px color-mix(in oklab, var(--tier) 60%, transparent);
+  }
+}
+
+@keyframes cat-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; }
+}
+
+.dark .cat-reveal {
+  color: var(--color-gray-100, #f3f4f6);
+  background: radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--tier) 22%, #1f2937) 0%, #1f2937 60%);
+}
+
+.dark .cat-reveal-title {
+  color: #fff;
+}
+
+.dark .cat-reveal-note {
+  color: var(--color-gray-300, #d1d5db);
+}
+
+.dark .cat-reveal--epic .cat-reveal-figure img {
+  box-shadow:
+    0 0 0 4px #1f2937,
+    0 0 0 7px var(--tier),
+    0 12px 30px -10px color-mix(in oklab, var(--tier) 70%, #000);
 }
 
 /* ── Full-page Gradient Mesh Background ───────────────── */

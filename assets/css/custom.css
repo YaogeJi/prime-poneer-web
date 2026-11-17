@@ -54,6 +54,11 @@ html {
 .resume-biography {
   padding-top: clamp(0.4rem, 1.2dvh, 1.6rem) !important;
   padding-bottom: clamp(1rem, 3dvh, 4rem) !important;
+  /* Clipped at the sides only. A turned Beyond-research coin lifts to up to
+     2.5x its size, and at the foot of the left column it hangs below the
+     section; clipping top and bottom too cut its lower half off. */
+  overflow: visible;
+  overflow-x: clip;
 }
 
 /* Section rhythm. The theme pads every block 6rem top and bottom, so two
@@ -1461,10 +1466,10 @@ html {
 
 /* Each badge is a coin: the picture on the front, a short inscription on
    the back. A click turns it over about its vertical axis and lifts it a
-   little, so the small type can be read; pointing away turns it back (the
-   script is in the bio block). The back is the front's own cream disc with a
-   hairline rim, inscribed in the badges' navy and sage, so the two faces read
-   as one object. The coin has a little thickness (a stack of thin discs
+   little, so the small type can be read; pointing away turns it back after a
+   short pause (the script is in the bio block). The back is the front's own
+   cream disc with a hairline rim, inscribed in the badges' navy and sage, so
+   the two faces read as one object. The coin has a little thickness (a stack of thin discs
    between the faces, see .hobby-edge), so it reads as a solid token rather
    than a paper disc when it tilts or turns. */
 .hobby-badge {

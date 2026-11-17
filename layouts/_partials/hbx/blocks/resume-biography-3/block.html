@@ -82,7 +82,7 @@
   {{ end }}
 {{ end }}
 
-<div class="resume-biography px-4 relative overflow-hidden">
+<div class="resume-biography px-4 relative">
   {{/* Add subtle top gradient for navbar transition */}}
   <div class="max-w-7xl mx-auto">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 lg:gap-12 items-start">
@@ -342,10 +342,11 @@
 
         {{/* Off-duty badges, as coins: data/badges.yaml says what each one
              holds (front, back, photos, tiers and odds) and how to add more.
-             A click turns a coin over; pointing away, moving focus, Escape or a
-             tap elsewhere turns it back (script below). The front is an SVG
-             (inlined, so a one-colour icon takes the accent colour) or a
-             picture (a small WebP clipped to the circle). Coins with photos
+             A click turns a coin over; pointing away turns it back after a
+             short pause, and moving focus, Escape or a tap elsewhere turns it
+             back at once (script below). The front is an SVG (inlined, so a
+             one-colour icon takes the accent colour) or a picture (a small
+             WebP clipped to the circle). Coins with photos
              lift further when turned, so the pictures can be seen. `label` is
              the button's accessible name, so a screen reader gets the full
              sentence whatever the back shows. */}}
@@ -654,10 +655,12 @@
 </div>
 
 {{/* Beyond-research coins: a click turns one over, and it turns back when
-     the mouse leaves, focus moves on, Escape is pressed, or the page is tapped
-     elsewhere. A finger lifting also "leaves", so touch waits for a tap
-     elsewhere instead. Without the script the coins simply stay face up; the
-     button's name still carries the full sentence.
+     focus moves on, Escape is pressed, or the page is tapped elsewhere. When
+     the mouse leaves, it stays turned a moment longer (LINGER below), so the
+     picture can still be seen; coming back in keeps it turned. A finger
+     lifting also "leaves", so touch waits for a tap elsewhere instead.
+     Without the script the coins simply stay face up; the button's name still
+     carries the full sentence.
 
      A coin with several photos shows one per turn, swapped while its back
      still faces away. With tiers (`data-odds` on the coin, `data-tier` on each
@@ -680,6 +683,7 @@
   // A coin that changes sides stops following the pointer for the length of
   // the turn (0.65s, as in custom.css), so the turn keeps its spring.
   function turn(coin, over) {
+    clearTimeout(coin.lingerTimer);
     var was = coin.getAttribute('aria-pressed') === 'true';
     coin.setAttribute('aria-pressed', over ? 'true' : 'false');
     if (was !== over) {
@@ -687,6 +691,9 @@
       coin.calmUntil = Date.now() + 650;
     }
   }
+
+  // How long a turned coin stays turned after the mouse leaves it (ms).
+  var LINGER = 2000;
 
   // Tilt with the pointer: the side under it dips away, as if pressed, up to
   // these angles at the coin's edge. Mouse and pen only, and not while the
@@ -818,9 +825,13 @@
     });
     coin.addEventListener('pointermove', function (e) { tilt(coin, e); });
     coin.addEventListener('pointerleave', function (e) {
-      if (e.pointerType !== 'touch') { turn(coin, false); }
+      if (e.pointerType !== 'touch' && coin.getAttribute('aria-pressed') === 'true') {
+        clearTimeout(coin.lingerTimer);
+        coin.lingerTimer = setTimeout(function () { turn(coin, false); }, LINGER);
+      }
       untilt(coin);
     });
+    coin.addEventListener('pointerenter', function () { clearTimeout(coin.lingerTimer); });
     coin.addEventListener('blur', function () { turn(coin, false); });
     coin.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { turn(coin, false); }

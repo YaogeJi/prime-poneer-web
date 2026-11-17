@@ -1,0 +1,146 @@
+{{/* Education & training: a vertical timeline for the bio's left column.
+
+     The B.S. → M.S. → Ph.D. → Postdoc path the bio once showed as a horizontal
+     row (it gave way to the research roadmap in 58b635a), turned on its side
+     to fit the narrow column. One node per stage, oldest at the top, so it
+     still reads in time order. Each node shows the short degree, the school,
+     its department (`department` in the data) and the years; its research directions sit underneath; the full degree,
+     dates, focus, advisors and thesis open in a card on hover or focus,
+     below the row.
+
+     Context: the author profile (functions/get_author_profile). Reads its
+     `education` and `experience` lists, i.e. data/authors/me.yaml. */}}
+
+{{ $profile := . }}
+
+{{/* Both lists feed one timeline; each entry remembers which it came from,
+     for its icon. */}}
+{{ $sources := slice }}
+{{ with $profile.education }}{{ if reflect.IsSlice . }}{{ range . }}
+  {{ $sources = $sources | append (dict "e" . "type" "education") }}
+{{ end }}{{ end }}{{ end }}
+{{ with $profile.experience }}{{ if reflect.IsSlice . }}{{ range . }}
+  {{ $sources = $sources | append (dict "e" . "type" "experience") }}
+{{ end }}{{ end }}{{ end }}
+
+{{ $items := slice }}
+{{ range $sources }}
+  {{ $e := .e }}
+  {{ if reflect.IsMap $e }}
+    {{ $title := "" }}
+    {{ with or (index $e "degree") (index $e "role") (index $e "position") (index $e "area") }}{{ $title = strings.TrimSpace (printf "%v" .) }}{{ end }}
+    {{ $org := "" }}
+    {{ with or (index $e "institution") (index $e "org") (index $e "company_name") }}{{ $org = strings.TrimSpace (printf "%v" .) }}{{ end }}
+    {{ $dept := "" }}
+    {{ with or (index $e "department") (index $e "school") }}{{ $dept = strings.TrimSpace (printf "%v" .) }}{{ end }}
+    {{ $short := $title }}
+    {{ with index $e "short" }}{{ $short = strings.TrimSpace (printf "%v" .) }}{{ end }}
+
+    {{/* Dates: years on the node, month and year in the card. */}}
+    {{ $sort := "" }}{{ $years := "" }}{{ $period := "" }}
+    {{ $startT := "" }}{{ $endT := "" }}
+    {{ with or (index $e "start") (index $e "date_start") }}
+      {{ $p := try (time.AsTime .) }}{{ if not $p.Err }}{{ $startT = $p.Value }}{{ end }}
+    {{ end }}
+    {{ with or (index $e "end") (index $e "date_end") }}
+      {{ $p := try (time.AsTime .) }}{{ if not $p.Err }}{{ $endT = $p.Value }}{{ end }}
+    {{ end }}
+    {{/* No end date means the stage is current. `cond` would evaluate both
+         branches, so the end text is worked out on its own first. */}}
+    {{ $endYear := "Present" }}{{ $endMonth := "Present" }}
+    {{ with $endT }}{{ $endYear = printf "%d" .Year }}{{ $endMonth = .Format "Jan 2006" }}{{ end }}
+    {{ with $startT }}
+      {{ $sort = .Format "2006-01-02" }}
+      {{ $years = printf "%d–%s" .Year $endYear }}
+      {{ $period = printf "%s – %s" (.Format "Jan 2006") $endMonth }}
+    {{ end }}
+
+    {{ $advisors := slice }}
+    {{ with index $e "advisor" }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}{{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}{{ end }}
+      {{ else }}
+        {{ $advisors = $advisors | append (strings.TrimSpace (printf "%v" .)) }}
+      {{ end }}
+    {{ end }}
+
+    {{ $topics := slice }}
+    {{ with index $e "topics" }}{{ if reflect.IsSlice . }}
+      {{ range . }}
+        {{ if reflect.IsMap . }}
+          {{ with index . "name" }}{{ $topics = $topics | append (printf "%v" .) }}{{ end }}
+        {{ else }}
+          {{ $topics = $topics | append (printf "%v" .) }}
+        {{ end }}
+      {{ end }}
+    {{ end }}{{ end }}
+
+    {{ if or $title $org }}
+      {{ $items = $items | append (dict
+          "title" $title "org" $org "dept" $dept "short" $short
+          "sort" $sort "years" $years "period" $period
+          "focus" (strings.TrimSpace (printf "%v" (index $e "focus" | default "")))
+          "summary" (strings.TrimSpace (printf "%v" (index $e "summary" | default "")))
+          "advisors" $advisors "topics" $topics
+          "icon" (printf "%v" (index $e "icon" | default ""))
+          "type" .type) }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ if $items }}
+{{ $items = sort $items "sort" }}
+<div class="bio-path">
+  <span class="bio-path-heading">Education &amp; training</span>
+  <ol class="bp-list">
+    {{ range $i, $it := $items }}
+    {{ $tipId := printf "bp-tip-%d" $i }}
+    <li class="bp-item">
+      <div class="bp-head">
+        {{/* A real button, so the card is reachable by keyboard; the card is
+             its description, so it is announced without being opened. */}}
+        <button type="button" class="bp-node" aria-describedby="{{ $tipId }}">
+          <span class="bp-dot" aria-hidden="true">
+            {{ if eq .icon "doctoral-tam" }}
+              {{/* Octagonal doctoral tam */}}
+              <svg class="bp-ico-tam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.93 9.4 14.87 11.6 9.13 11.6 5.07 9.4 5.07 6.2 9.13 4 14.87 4 18.93 6.2Z" />
+                <circle cx="12" cy="7.8" r=".85" fill="currentColor" stroke="none" />
+                <path d="M12.8 8 18.93 9.4" />
+                <path d="M18.93 9.4v4.6" />
+                <path d="M18.03 14h1.8v1.5a.9.9 0 0 1-1.8 0Z" />
+                <path d="M8.9 12.5v2.1a3.3 3.3 0 0 0 6.6 0v-2.1" />
+              </svg>
+            {{ else if eq .type "education" }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256"><path d="M251.76,88.94l-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V240a8,8,0,0,0,16,0V199.51a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12ZM128,200c-43.27,0-68.72-21.14-80-33.71V126.4l76.24,40.66a8,8,0,0,0,7.52,0L176,143.47v46.34C163.4,195.69,147.52,200,128,200Zm80-33.75a97.83,97.83,0,0,1-16,14.25V134.93l16-8.53ZM188,118.94l-.22-.13-56-29.87a8,8,0,0,0-7.52,14.12L171,128l-43,22.93L25,96,128,41.07,231,96Z"></path></svg>
+            {{ else }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 256 256"><path d="M216,56H176V48a24,24,0,0,0-24-24H104A24,24,0,0,0,80,48v8H40A16,16,0,0,0,24,72V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V72A16,16,0,0,0,216,56ZM96,48a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96ZM216,72v41.61A184,184,0,0,1,128,136a184.07,184.07,0,0,1-88-22.38V72Zm0,128H40V131.64A200.19,200.19,0,0,0,128,152a200.25,200.25,0,0,0,88-20.37V200ZM104,112a8,8,0,0,1,8-8h32a8,8,0,0,1,0,16H112A8,8,0,0,1,104,112Z"></path></svg>
+            {{ end }}
+          </span>
+          <span class="bp-text">
+            <span class="bp-label">{{ .short }}</span>
+            {{ with .org }}<span class="bp-org">{{ . }}</span>{{ end }}
+            {{ with .dept }}<span class="bp-dept">{{ . }}</span>{{ end }}
+          </span>
+          {{ with .years }}<span class="bp-years">{{ . }}</span>{{ end }}
+        </button>
+      </div>
+      {{ with .topics }}
+      <ul class="bp-topics">
+        {{ range . }}<li>{{ . }}</li>{{ end }}
+      </ul>
+      {{ end }}
+      {{/* The card comes last, under the research directions, so opening it
+           never covers the row it describes. */}}
+      <div class="bp-tip" role="tooltip" id="{{ $tipId }}">
+        {{ with .title }}<p class="bp-tip-title">{{ . }}</p>{{ end }}
+        {{ with .period }}<p class="bp-tip-date">{{ . }}</p>{{ end }}
+        {{ with .focus }}<p class="bp-tip-row"><span class="bp-tip-key">Focus</span>{{ . }}</p>{{ end }}
+        {{ with .advisors }}<p class="bp-tip-row"><span class="bp-tip-key">{{ if gt (len .) 1 }}Advisors{{ else }}Advisor{{ end }}</span>{{ delimit . " · " }}</p>{{ end }}
+        {{ with .summary }}<p class="bp-tip-row"><span class="bp-tip-key">Thesis</span>{{ . }}</p>{{ end }}
+      </div>
+    </li>
+    {{ end }}
+  </ol>
+</div>
+{{ end }}

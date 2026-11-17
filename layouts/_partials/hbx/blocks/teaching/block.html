@@ -19,9 +19,10 @@
       <h2 class="tch-title">{{ $title }}</h2>
     {{ end }}
 
-    {{/* Teaching experience and outreach sit side by side once there is room
-         for two readable columns, and stack below that — same grid and column
-         rule as the Research section, so the two wide sections match. */}}
+    {{/* Teaching experience and outreach & service sit side by side once
+         there is room for two readable columns, and stack below that — same
+         grid and column rule as the Research section, so the two wide
+         sections match. */}}
     <div class="tch-columns">
 
       <section class="tch-col">
@@ -64,13 +65,33 @@
         {{ end }}
       </section>
 
+      {{/* Outreach and service: groups shaped like the institutions on the
+           left (accent subheading, then rows). A row is the bold `kind` plus
+           a `name` (linked when it has a `url`). An item with a `venues` list
+           instead expands to one row per venue, "Kind Venue". A bare `items`
+           list without groups still renders, as one unlabelled group. */}}
       {{ with $data.outreach }}
       <section class="tch-col">
         {{ with .heading }}<h3 class="tch-heading">{{ . }}</h3>{{ end }}
-        {{ with .items }}
+        {{ $groups := .groups }}
+        {{ if and (not $groups) .items }}{{ $groups = slice (dict "items" .items) }}{{ end }}
+        {{ range $groups }}
         <section class="tch-group">
+          {{ with .label }}<h4 class="tch-inst">{{ . }}</h4>{{ end }}
+          {{ with .items }}
           <ul class="tch-courses">
             {{ range . }}
+            {{ if .venues }}
+              {{ $kind := .kind }}
+              {{ range .venues }}
+              <li>
+                <span class="tch-course">
+                  {{ with $kind }}<span class="tch-kind">{{ . }}</span>{{ end }}
+                  {{ . }}
+                </span>
+              </li>
+              {{ end }}
+            {{ else }}
             <li>
               <span class="tch-course">
                 {{ with .kind }}<span class="tch-kind">{{ . }}</span>{{ end }}
@@ -79,7 +100,9 @@
               {{ with .term }}<span class="tch-term">{{ . }}</span>{{ end }}
             </li>
             {{ end }}
+            {{ end }}
           </ul>
+          {{ end }}
         </section>
         {{ end }}
       </section>

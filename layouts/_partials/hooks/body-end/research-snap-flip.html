@@ -1,52 +1,109 @@
 {{/* Research Snap page flipper.
 
-     Progressive enhancement: without JavaScript the pages render stacked, so
-     the figure is never hidden behind a control that cannot run. This script
-     collapses each set to one page at a time and reveals the nav. */}}
+     Progressive enhancement: the pages sit in a native scroll-snap track
+     (see snap.html and custom.css), so without JavaScript they can still be
+     swiped, scrolled or arrowed through. This script reveals Previous/Next and
+     the page dots, keeps the dots on the visible page, and announces the page
+     once scrolling settles. The controls only start a scroll; everything they
+     show is read back from the scroll position, so a swipe and a click can
+     never disagree. */}}
 
 {{ $js := resources.FromString "js/research-snap-flip.js" `
 (function () {
   var roots = document.querySelectorAll('[data-rp-flip]');
 
   Array.prototype.forEach.call(roots, function (root) {
-    var pages = root.querySelectorAll('[data-rp-page]');
-    if (pages.length < 2) return;
+    var track = root.querySelector('[data-rp-track]');
+    if (!track) return;
+    var slides = Array.prototype.slice.call(track.children);
+    var n = slides.length;
+    if (n < 2) return;
 
     var nav  = root.querySelector('[data-rp-nav]');
     var live = root.querySelector('[data-rp-live]');
-    var dots = root.querySelectorAll('[data-rp-dot]');
+    var dots = Array.prototype.slice.call(root.querySelectorAll('[data-rp-dot]'));
     var prev = root.querySelector('[data-rp-prev]');
     var next = root.querySelector('[data-rp-next]');
-    var at = 0;
 
-    function show(n) {
-      at = (n + pages.length) % pages.length;
-      Array.prototype.forEach.call(pages, function (page, k) {
-        page.classList.toggle('is-current', k === at);
-        // Keep hidden pages out of the a11y tree and out of tab order.
-        page.setAttribute('aria-hidden', k === at ? 'false' : 'true');
+    var marked = -1;    // page the dots point at
+    var settled = 0;    // page last announced
+    var pending = null; // page a click is still scrolling to
+
+    // The page nearest the track's scroll position. The track is the slides'
+    // offsetParent, so offsetLeft is each page's own scroll position.
+    function nearest() {
+      var x = track.scrollLeft, best = 0, d = Infinity;
+      slides.forEach(function (s, i) {
+        var di = Math.abs(s.offsetLeft - x);
+        if (di < d) { d = di; best = i; }
       });
-      Array.prototype.forEach.call(dots, function (dot, k) {
-        if (k === at) dot.setAttribute('aria-current', 'true');
-        else dot.removeAttribute('aria-current');
-      });
-      if (live) live.textContent = 'Page ' + (at + 1) + ' of ' + pages.length;
+      return best;
     }
 
-    if (prev) prev.addEventListener('click', function () { show(at - 1); });
-    if (next) next.addEventListener('click', function () { show(at + 1); });
-    Array.prototype.forEach.call(dots, function (dot, k) {
-      dot.addEventListener('click', function () { show(k); });
+    function mark(i) {
+      if (i === marked) return;
+      marked = i;
+      dots.forEach(function (dot, k) {
+        if (k === i) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+    }
+
+    // Next on the last page rewinds to the first, and Previous on the first
+    // jumps to the last. Smooth or instant comes from CSS scroll-behavior,
+    // which honours reduced motion.
+    function go(i) {
+      i = (i + n) % n;
+      mark(i); // the dot moves on the click, not after the slide lands
+      if (Math.abs(slides[i].offsetLeft - track.scrollLeft) < 1) { pending = null; return; }
+      pending = i;
+      track.scrollTo({ left: slides[i].offsetLeft });
+    }
+
+    // Rapid clicks build on the page already being scrolled to.
+    function from() { return pending !== null ? pending : nearest(); }
+
+    if (prev) prev.addEventListener('click', function () { go(from() - 1); });
+    if (next) next.addEventListener('click', function () { go(from() + 1); });
+    dots.forEach(function (dot, k) {
+      dot.addEventListener('click', function () { go(k); });
     });
 
-    root.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowLeft')  { show(at - 1); e.preventDefault(); }
-      if (e.key === 'ArrowRight') { show(at + 1); e.preventDefault(); }
-    });
+    // Dots follow a swipe live, at most once per frame. Skipped while a
+    // click's scroll is in flight, so they do not flicker through the pages
+    // it passes over.
+    var queued = false;
+    track.addEventListener('scroll', function () {
+      if (pending !== null || queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; mark(nearest()); });
+    }, { passive: true });
+
+    // When scrolling settles: sync the dots, and announce only a page change.
+    function settle() {
+      pending = null;
+      var i = nearest();
+      mark(i);
+      if (i !== settled) {
+        settled = i;
+        if (live) live.textContent = 'Page ' + (i + 1) + ' of ' + n;
+      }
+    }
+
+    if ('onscrollend' in window) {
+      track.addEventListener('scrollend', settle);
+    } else {
+      var timer;
+      track.addEventListener('scroll', function () {
+        clearTimeout(timer);
+        timer = setTimeout(settle, 150);
+      }, { passive: true });
+    }
 
     root.classList.add('is-ready');
     if (nav) nav.hidden = false;
-    show(0);
+    mark(nearest());
+    settled = marked; // the page shown on load is not announced
   });
 })();
 ` }}

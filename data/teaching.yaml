@@ -54,15 +54,37 @@ groups:
             term: Fall 2016
 
 outreach:
-  heading: Outreach
-  items:
-    - kind: Instructor
-      name: Pre-College Reinforcement Learning Course for High School Students, Georgia Tech
-      url: /rl-course/
-      term: Summer 2026
-    - kind: Judge
-      name: "STEM Spark: INFORMS K–12 Poster Competition"
-      term: 2026
-    - kind: Judge
-      name: Georgia Tech 2026 CRIDC Poster Competition
-      term: 2026
+  heading: Outreach and Service
+  # Each group renders like an institution in the left column: an accent
+  # subheading, then rows. A row is `kind` (bold) followed by either `name`
+  # (optionally linked with `url`), or `venues`, a list that expands to one
+  # row per venue, "Kind Venue". `term` is optional and sits on the right.
+  groups:
+    - label: Outreach
+      items:
+        - kind: Instructor
+          name: Pre-College Reinforcement Learning Course for High School Students, Georgia Tech
+          url: /rl-course/
+          term: Summer 2026
+        - kind: Judge
+          name: "STEM Spark: INFORMS K–12 Poster Competition"
+          term: 2026
+        - kind: Judge
+          name: Georgia Tech 2026 CRIDC Poster Competition
+          term: 2026
+
+    - label: Service
+      items:
+        - kind: Journal Referee
+          venues:
+            - Mathematical Programming
+            - SIAM Journal on Optimization
+            - Operations Research
+            - Journal of the American Statistical Association
+            - Stochastic Systems
+            - Journal of Global Optimization
+            - Journal of Optimization Theory and Applications
+            - IEEE Transactions on Automatic Control
+        - kind: Conference Reviewer
+          venues:
+            - IEEE International Symposium on Information Theory

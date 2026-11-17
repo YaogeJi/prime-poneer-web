@@ -8,7 +8,7 @@
 #   venue:   the journal or meeting, name only — `Mathematical Programming, Series A`
 #   detail:  the rest of the citation, small under the venue — volume and pages,
 #            or the arXiv number while under review
-#   status:  where the paper stands there, shown as a pill on the right —
+#   status:  where the paper stands there, shown as a status label on the right —
 #            `Major revision`, `Under review`, `Poster`. Leave it out once
 #            published; the year then takes its place.
 #   year:    publication year, shown when there is no status

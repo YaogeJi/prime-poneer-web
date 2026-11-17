@@ -1,5 +1,22 @@
+/* Stand-in for Geist while it loads (display=swap) or if it never arrives:
+   local Arial, scaled so the same text sets to about the same width and the
+   line sits on the same baseline. Without it the first paint used system-ui,
+   which runs ~12% narrower than Geist, so every line rewrapped on swap.
+   Values measured from the font files:
+     size-adjust     = Geist / Arial advance width on running English text
+     ascent/descent  = Geist hhea ascender/descender ÷ size-adjust
+   Only this fallback face is affected; Geist itself renders untouched. */
+@font-face {
+  font-family: 'Geist Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
+  size-adjust: 106.15%;
+  ascent-override: 94.68%;
+  descent-override: 27.79%;
+  line-gap-override: 0%;
+}
+
 :root {
-  --font-family-sans: 'Geist', ui-sans-serif, system-ui, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
+  --font-family-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
 
   /* One selected/hover look, shared by everything clickable or hover-revealing:
      a faint tint and a slightly deeper text colour. No transform, no shadow. */
@@ -13,9 +30,24 @@
   --hl-fg: #fff;
 }
 
+/* Native UI (scrollbars, form controls, the canvas behind overscroll) follows
+   the theme the page is showing, not the OS. The theme set color-scheme only
+   from prefers-color-scheme, so choosing dark on a light OS kept light
+   scrollbars, and the reverse. `.dark` is set by the theme's blocking head
+   script before first paint, so this never flashes; and if that script never
+   runs the page renders light, which `light` then matches. Two classes'
+   worth of specificity, to outrank the theme's `:root` rule. */
+:root:not(.dark) {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
 body,
 html {
-  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+  font-family: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Viewport-adaptive biography section */
@@ -24,9 +56,20 @@ html {
   padding-bottom: clamp(1rem, 3dvh, 4rem) !important;
 }
 
+/* Section rhythm. The theme pads every block 6rem top and bottom, so two
+   sections sat 12rem (192px) apart: on a phone nearly a quarter of the
+   screen of nothing, which read as the end of the page right after the news.
+   2.5rem a side on a phone, growing to 4rem on a wide screen, keeps the
+   sections distinct without the void. */
+.hbb-section {
+  padding-top: clamp(2.5rem, 1rem + 4vw, 4rem);
+  padding-bottom: clamp(2.5rem, 1rem + 4vw, 4rem);
+}
+
 /* Gap between the header and the top of the page content. Both this and the
    block padding above are halved from their previous values (6rem / 3dvh
-   originally). Scoped to the bio section — inter-section gaps keep 6rem. */
+   originally). Scoped to the bio section; it outranks the section rhythm
+   above, which sets the gaps between sections. */
 .hbb-section.blox-resume-biography-3 {
   padding-top: 2.4rem;
 }
@@ -48,8 +91,9 @@ html {
 /* ── Research terms and shared hover look ─────────────── */
 
 /* Research terms in the prose. Their pairing with the roadmap branches is in
-   the Research roadmap section below. Styled exactly like the inline links in
-   the paragraph above: accent colour, weight 500, no underline. */
+   the Research roadmap section below. Same accent colour and weight as the
+   inline links, but no underline: they are not links, and the underline is
+   the one thing that tells the two apart. */
 .rterm {
   color: var(--color-primary-600);
   font-weight: 500;
@@ -78,24 +122,51 @@ html {
   background: var(--hl-bg);
 }
 
-/* Inline links carry no underline — the accent colour marks them — and they
-   take the same tint on hover as every other interactive element. */
+/* Inline links: accent colour plus a thin, tinted underline. Colour alone was
+   not enough — the accent sits at 1.4:1 against the body text, and the
+   research terms beside these links share it. The underline is the same tint
+   and offset as the Teaching annotations, solid where theirs is dotted, so
+   the page has one family: solid = goes somewhere, dotted = explains, none =
+   a term. Hover keeps the shared tint and firms the line up. */
 .resume-biography .bio-text a,
 .resume-biography .affiliation-line a,
 .teaching .tch-course a {
   color: var(--color-primary-600);
   font-weight: 500;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in oklch, var(--color-primary-500) 45%, transparent);
   padding: 0 0.15rem;
   margin: 0 -0.15rem;
   border-radius: var(--hl-radius);
-  transition: color 0.16s ease, background 0.16s ease;
+  transition: color 0.16s ease, background 0.16s ease, text-decoration-color 0.16s ease;
 }
 
 .dark .resume-biography .bio-text a,
 .dark .resume-biography .affiliation-line a,
 .dark .teaching .tch-course a {
   color: var(--color-primary-300);
+  text-decoration-color: color-mix(in oklch, var(--color-primary-400) 55%, transparent);
+}
+
+.resume-biography .bio-text a:hover,
+.resume-biography .bio-text a:focus-visible,
+.resume-biography .affiliation-line a:hover,
+.resume-biography .affiliation-line a:focus-visible,
+.teaching .tch-course a:hover,
+.teaching .tch-course a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* Line breaks. The bio paragraphs avoid a one-word last line, and so do the
+   news titles ("2026" alone on a line). `pretty`, not `balance`, for the
+   titles: balance evens the lines out, which broke "Co-organizing a Session
+   on Stochastic" early with half the row empty above a full-width summary.
+   Both are progressive: browsers without them wrap as before. */
+.resume-biography .bio-text p,
+.news-feed-items h3 {
+  text-wrap: pretty;
 }
 
 /* ── Research roadmap (fishbone) ──────────────────────── */
@@ -132,6 +203,51 @@ html {
 .rm-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Sideways-scroll hint, shared by every figure that scrolls on a phone: the
+   roadmap, the AC-FGM graph and the AR subproblem. The content fades out at
+   whichever edge has more, so a label cut at the screen edge reads as "keep
+   swiping" rather than as a broken layout. A mask, so it works over the
+   gradient background; driven by the element's own scroll position, so each
+   fade disappears once you reach that end. Where the figure fits (desktop,
+   or the AC-FGM graph above its 460px tier, where it is not a scroller at
+   all) the timeline is inactive and nothing fades. */
+@property --sx-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --sx-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.rm-scroll,
+.research-program .rp-acfgm,
+.research-program .rp-ar-eq {
+  --sx-fade-size: 2.5rem;
+  mask:
+    linear-gradient(black, black) no-clip subtract,
+    linear-gradient(to right, black, transparent) 0 0 / var(--sx-fade-start) 100% no-repeat no-clip,
+    linear-gradient(to right, transparent, black) 100% 0 / var(--sx-fade-end) 100% no-repeat no-clip;
+  animation: sx-fade-start linear both, sx-fade-end linear both;
+  animation-timeline: scroll(self inline);
+  animation-range: 0 var(--sx-fade-size), calc(100% - var(--sx-fade-size)) 100%;
+}
+
+@keyframes sx-fade-start {
+  to {
+    --sx-fade-start: var(--sx-fade-size);
+  }
+}
+
+@keyframes sx-fade-end {
+  from {
+    --sx-fade-end: var(--sx-fade-size);
+  }
 }
 
 .rm-svg {
@@ -412,6 +528,51 @@ html {
   scrollbar-color: rgba(161, 161, 170, 0.2) transparent;
 }
 
+/* The list fades out at whichever end has more news. It is a mask on the list
+   itself, so the items turn transparent over whatever is behind them; the old
+   overlay was painted in the page colour and showed as a pale band with a hard
+   edge across the gradient background. Driven by the list's own scroll
+   position: the top fade grows in as you leave the start, the bottom one
+   shrinks away as you reach the end, and with nothing to scroll the timeline
+   is inactive and neither shows. No script. Browsers without scroll-driven
+   animations simply show no fade; the list still scrolls. */
+@property --news-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --news-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.news-feed-items {
+  --news-fade-size: 3rem;
+  /* a link reached by Tab never comes to rest inside a fade */
+  scroll-padding-block: var(--news-fade-size);
+  mask:
+    linear-gradient(black, black) no-clip subtract,
+    linear-gradient(to bottom, black, transparent) 0 0 / 100% var(--news-fade-start) no-repeat no-clip,
+    linear-gradient(to bottom, transparent, black) 0 100% / 100% var(--news-fade-end) no-repeat no-clip;
+  animation: news-fade-start linear both, news-fade-end linear both;
+  animation-timeline: scroll(self block);
+  animation-range: 0 var(--news-fade-size), calc(100% - var(--news-fade-size)) 100%;
+}
+
+@keyframes news-fade-start {
+  to {
+    --news-fade-start: var(--news-fade-size);
+  }
+}
+
+@keyframes news-fade-end {
+  from {
+    --news-fade-end: var(--news-fade-size);
+  }
+}
+
 /* Affiliation line — sized to stay on a single line in the left column */
 .affiliation-line {
   font-size: clamp(0.55rem, 1.1vw, 0.85rem);
@@ -499,7 +660,7 @@ html {
   color: #fff;
 }
 
-/* Teaching experience and outreach side by side, stacking below 1024px.
+/* Teaching experience and outreach & service side by side, stacking below 1024px.
    Divider is a centred pseudo-element so both columns keep equal width, and
    it fades out because the two columns never end level. */
 .teaching .tch-columns {
@@ -745,6 +906,297 @@ html {
   border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
 }
 
+/* Email pill: "Email" and "Copied!" share one grid cell, so the pill is sized
+   by the longer label and nothing in the row moves when it swaps. The idle
+   label fades rather than hides, so it stays the link's accessible name. */
+.text-link-stack {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.text-link-stack > * {
+  grid-area: 1 / 1;
+  transition: opacity 0.16s ease;
+}
+
+.text-link-done,
+.text-link[data-copied] .text-link-idle {
+  opacity: 0;
+}
+
+.text-link[data-copied] .text-link-done {
+  opacity: 1;
+}
+
+/* ── Education & training (left column) ───────────────── */
+
+/* The old horizontal timeline, turned vertical for the narrow column: a rail
+   of icon dots, oldest at the top. Same three tiers as before, degree
+   (near-black, bold) > school (accent) > research directions (grey), with the
+   years on the right. The details card opens downward, under the text. */
+.bio-path {
+  width: 100%;
+}
+
+.bio-path .bp-list {
+  --bp-dot: 2rem;
+  --bp-gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bio-path .bp-item {
+  --bp-after: 0.9rem; /* space under the row, before the next node */
+  position: relative;
+  padding-bottom: var(--bp-after);
+}
+
+.bio-path .bp-item:last-child {
+  --bp-after: 0rem;
+}
+
+/* The rail: from just under one dot to just above the next, so it runs
+   through the research directions without touching the circles. */
+.bio-path .bp-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--bp-dot) / 2 - 1px);
+  top: calc(var(--bp-dot) + 0.3rem);
+  bottom: 0.3rem;
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in oklch, var(--color-primary-500) 35%, transparent);
+}
+
+.dark .bio-path .bp-item:not(:last-child)::before {
+  background: color-mix(in oklch, var(--color-primary-400) 70%, transparent);
+}
+
+/* The node is the card's trigger. It takes the shared hover tint; the
+   negative margin lets the tint breathe around the content without moving
+   the dot off the rail. */
+.bio-path .bp-node {
+  display: flex;
+  align-items: center;
+  gap: var(--bp-gap);
+  width: calc(100% + 0.8rem);
+  margin: -0.2rem -0.4rem;
+  padding: 0.2rem 0.4rem;
+  border: 0;
+  border-radius: var(--hl-radius);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: help;
+  transition: background 0.16s ease;
+}
+
+.bio-path .bp-item:hover .bp-node,
+.bio-path .bp-node:focus-visible {
+  background: var(--hl-bg);
+}
+
+.bio-path .bp-dot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--bp-dot);
+  height: var(--bp-dot);
+  border: 2px solid var(--color-primary-500);
+  border-radius: 9999px;
+  background: var(--color-white, #fff);
+  color: var(--color-primary-600);
+}
+
+.bio-path .bp-dot svg {
+  width: 55%;
+  height: 55%;
+}
+
+/* The tam is drawn with more padding inside its viewBox than the Phosphor
+   glyphs, so it needs a nudge to carry the same visual weight. */
+.bio-path .bp-dot svg.bp-ico-tam {
+  width: 66%;
+  height: 66%;
+}
+
+.dark .bio-path .bp-dot {
+  border-color: var(--color-primary-400);
+  background: var(--color-gray-900, #111827);
+  color: var(--color-primary-300);
+}
+
+.bio-path .bp-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bio-path .bp-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-gray-900, #111827);
+}
+
+.bio-path .bp-org {
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-primary-600);
+}
+
+/* The department sits under the school as part of the same name, so it
+   keeps the accent colour at a lighter weight and size; the research
+   directions below stay grey, a separate tier. */
+.bio-path .bp-dept {
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--color-primary-600);
+}
+
+.dark .bio-path .bp-dept {
+  color: var(--color-primary-300);
+}
+
+.bio-path .bp-years {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .bio-path .bp-label {
+  color: #fff;
+}
+
+.dark .bio-path .bp-org {
+  color: var(--color-primary-300);
+}
+
+.dark .bio-path .bp-years {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+/* Research directions: one wrapped line under the school, indented to the
+   text so the rail stays clear. */
+.bio-path .bp-topics {
+  margin: 0.3rem 0 0 calc(var(--bp-dot) + var(--bp-gap));
+  padding: 0;
+  list-style: none;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.bio-path .bp-topics li {
+  display: inline;
+}
+
+/* The separator is decoration: the empty alt text keeps it out of what a
+   screen reader reads, which already announces a list. */
+.bio-path .bp-topics li + li::before {
+  content: '·' / '';
+  margin: 0 0.4rem;
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .bio-path .bp-topics {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .bio-path .bp-topics li + li::before {
+  color: var(--color-gray-500, #6b7280);
+}
+
+/* Details card: the only place the full degree, dates, advisors and thesis
+   appear. Opens under the row's research directions (never over them),
+   aligned with the text rather than the dot. Anywhere on the row opens it,
+   and it is a child of the row, so moving the pointer onto it keeps it open. */
+.bio-path .bp-tip {
+  position: absolute;
+  top: calc(100% - var(--bp-after) + 0.4rem);
+  left: calc(var(--bp-dot) + var(--bp-gap));
+  z-index: 40;
+  width: max-content;
+  max-width: min(20rem, calc(100% - var(--bp-dot) - var(--bp-gap)));
+  padding: 0.7rem 0.85rem;
+  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
+  border-radius: 0.75rem;
+  background: var(--color-white, #fff);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.25rem);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.dark .bio-path .bp-tip {
+  border-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
+  background: var(--color-gray-800, #1f2937);
+  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+}
+
+.bio-path .bp-item:hover .bp-tip,
+.bio-path .bp-item:focus-within .bp-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bio-path .bp-tip-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-gray-900, #111827);
+}
+
+.bio-path .bp-tip-date {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.bio-path .bp-tip-row {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--color-gray-600, #4b5563);
+}
+
+.bio-path .bp-tip-key {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gray-500, #6b7280);
+}
+
+.dark .bio-path .bp-tip-title {
+  color: #fff;
+}
+
+.dark .bio-path .bp-tip-date,
+.dark .bio-path .bp-tip-key {
+  color: var(--color-gray-400, #9ca3af);
+}
+
+.dark .bio-path .bp-tip-row {
+  color: var(--color-gray-300, #d1d5db);
+}
+
 /* ── Off-duty badges ──────────────────────────────────── */
 /* Label + badges are one flex child of the left column, so the column's
    gap no longer lands between them — it was stacking on the label's margin. */
@@ -752,19 +1204,26 @@ html {
   width: 100%;
 }
 
-/* Small, pale, all-caps label above the badges — no rule, no long line */
-.hobby-heading {
+/* Small, pale, all-caps label above the badges — no rule, no long line.
+   Shared with the Education & training heading above it. */
+.hobby-heading,
+.bio-path-heading {
   display: block;
   margin: 0 0 0.4rem;
   font-size: 0.64rem;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
-.dark .hobby-heading {
-  color: var(--color-gray-500, #6b7280);
+.bio-path-heading {
+  margin-bottom: 0.7rem;
+}
+
+.dark .hobby-heading,
+.dark .bio-path-heading {
+  color: var(--color-gray-400, #9ca3af);
 }
 
 .hobby-row {
@@ -775,48 +1234,120 @@ html {
   margin-top: 0;
 }
 
-/* Pictogram first, circle second: a very faint keyline at ~14% by default
-   that only firms up on hover, with no fill and no shadow, so nothing reads
-   as a button shell. The circle also shrinks while the glyph does not,
-   raising the symbol-to-container ratio from 0.62 to 0.72. */
+/* Each badge is a small medallion in the site's own palette: white lit to a
+   faint primary tint, a fine primary ring, a white inner rim and a soft
+   neutral shadow, so it belongs with the timeline dots and the link pills
+   rather than standing apart. The icon takes the accent colour. Hover and
+   focus firm the ring up, as elsewhere; nothing moves. */
 .hobby-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.875rem;
-  height: 2.875rem;
+  width: 3rem;
+  height: 3rem;
   border-radius: 9999px;
   cursor: pointer;
   color: var(--color-primary-600);
-  background: transparent;
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 14%, transparent);
-  box-shadow: none;
-  transition: border-color 0.16s ease, background 0.16s ease;
+  background: radial-gradient(circle at 32% 26%, #fff 0%, color-mix(in oklab, var(--color-primary-500) 7%, #fff) 75%);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.85),
+    0 0 0 1px color-mix(in oklab, var(--color-primary-500) 20%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.05),
+    0 4px 10px -6px rgb(0 0 0 / 0.2);
+  transition: box-shadow 0.16s ease;
 }
 
-.hobby-ico {
-  width: 72%;
-  height: 72%;
+.hobby-badge > svg,
+.hobby-badge > img {
+  display: block;
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
 }
 
 .dark .hobby-badge {
   color: var(--color-primary-300);
-  border-color: color-mix(in oklch, var(--color-primary-400) 18%, transparent);
+  background: radial-gradient(circle at 32% 26%,
+    color-mix(in oklab, var(--color-primary-400) 16%, transparent) 0%,
+    color-mix(in oklab, var(--color-primary-400) 6%, transparent) 75%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--color-primary-400) 26%, transparent),
+    0 4px 12px -6px rgb(0 0 0 / 0.6);
 }
 
 .hobby-item:hover .hobby-badge,
 .hobby-item:focus-within .hobby-badge {
-  border-color: color-mix(in oklch, var(--color-primary-500) 34%, transparent);
-  background: var(--hl-bg);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.85),
+    0 0 0 1px color-mix(in oklab, var(--color-primary-500) 40%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.05),
+    0 4px 10px -6px rgb(0 0 0 / 0.2);
 }
 
 .dark .hobby-item:hover .hobby-badge,
 .dark .hobby-item:focus-within .hobby-badge {
-  border-color: color-mix(in oklch, var(--color-primary-400) 42%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--color-primary-400) 48%, transparent),
+    0 4px 12px -6px rgb(0 0 0 / 0.6);
 }
 
+/* Keyboard focus gets a visible ring; it used to be removed outright. */
 .hobby-badge:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 3px;
+}
+
+.dark .hobby-badge:focus-visible {
+  outline-color: var(--color-primary-300);
+}
+
+/* Print badges: a picture that is already a round medallion (the supplied badges)
+   is shown whole, clipped to the circle, with its own paper as the ground.
+   Larger than the icon badges, so the carving reads. Same fine ring and soft
+   shadow as the icon badges; hover firms the ring up. */
+.hobby-badge:has(> img) {
+  width: 4.25rem;
+  height: 4.25rem;
+  overflow: hidden;
+  background: #f8f4ec; /* a paper tone, shown while the image loads */
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-primary-500) 22%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 5px 12px -6px rgb(0 0 0 / 0.28);
+}
+
+.hobby-badge > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hobby-item:hover .hobby-badge:has(> img),
+.hobby-item:focus-within .hobby-badge:has(> img) {
+  box-shadow:
+    0 0 0 1.5px color-mix(in oklab, var(--color-primary-500) 45%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 5px 12px -6px rgb(0 0 0 / 0.28);
+}
+
+/* Dark: the paper is the brightest thing in the column, so it is toned down
+   a little to sit with the page rather than glare. */
+.dark .hobby-badge:has(> img) {
+  background: #d6d2ca; /* the paper tone, a shade down; `.dark .hobby-badge` would otherwise win */
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-primary-400) 30%, transparent),
+    0 5px 14px -6px rgb(0 0 0 / 0.7);
+}
+
+.dark .hobby-badge > img {
+  filter: brightness(0.86);
+}
+
+.dark .hobby-item:hover .hobby-badge:has(> img),
+.dark .hobby-item:focus-within .hobby-badge:has(> img) {
+  box-shadow:
+    0 0 0 1.5px color-mix(in oklab, var(--color-primary-400) 55%, transparent),
+    0 5px 14px -6px rgb(0 0 0 / 0.7);
 }
 
 /* Label — hidden until hover / focus.
@@ -871,9 +1402,12 @@ html {
 /* ── Full-page Gradient Mesh Background ───────────────── */
 
 
+/* Fixed behind the page, the same layer as the theme's #page-bg (which it
+   follows in the DOM, so it paints over that empty layer). */
 .gradient-mesh-global {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
@@ -882,7 +1416,6 @@ html {
   position: absolute;
   border-radius: 9999px;
   filter: blur(80px);
-  will-change: transform;
 }
 
 .gradient-mesh-orb-1 {
@@ -891,7 +1424,6 @@ html {
   top: 5%;
   left: 15%;
   background: color-mix(in oklch, var(--color-primary-500) 20%, transparent);
-  animation: mesh-float-1 12s ease-in-out infinite;
 }
 
 .gradient-mesh-orb-2 {
@@ -900,8 +1432,6 @@ html {
   top: 40%;
   right: 10%;
   background: color-mix(in oklch, var(--color-secondary-500) 18%, transparent);
-  animation: mesh-float-2 14s ease-in-out infinite;
-  animation-delay: -4s;
 }
 
 .gradient-mesh-orb-3 {
@@ -910,8 +1440,29 @@ html {
   bottom: 10%;
   left: 35%;
   background: color-mix(in oklch, var(--color-primary-500) 12%, transparent);
-  animation: mesh-float-3 16s ease-in-out infinite;
-  animation-delay: -8s;
+}
+
+/* The drift is opt-in: static by default, animated only when the visitor has
+   not asked for reduced motion. The theme's global reduced-motion reset is a
+   `*` rule, so it never overrode these class-level animations. */
+@media (prefers-reduced-motion: no-preference) {
+  .gradient-mesh-orb {
+    will-change: transform;
+  }
+
+  .gradient-mesh-orb-1 {
+    animation: mesh-float-1 12s ease-in-out infinite;
+  }
+
+  .gradient-mesh-orb-2 {
+    animation: mesh-float-2 14s ease-in-out infinite;
+    animation-delay: -4s;
+  }
+
+  .gradient-mesh-orb-3 {
+    animation: mesh-float-3 16s ease-in-out infinite;
+    animation-delay: -8s;
+  }
 }
 
 @keyframes mesh-float-1 {
@@ -971,7 +1522,8 @@ html {
 }
 
 /* Visually hidden, still announced. Defined locally rather than relying on a
-   utility class, so the template does not depend on class extraction. */
+   utility class, so the template does not depend on class extraction. Used by
+   the Research Snap page status and the email pill's copy status. */
 .rp-sr-only {
   position: absolute;
   width: 1px;
@@ -1036,11 +1588,11 @@ html {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 .dark .research-program .rp-focus-label {
-  color: var(--color-gray-500, #6b7280);
+  color: var(--color-gray-400, #9ca3af);
 }
 
 .research-program .rp-focus-list {
@@ -1152,8 +1704,50 @@ html {
 
 /* ── Multi-page Research Snap ─────────────────────────── */
 
-/* Before the script runs the pages are simply stacked, so the figure is fully
-   readable with JavaScript off. `is-ready` switches to one page at a time. */
+/* A horizontal scroll-snap track, one page per view. It scrolls natively, so
+   it works on touch, trackpad and keyboard with or without the script; the
+   script only adds the Previous/Next and dot controls under it. */
+.research-program .rp-flip {
+  display: flex;
+  flex-direction: column;
+}
+
+.research-program .rp-flip-track {
+  position: relative; /* offsetParent for the slides, which the script measures */
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  /* mandatory: the track always comes to rest on a whole page */
+  scroll-snap-type: x mandatory;
+  /* a swipe past either end stays on the figure instead of going back a page
+     in the browser; x only, so the page still scrolls vertically over it */
+  overscroll-behavior-x: contain;
+  touch-action: manipulation;
+  border-radius: 0.6rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .research-program .rp-flip-track {
+    scroll-behavior: smooth;
+  }
+}
+
+/* With the controls present the scrollbar is redundant; without the script it
+   stays, as the only visible sign the figure has more pages. */
+.research-program .rp-flip.is-ready .rp-flip-track {
+  scrollbar-width: none;
+}
+
+.research-program .rp-flip-track:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.research-program .rp-flip-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+}
+
 .research-program .rp-flip-page {
   display: block;
   width: 100%;
@@ -1162,20 +1756,9 @@ html {
   border: 1px solid var(--rp-rule);
 }
 
-.research-program .rp-flip-page + .rp-flip-page {
-  margin-top: 0.75rem;
-}
-
-.research-program .rp-flip.is-ready .rp-flip-page {
-  display: none;
-  margin-top: 0;
-}
-
-.research-program .rp-flip.is-ready .rp-flip-page.is-current {
-  display: block;
-}
-
+/* First in the DOM so it precedes the track for screen readers; shown below. */
 .research-program .rp-flip-nav {
+  order: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1199,6 +1782,7 @@ html {
   background: var(--color-white, #fff);
   color: var(--color-gray-600, #4b5563);
   cursor: pointer;
+  touch-action: manipulation;
   transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
 }
 
@@ -1236,6 +1820,7 @@ html {
   border-radius: 9999px;
   background: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .research-program .rp-flip-dot::after {
@@ -1299,7 +1884,7 @@ html {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 .research-program .rp-snap-placeholder-sub {
@@ -1309,12 +1894,12 @@ html {
   letter-spacing: 0.06em;
   text-transform: none;
   font-size: 0.72rem;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 .dark .research-program .rp-snap-placeholder-text,
 .dark .research-program .rp-snap-placeholder-sub {
-  color: var(--color-gray-500, #6b7280);
+  color: var(--color-gray-400, #9ca3af);
 }
 
 /* ── Item text ────────────────────────────────────────── */
@@ -1325,11 +1910,11 @@ html {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 .dark .research-program .rp-label {
-  color: var(--color-gray-500, #6b7280);
+  color: var(--color-gray-400, #9ca3af);
 }
 
 .research-program .rp-title {
@@ -1338,7 +1923,9 @@ html {
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: -0.01em;
-  text-wrap: balance;
+  /* pretty, not balance: lines fill normally and only the tail is adjusted,
+     so a title does not break early above the full-width summary */
+  text-wrap: pretty;
   color: var(--color-gray-900, #111827);
 }
 
@@ -1386,7 +1973,7 @@ html {
 /* The foot of the card, bled to its edges: one shade deeper than the card and
    set off by a hairline, so the venue reads as where the work stands rather
    than as small print. The journal name is plain sentence case at body
-   weight-plus; the status is the only pill on the card with a solid fill. */
+   weight-plus; the status is a small-caps label on the right (see below). */
 .research-program .rp-venue-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1420,18 +2007,35 @@ html {
   color: var(--color-gray-500, #6b7280);
 }
 
+/* Where the paper stands. A label, not a control: no border, no fill, no
+   pill, so it cannot be mistaken for the Paper / Slides buttons above it,
+   which are exactly that shape. It keeps its weight through the page's
+   status voice instead, the same small-caps accent as the "Available" chip on
+   the job-market notice, with a dot in front like a status light. */
 .research-program .rp-venue-status {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.22rem 0.7rem;
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 32%, transparent);
-  border-radius: 9999px;
-  background: var(--color-white, #fff);
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
   line-height: 1.35;
+  text-transform: uppercase;
   white-space: nowrap;
   color: var(--color-primary-700);
+}
+
+.research-program .rp-venue-status::before {
+  content: '';
+  flex: none;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 9999px;
+  background: currentColor;
+  /* a faint halo, so the dot reads as a light rather than a bullet */
+  box-shadow: 0 0 0 0.2rem color-mix(in oklch, currentColor 16%, transparent);
 }
 
 .research-program .rp-venue-year {
@@ -1453,9 +2057,7 @@ html {
 }
 
 .dark .research-program .rp-venue-status {
-  border-color: color-mix(in oklch, var(--color-primary-400) 45%, transparent);
-  background: var(--color-gray-900, #111827);
-  color: var(--color-primary-200);
+  color: var(--color-primary-300);
 }
 
 /* ── Item links ───────────────────────────────────────── */
@@ -1887,7 +2489,7 @@ html {
   font-size: 0.6rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 /* The box is the only filled element — it is the thing the figure is about. */
@@ -2014,7 +2616,7 @@ html {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--color-gray-500, #6b7280);
 }
 
 .research-program .rp-ar-req {
@@ -2059,6 +2661,14 @@ html {
   width: 1.2rem;
   text-align: right;
   font-size: 0.66rem;
+  color: var(--color-gray-500, #6b7280);
+}
+
+/* Dark counterparts for the small AR-figure labels above (gray-400 is 7:1 on
+   the dark card; the light value would drop to 3.7:1 here). */
+.dark .research-program .rp-ar-cap,
+.dark .research-program .rp-ar-algo-kicker,
+.dark .research-program .rp-ar-steps > li::before {
   color: var(--color-gray-400, #9ca3af);
 }
 
@@ -2096,12 +2706,8 @@ html {
     gap: 0.35rem;
   }
   /* The subproblem cannot shrink to fit a phone without becoming unreadable,
-     so it scrolls — and a right-edge fade shows there is more to see. Scoped
-     to this width, where it always overflows, so the fade never appears on a
-     line that already fits. */
-  .research-program .rp-ar-eq {
-    mask-image: linear-gradient(to right, #000 88%, transparent 100%);
-  }
+     so it scrolls; the shared sideways-scroll fade (see .rm-scroll) shows
+     there is more to see and clears once the end is reached. */
   .research-program .rp-ar-out {
     max-width: 7rem;
   }
@@ -2133,9 +2739,6 @@ html {
   margin-top: 0;
 }
 
-/* The fade at the foot of the scroller is painted with --color-background.
-   Inside this column that is still the page background, so it continues to
-   blend correctly in both themes. */
 
 /* ── Pinned news callout ──────────────────────────────── */
 

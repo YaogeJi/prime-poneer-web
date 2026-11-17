@@ -138,7 +138,7 @@
               {{/* 7. Venue bar — the foot of the card, full bleed, a shade
                    deeper than the card itself. Journal name first, the rest
                    of the citation (`detail`) under it, and the status as a
-                   pill on the right; published works show the year there. */}}
+                   label on the right; published works show the year there. */}}
               {{ $venue := strings.TrimSpace (printf "%v" (index $item "venue" | default "")) }}
               {{ $detail := strings.TrimSpace (printf "%v" (index $item "detail" | default "")) }}
               {{ $status := strings.TrimSpace (printf "%v" (index $item "status" | default "")) }}

@@ -1,13 +1,11 @@
+{{/* Homepage background: three soft colour orbs behind the content. Plain
+     markup rather than script-injected, so it is there on first paint. It sits
+     fixed behind the page like the theme's #page-bg; the drift animation only
+     runs when the visitor has not asked for reduced motion (see custom.css). */}}
 {{ if .IsHome }}
-<script>
-  (function() {
-    var bg = document.getElementById('page-bg');
-    if (!bg) return;
-    bg.innerHTML = '<div class="gradient-mesh-global">' +
-      '<div class="gradient-mesh-orb gradient-mesh-orb-1"></div>' +
-      '<div class="gradient-mesh-orb gradient-mesh-orb-2"></div>' +
-      '<div class="gradient-mesh-orb gradient-mesh-orb-3"></div>' +
-      '</div>';
-  })();
-</script>
+<div class="gradient-mesh-global" aria-hidden="true">
+  <div class="gradient-mesh-orb gradient-mesh-orb-1"></div>
+  <div class="gradient-mesh-orb gradient-mesh-orb-2"></div>
+  <div class="gradient-mesh-orb gradient-mesh-orb-3"></div>
+</div>
 {{ end }}

@@ -34,8 +34,42 @@
     {{ end }}
 
   {{ else if $hasPages }}
-    <div class="rp-flip" data-rp-flip>
-      <div class="rp-flip-stage">
+    {{/* A native scroll-snap track: swipe on touch, scroll with a trackpad or
+         the arrow keys once focused, and it still works with JavaScript off.
+         The script adds Previous/Next and page dots and announces the page.
+         The controls come before the track in the DOM, so after "Next" a
+         screen reader reads straight on into the new page; CSS shows them
+         below the figure. */}}
+    {{ $n := len $pages }}
+    <div class="rp-flip" data-rp-flip role="region" aria-roledescription="carousel"
+         aria-label="Research Snap for {{ $title }}">
+      <div class="rp-flip-nav" data-rp-nav hidden>
+        <button type="button" class="rp-flip-btn" data-rp-prev
+                aria-label="Previous page">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M10 2 4 8l6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <span class="rp-flip-dots" role="group" aria-label="Choose a page">
+          {{ range $i, $p := $pages }}
+            <button type="button" class="rp-flip-dot" data-rp-dot
+                    {{ if eq $i 0 }}aria-current="true"{{ end }}
+                    aria-label="Go to page {{ add $i 1 }}"></button>
+          {{ end }}
+        </span>
+
+        <button type="button" class="rp-flip-btn" data-rp-next
+                aria-label="Next page">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M6 2l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rp-flip-track" data-rp-track tabindex="0" role="group" aria-label="Pages">
         {{ range $i, $p := $pages }}
           {{ $file := strings.TrimSpace (printf "%v" (index $p "file" | default "")) }}
           {{ $alt := strings.TrimSpace (printf "%v" (index $p "alt" | default "")) }}
@@ -55,44 +89,20 @@
             {{ $srcset = $srcset | append (printf "%s %dw" $r.RelPermalink .) }}
           {{ end }}
           {{ $fallback := $res.Resize "1400x webp q82 Lanczos" }}
-          <img class="rp-flip-page{{ if eq $i 0 }} is-current{{ end }}"
-               data-rp-page="{{ $i }}"
-               src="{{ $fallback.RelPermalink }}"
-               srcset="{{ delimit $srcset ", " }}"
-               sizes="(min-width: 1024px) 600px, 92vw"
-               width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
-               alt="{{ $alt }}"
-               loading="{{ cond (eq $i 0) "eager" "lazy" }}" decoding="async">
+          <div class="rp-flip-slide" role="group" aria-roledescription="page"
+               aria-label="{{ add $i 1 }} of {{ $n }}">
+            <img class="rp-flip-page"
+                 src="{{ $fallback.RelPermalink }}"
+                 srcset="{{ delimit $srcset ", " }}"
+                 sizes="(min-width: 1024px) 600px, 92vw"
+                 width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
+                 alt="{{ $alt }}"
+                 loading="{{ cond (eq $i 0) "eager" "lazy" }}" decoding="async">
+          </div>
         {{ end }}
       </div>
 
-      <div class="rp-flip-nav" data-rp-nav hidden>
-        <button type="button" class="rp-flip-btn" data-rp-prev
-                aria-label="Previous page of the Research Snap for {{ $title }}">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M10 2 4 8l6 6" fill="none" stroke="currentColor"
-                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-
-        <span class="rp-flip-dots">
-          {{ range $i, $p := $pages }}
-            <button type="button" class="rp-flip-dot" data-rp-dot
-                    {{ if eq $i 0 }}aria-current="true"{{ end }}
-                    aria-label="Go to page {{ add $i 1 }}"></button>
-          {{ end }}
-        </span>
-
-        <button type="button" class="rp-flip-btn" data-rp-next
-                aria-label="Next page of the Research Snap for {{ $title }}">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M6 2l6 6-6 6" fill="none" stroke="currentColor"
-                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <p class="rp-sr-only" aria-live="polite" data-rp-live></p>
+      <p class="rp-sr-only" role="status" data-rp-live></p>
     </div>
 
   {{ else if $figure }}

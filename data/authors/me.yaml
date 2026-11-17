@@ -32,9 +32,6 @@ links:
     icon: at-symbol
     url: mailto:yaoji@gatech.edu
     label: Copy email address
-  - text: GitHub
-    icon: brands/github
-    url: https://github.com/YaogeJi/
   - text: LinkedIn
     icon: brands/linkedin
     url: https://www.linkedin.com/in/yao-ji-522a751a9/
@@ -50,6 +47,7 @@ education:
   - degree: B.S. in Mathematics
     short: B.S.
     institution: Beijing Normal University
+    department: School of Mathematical Sciences
     institution_short: BNU
     focus: Probability and statistics foundation
     topics:
@@ -60,6 +58,7 @@ education:
   - degree: Thesis M.S. in Probability Theory and Stochastic Processes
     short: M.S.
     institution: Beijing Normal University
+    department: School of Mathematical Sciences
     institution_short: BNU
     focus: Stochastic processes
     topics:
@@ -73,6 +72,7 @@ education:
     short: Ph.D.
     icon: doctoral-tam
     institution: Purdue University
+    department: Edwardson School of Industrial Engineering
     institution_short: Purdue
     topics:
       - name: Distributed Optimization
@@ -90,6 +90,7 @@ experience:
   - role: H. Milton Stewart Postdoctoral Fellow
     short: Postdoc
     org: Georgia Institute of Technology
+    department: H. Milton Stewart School of Industrial and Systems Engineering
     org_short: Georgia Tech
     topics:
       - name: Parameter-free

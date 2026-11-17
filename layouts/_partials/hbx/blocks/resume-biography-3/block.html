@@ -369,6 +369,10 @@
             <button type="button" class="hobby-badge hobby-badge--{{ $kind }}" aria-pressed="false" aria-label="{{ .label }}"
                     {{ with $odds }}data-odds="{{ delimit . "," }}"{{ end }}>
               <span class="hobby-coin" aria-hidden="true">
+                {{/* The coin's edge: thin discs stacked between the two faces,
+                     so the coin shows its thickness when it tilts or turns.
+                     The count matches --slices in custom.css. */}}
+                <span class="hobby-edge">{{ range seq 0 11 }}<span style="--i: {{ . }}"></span>{{ end }}</span>
                 <span class="hobby-face hobby-face--front">
                   {{ if eq $icon.MediaType.SubType "svg" }}
                     {{ $icon.Content | safeHTML }}
@@ -659,7 +663,12 @@
      still faces away. With tiers (`data-odds` on the coin, `data-tier` on each
      photo) a tier is drawn first, by its odds, then a photo within it; never
      the same photo twice in a row where there is a choice. An epic or
-     legendary pull opens the reveal card once the coin has landed. */}}
+     legendary pull opens the reveal card once the coin has landed.
+
+     With a mouse or pen, a hovered coin also tips with the pointer, the side
+     under it dipping away as if pressed, and the light on its rim swings
+     toward the pointer while its shadow leans away (custom.css reads
+     --tilt-x, --tilt-y, --rim-angle, --light-x and --light-y). */}}
 <script>
 (function () {
   var coins = document.querySelectorAll('.hobby-badge[aria-pressed]');
@@ -668,7 +677,52 @@
   var dialog = document.querySelector('[data-reveal]');
   var revealTimer;
 
-  function turn(coin, over) { coin.setAttribute('aria-pressed', over ? 'true' : 'false'); }
+  // A coin that changes sides stops following the pointer for the length of
+  // the turn (0.65s, as in custom.css), so the turn keeps its spring.
+  function turn(coin, over) {
+    var was = coin.getAttribute('aria-pressed') === 'true';
+    coin.setAttribute('aria-pressed', over ? 'true' : 'false');
+    if (was !== over) {
+      coin.classList.remove('is-tilting');
+      coin.calmUntil = Date.now() + 650;
+    }
+  }
+
+  // Tilt with the pointer: the side under it dips away, as if pressed, up to
+  // these angles at the coin's edge. Mouse and pen only, and not while the
+  // coin is turned or turning.
+  var TILT_X = 18, TILT_Y = 26;
+  function tilt(coin, e) {
+    if (e.pointerType === 'touch' || reduced.matches) { return; }
+    if (coin.getAttribute('aria-pressed') === 'true' || Date.now() < (coin.calmUntil || 0)) { return; }
+    var r = coin.getBoundingClientRect();
+    var x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+    var y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
+    coin.style.setProperty('--tilt-x', (-y * TILT_X).toFixed(1) + 'deg');
+    coin.style.setProperty('--tilt-y', (x * TILT_Y).toFixed(1) + 'deg');
+    // The rim light points at the pointer, leaning to the upper left, where
+    // it rests (0deg is the top, clockwise); the shadow leans away from it.
+    rim(coin, Math.atan2(x - 0.3, 0.3 - y) * 180 / Math.PI);
+    coin.style.setProperty('--light-x', x.toFixed(2));
+    coin.style.setProperty('--light-y', y.toFixed(2));
+    coin.classList.add('is-tilting');
+  }
+  function untilt(coin) {
+    coin.style.removeProperty('--tilt-x');
+    coin.style.removeProperty('--tilt-y');
+    coin.style.removeProperty('--light-x');
+    coin.style.removeProperty('--light-y');
+    rim(coin, 315);
+    coin.classList.remove('is-tilting');
+  }
+  // Set the rim light's angle the short way round from where it is, so it
+  // never eases through a full turn.
+  function rim(coin, a) {
+    var was = coin.rimAngle == null ? 315 : coin.rimAngle;
+    a += Math.round((was - a) / 360) * 360;
+    coin.rimAngle = a;
+    coin.style.setProperty('--rim-angle', a.toFixed(1) + 'deg');
+  }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
 
   // "common:70,rare:20,..." -> a tier, among the tiers that have photos.
@@ -762,8 +816,10 @@
         revealTimer = setTimeout(function () { reveal(shot); }, reduced.matches ? 0 : 700);
       }
     });
+    coin.addEventListener('pointermove', function (e) { tilt(coin, e); });
     coin.addEventListener('pointerleave', function (e) {
       if (e.pointerType !== 'touch') { turn(coin, false); }
+      untilt(coin);
     });
     coin.addEventListener('blur', function () { turn(coin, false); });
     coin.addEventListener('keydown', function (e) {

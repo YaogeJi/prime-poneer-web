@@ -40,7 +40,7 @@ reveal:
     close: Purr-fect!
 
 coins:
-  - icon: bouldering-flat.png
+  - icon: bouldering-sheen.png
     label: Bouldering. Let's go climbing sometime!
     caption: Let's go climbing!
     photos:
@@ -49,18 +49,17 @@ coins:
       - file: climb-3.jpg
       - file: climb-4.jpg
 
-  - icon: running-flat.png
+  - icon: running-sheen.png
     label: Half marathon, 2 hours 3 minutes 49 seconds, at the Columbus Marathon
     kicker: Half marathon
     lines: ["2:03:49"]
     big: true
     photo: photo-medals.jpg
 
-  - icon: cats-flat.png
+  - icon: cats-sheen.png
     label: "Mother of three naughty cats: Doggy, Oreo and Dove"
     photos:
       # Common, 70%
-      - { file: cat-doggy.jpg, name: Doggy, tier: common }
       - { file: cat-oreo.jpg, name: Oreo, tier: common }
       - { file: cat-dove.jpg, name: Dove, tier: common }
       - { file: cat-oreo-2.jpg, name: Oreo, tier: common }
@@ -78,6 +77,11 @@ coins:
         tier: epic
         alt: Oreo, a black-and-white cat, curled up in a bathroom sink and looking up
         note: Oreo has claimed the sink. Please wash your hands elsewhere. 🐾
+      - file: cat-doggy.jpg
+        name: Doggy
+        tier: epic
+        alt: Doggy, a silver tabby cat, lying on a sunny patio mid-yawn with mouth wide open
+        note: Doggy has heard enough about convergence rates for one day. 🐾
       # Legendary, 2%
       - file: cat-legend.jpg
         full: cat-legend-full.jpg

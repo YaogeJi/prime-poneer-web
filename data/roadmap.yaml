@@ -58,7 +58,7 @@ directions:
     works:
       - title: >-
           Transformer based offline reinforcement learning for coordinated
-          perioperative kidney risk management in cardiac surgery
+          perioperative renal protection strategies in cardiac surgery
         venue: British Journal of Anaesthesia
         status: Under review
         year: 2026
@@ -75,11 +75,16 @@ directions:
   structural:
     name: Structural refinement
     state: Future direction
+    note: >-
+      Smaller classes, faster rates, more problem parameters—making
+      parameter-free methods more important.
 
   opt-rl:
-    name: Optimization for RL
+    name: Parameter-free RL
     state: Future direction
+    note: Policy optimization and evaluation theory.
 
   post-training:
     name: Large-scale post-training
     state: Future direction
+    note: Running free RL training.

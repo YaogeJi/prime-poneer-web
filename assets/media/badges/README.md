@@ -14,6 +14,12 @@ navy-and-sage designs supplied by the site owner (Nov 2026). Each was cropped
 to its cream disc (504 px square, 2 px inside the disc edge, so no white
 shows when the page clips it to a circle); Hugo serves them as small WebPs.
 
+Coin backs (photos supplied by the site owner, Nov 2026): `photo-medals.jpg`
+behind the half-marathon coin; `cat-doggy.jpg`, `cat-oreo.jpg`, `cat-dove.jpg`
+for the cats coin, one shown per turn. Each was squared on its subject and
+re-encoded with no metadata (the originals carried GPS location, capture
+date and device); keep it that way for any photo added here.
+
 Kept for switching back: `bouldering.svg`, `running.svg`, `cats.svg`, the
 site's original one-colour line drawings.
 

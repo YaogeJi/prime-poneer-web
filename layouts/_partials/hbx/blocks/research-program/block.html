@@ -35,11 +35,14 @@
 
       {{ with index $data "current_focus" }}
         {{ if reflect.IsSlice . }}
+          {{/* The small-caps label is optional; without it the list carries
+               its own accessible name. */}}
+          {{ $focusLabel := index $data "current_focus_label" }}
           <div class="rp-focus">
-            <h3 class="rp-focus-label" id="rp-focus-label">
-              {{ index $data "current_focus_label" | default "Current focus" }}
-            </h3>
-            <ul class="rp-focus-list" aria-labelledby="rp-focus-label">
+            {{ with $focusLabel }}
+            <h3 class="rp-focus-label" id="rp-focus-label">{{ . }}</h3>
+            {{ end }}
+            <ul class="rp-focus-list" {{ if $focusLabel }}aria-labelledby="rp-focus-label"{{ else }}aria-label="Research interests"{{ end }}>
               {{ range . }}<li>{{ printf "%v" . }}</li>{{ end }}
             </ul>
           </div>

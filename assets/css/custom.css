@@ -341,13 +341,14 @@ html {
 .rm-svg .rm-t-app { fill: var(--rm-app); }
 .rm-svg .rm-t-ml { fill: var(--rm-ml); }
 
-/* The closing question and its answer, as text under the drawing. */
+/* The closing line, as text under the drawing, in the accent voice the
+   talk's question used to have. */
 .rm-caption {
   margin-top: 0.6rem;
   text-align: center;
 }
 
-.rm-question {
+.rm-tagline {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
@@ -356,20 +357,8 @@ html {
   color: var(--color-primary-600);
 }
 
-.rm-answer {
-  margin: 0.2rem 0 0;
-  font-size: 0.92rem;
-  font-style: italic;
-  line-height: 1.45;
-  color: var(--color-gray-600, #4b5563);
-}
-
-.dark .rm-question {
+.dark .rm-tagline {
   color: var(--color-primary-300);
-}
-
-.dark .rm-answer {
-  color: var(--color-gray-300, #d1d5db);
 }
 
 /* Pairing with the research paragraph, two ways:
@@ -933,7 +922,8 @@ html {
 /* The old horizontal timeline, turned vertical for the narrow column: a rail
    of icon dots, oldest at the top. Same three tiers as before, degree
    (near-black, bold) > school (accent) > research directions (grey), with the
-   years on the right. The details card opens downward, under the text. */
+   years on the right. Most recent at the top, as on the CV. The details
+   card opens downward, under the text. */
 .bio-path {
   width: 100%;
 }
@@ -1101,11 +1091,10 @@ html {
   display: inline;
 }
 
-/* The separator is decoration: the empty alt text keeps it out of what a
-   screen reader reads, which already announces a list. */
-.bio-path .bp-topics li + li::before {
-  content: '·' / '';
-  margin: 0 0.4rem;
+/* The separator is a real character (so copied text keeps it), hidden from
+   screen readers in the markup. */
+.bio-path .bp-sep {
+  margin: 0 0.15rem;
   color: var(--color-gray-400, #9ca3af);
 }
 
@@ -1113,7 +1102,7 @@ html {
   color: var(--color-gray-400, #9ca3af);
 }
 
-.dark .bio-path .bp-topics li + li::before {
+.dark .bio-path .bp-sep {
   color: var(--color-gray-500, #6b7280);
 }
 
@@ -1221,6 +1210,11 @@ html {
   margin-bottom: 0.7rem;
 }
 
+/* Room above the coins, so one lifted while turned clears the label. */
+.hobby-heading {
+  margin-bottom: 0.65rem;
+}
+
 .dark .hobby-heading,
 .dark .bio-path-heading {
   color: var(--color-gray-400, #9ca3af);
@@ -1234,169 +1228,371 @@ html {
   margin-top: 0;
 }
 
-/* Each badge is a small medallion in the site's own palette: white lit to a
-   faint primary tint, a fine primary ring, a white inner rim and a soft
-   neutral shadow, so it belongs with the timeline dots and the link pills
-   rather than standing apart. The icon takes the accent colour. Hover and
-   focus firm the ring up, as elsewhere; nothing moves. */
+/* Each badge is a coin: the picture on the front, a short inscription on
+   the back. A click turns it over about its vertical axis and lifts it a
+   little, so the small type can be read; pointing away turns it back (the
+   script is in the bio block). The back is the front's own cream disc with a
+   hairline rim, inscribed in the badges' navy and sage, so the two faces read
+   as one object. */
 .hobby-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  color: var(--color-primary-600);
-  background: radial-gradient(circle at 32% 26%, #fff 0%, color-mix(in oklab, var(--color-primary-500) 7%, #fff) 75%);
-  box-shadow:
-    inset 0 0 0 1.5px rgb(255 255 255 / 0.85),
-    0 0 0 1px color-mix(in oklab, var(--color-primary-500) 20%, transparent),
-    0 1px 2px rgb(0 0 0 / 0.05),
-    0 4px 10px -6px rgb(0 0 0 / 0.2);
-  transition: box-shadow 0.16s ease;
-}
-
-.hobby-badge > svg,
-.hobby-badge > img {
+  --coin: 4.25rem;
+  --coin-paper: #f8f4ec;   /* the badges' cream disc */
+  --coin-ink: #3e5064;     /* the badges' navy */
+  --coin-sage: #7fa597;    /* the badges' sage, for the rim */
+  --coin-sage-ink: #3d6153; /* sage dark enough for small type (5:1 on the paper) */
+  --lift: 1.25;            /* how far a turned coin comes up; photo coins further */
+  position: relative;
   display: block;
-  width: 62%;
-  height: 62%;
-  object-fit: contain;
+  width: var(--coin);
+  height: var(--coin);
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  perspective: 30rem;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.dark .hobby-badge {
-  color: var(--color-primary-300);
-  background: radial-gradient(circle at 32% 26%,
-    color-mix(in oklab, var(--color-primary-400) 16%, transparent) 0%,
-    color-mix(in oklab, var(--color-primary-400) 6%, transparent) 75%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--color-primary-400) 26%, transparent),
-    0 4px 12px -6px rgb(0 0 0 / 0.6);
+.hobby-badge[aria-pressed='true'] {
+  z-index: 2; /* lifted over its neighbours while it is turned */
 }
 
-.hobby-item:hover .hobby-badge,
-.hobby-item:focus-within .hobby-badge {
-  box-shadow:
-    inset 0 0 0 1.5px rgb(255 255 255 / 0.85),
-    0 0 0 1px color-mix(in oklab, var(--color-primary-500) 40%, transparent),
-    0 1px 2px rgb(0 0 0 / 0.05),
-    0 4px 10px -6px rgb(0 0 0 / 0.2);
+.hobby-coin {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
 }
 
-.dark .hobby-item:hover .hobby-badge,
-.dark .hobby-item:focus-within .hobby-badge {
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--color-primary-400) 48%, transparent),
-    0 4px 12px -6px rgb(0 0 0 / 0.6);
-}
-
-/* Keyboard focus gets a visible ring; it used to be removed outright. */
-.hobby-badge:focus-visible {
-  outline: 2px solid var(--color-primary-500);
-  outline-offset: 3px;
-}
-
-.dark .hobby-badge:focus-visible {
-  outline-color: var(--color-primary-300);
-}
-
-/* Print badges: a picture that is already a round medallion (the supplied badges)
-   is shown whole, clipped to the circle, with its own paper as the ground.
-   Larger than the icon badges, so the carving reads. Same fine ring and soft
-   shadow as the icon badges; hover firms the ring up. */
-.hobby-badge:has(> img) {
-  width: 4.25rem;
-  height: 4.25rem;
+.hobby-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
   overflow: hidden;
-  background: #f8f4ec; /* a paper tone, shown while the image loads */
+  border-radius: 9999px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--color-primary-500) 22%, transparent),
     0 1px 2px rgb(0 0 0 / 0.06),
     0 5px 12px -6px rgb(0 0 0 / 0.28);
+  transition: box-shadow 0.16s ease;
 }
 
-.hobby-badge > img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hobby-item:hover .hobby-badge:has(> img),
-.hobby-item:focus-within .hobby-badge:has(> img) {
+.hobby-badge:hover .hobby-face,
+.hobby-badge:focus-visible .hobby-face {
   box-shadow:
     0 0 0 1.5px color-mix(in oklab, var(--color-primary-500) 45%, transparent),
     0 1px 2px rgb(0 0 0 / 0.06),
     0 5px 12px -6px rgb(0 0 0 / 0.28);
 }
 
-/* Dark: the paper is the brightest thing in the column, so it is toned down
-   a little to sit with the page rather than glare. */
-.dark .hobby-badge:has(> img) {
-  background: #d6d2ca; /* the paper tone, a shade down; `.dark .hobby-badge` would otherwise win */
+/* Front: a picture fills the disc; a one-colour SVG icon sits on the site
+   medallion in the accent colour. */
+.hobby-face--front {
+  background: var(--coin-paper);
+}
+
+.hobby-face--front > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hobby-face--front:has(> svg) {
+  color: var(--color-primary-600);
+  background: radial-gradient(circle at 32% 26%, #fff 0%, color-mix(in oklab, var(--color-primary-500) 7%, #fff) 75%);
+}
+
+.hobby-face--front > svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* Back: the inscription, centred, with a hairline rim just inside the edge. */
+.hobby-face--back {
+  align-content: center;
+  gap: 0.05rem;
+  padding: 0 0.55rem;
+  text-align: center;
+  color: var(--coin-ink);
+  background: radial-gradient(circle at 35% 28%, #fffdf8 0%, var(--coin-paper) 70%);
+  transform: rotateY(180deg);
+}
+
+.hobby-face--back::before {
+  content: '';
+  position: absolute;
+  inset: 0.2rem;
+  border: 1px solid color-mix(in oklab, var(--coin-sage) 75%, transparent);
+  border-radius: inherit;
+}
+
+.hobby-back-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.hobby-back-kicker {
+  margin-bottom: 0.1rem;
+  font-size: 0.44rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--coin-sage-ink);
+}
+
+.hobby-back-line {
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.hobby-back-line--big {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Photo back: the picture fills the coin, the inscription sits on a soft
+   dark scrim across its top (over the ribbons, clear of the medals). */
+.hobby-badge--photo {
+  --lift: 2;
+}
+
+.hobby-face--photo {
+  align-content: start;
+  padding: 0;
+  background: #24303c;
+}
+
+.hobby-back-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hobby-face--photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(22 32 44 / 0.88) 0%, rgb(22 32 44 / 0.6) 30%, transparent 50%);
+}
+
+.hobby-face--photo::before {
+  z-index: 2;
+  border-color: rgb(255 255 255 / 0.55);
+}
+
+.hobby-face--photo .hobby-back-text {
+  z-index: 3;
+  margin-top: 0.42rem;
+  padding: 0 0.6rem;
+  gap: 0;
+  color: #fff;
+}
+
+/* On the photo the time leads and the event follows, both small enough to
+   stay inside the scrim, so the medals below are left clear. */
+.hobby-face--photo .hobby-back-line {
+  order: -1;
+}
+
+.hobby-face--photo .hobby-back-line--big {
+  font-size: 0.6rem;
+}
+
+.hobby-face--photo .hobby-back-kicker {
+  margin: 0;
+  font-size: 0.32rem;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.88);
+}
+
+/* Pets back: one photo at a time, filling the coin, with its name on a
+   soft scrim across the foot. The script picks which one each turn. */
+.hobby-badge--pets {
+  --lift: 2;
+}
+
+.hobby-face--pets {
+  padding: 0;
+  background: #24303c;
+}
+
+.hobby-pet {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.hobby-pet.is-shown {
+  display: block;
+}
+
+.hobby-pet img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hobby-face--pets::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top, rgb(22 32 44 / 0.88) 0%, rgb(22 32 44 / 0.55) 28%, transparent 48%);
+}
+
+.hobby-face--pets::before {
+  z-index: 2;
+  border-color: rgb(255 255 255 / 0.55);
+}
+
+.hobby-pet-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0.45rem;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+}
+
+.hobby-pet-caption .hobby-back-kicker {
+  margin: 0;
+  font-size: 0.3rem;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.88);
+}
+
+.hobby-pet-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* The turn. With motion allowed the coin rotates (with a little overshoot,
+   so it lands like a coin), lifts, and tilts slightly on hover as a hint
+   that it turns. With reduced motion the faces cross-fade in place. */
+@media (prefers-reduced-motion: no-preference) {
+  .hobby-coin {
+    transition: transform 0.65s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+
+  /* Belt and braces for backface-visibility, which some renderers ignore:
+     the face turning away is also hidden once the coin passes edge-on
+     (about 0.17s into this easing), so its mirror image never shows. */
+  .hobby-face {
+    transition: box-shadow 0.16s ease, visibility 0s linear 0.17s;
+  }
+
+  .hobby-face--back,
+  .hobby-badge[aria-pressed='true'] .hobby-face--front {
+    visibility: hidden;
+  }
+
+  .hobby-badge[aria-pressed='true'] .hobby-face--back {
+    visibility: visible;
+  }
+
+  .hobby-badge:hover .hobby-coin {
+    transform: rotateY(16deg);
+  }
+
+  .hobby-badge[aria-pressed='true'] .hobby-coin {
+    transform: rotateY(180deg) scale(var(--lift));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hobby-face {
+    transition: opacity 0.2s ease, box-shadow 0.16s ease;
+  }
+
+  .hobby-face--back {
+    transform: none;
+    opacity: 0;
+  }
+
+  .hobby-badge[aria-pressed='true'] .hobby-face--front {
+    opacity: 0;
+  }
+
+  .hobby-badge[aria-pressed='true'] .hobby-face--back {
+    opacity: 1;
+  }
+}
+
+/* Keyboard focus gets a visible ring. */
+.hobby-badge:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 3px;
+}
+
+/* Dark: both faces are toned down a little to sit with the page; the ink
+   stays, since it is read against the paper, not the page. */
+.dark .hobby-face {
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--color-primary-400) 30%, transparent),
     0 5px 14px -6px rgb(0 0 0 / 0.7);
 }
 
-.dark .hobby-badge > img {
-  filter: brightness(0.86);
-}
-
-.dark .hobby-item:hover .hobby-badge:has(> img),
-.dark .hobby-item:focus-within .hobby-badge:has(> img) {
+.dark .hobby-badge:hover .hobby-face,
+.dark .hobby-badge:focus-visible .hobby-face {
   box-shadow:
     0 0 0 1.5px color-mix(in oklab, var(--color-primary-400) 55%, transparent),
     0 5px 14px -6px rgb(0 0 0 / 0.7);
 }
 
-/* Label — hidden until hover / focus.
-   Anchored to the row and opening upward: the badges sit at the bottom of
-   the column, and .resume-biography clips overflow, so a card below them
-   would be cut off by the section edge. */
-.hobby-tip {
-  position: absolute;
-  bottom: calc(100% + 0.6rem);
-  left: 0;
-  z-index: 40;
-  width: max-content;
-  max-width: min(22rem, 78vw);
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.7rem;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  text-align: left;
-  color: var(--color-gray-700, #374151);
-  background: var(--color-white, #fff);
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 20%, transparent);
-  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.25);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(0.25rem);
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+.dark .hobby-face--front {
+  background: #d6d2ca;
 }
 
-.dark .hobby-tip {
-  color: var(--color-gray-200, #e5e7eb);
-  background: var(--color-gray-800, #1f2937);
-  border-color: color-mix(in oklch, var(--color-primary-400) 30%, transparent);
-  box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+.dark .hobby-face--front > img {
+  filter: brightness(0.86);
 }
 
-.hobby-tip a {
-  text-decoration: underline;
-  color: var(--color-primary-600);
-}
-
-.dark .hobby-tip a {
+.dark .hobby-face--front:has(> svg) {
   color: var(--color-primary-300);
+  background: radial-gradient(circle at 32% 26%,
+    color-mix(in oklab, var(--color-primary-400) 16%, transparent) 0%,
+    color-mix(in oklab, var(--color-primary-400) 6%, transparent) 75%);
 }
 
-.hobby-item:hover .hobby-tip,
-.hobby-item:focus-within .hobby-tip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+.dark .hobby-face--back {
+  background: radial-gradient(circle at 35% 28%, #e4e0d7 0%, #d6d2ca 70%);
+}
+
+.dark .hobby-face--photo,
+.dark .hobby-face--pets {
+  background: #24303c;
+}
+
+.dark .hobby-back-photo,
+.dark .hobby-pet img {
+  filter: brightness(0.9);
+}
+
+.dark .hobby-badge:focus-visible {
+  outline-color: var(--color-primary-300);
 }
 
 /* ── Full-page Gradient Mesh Background ───────────────── */
@@ -1580,6 +1776,12 @@ html {
    and a middot-separated run, so it cannot be mistaken for section headings. */
 .research-program .rp-focus {
   margin-top: 1.1rem;
+}
+
+/* Straight under the heading (no intro sentence), the heading's own margin
+   is the gap. */
+.research-program .rp-heading + .rp-focus {
+  margin-top: 0;
 }
 
 .research-program .rp-focus-label {

@@ -2,8 +2,8 @@
 
      The B.S. → M.S. → Ph.D. → Postdoc path the bio once showed as a horizontal
      row (it gave way to the research roadmap in 58b635a), turned on its side
-     to fit the narrow column. One node per stage, oldest at the top, so it
-     still reads in time order. Each node shows the short degree, the school,
+     to fit the narrow column. One node per stage, most recent at the top,
+     as on the CV. Each node shows the short degree, the school,
      its department (`department` in the data) and the years; its research directions sit underneath; the full degree,
      dates, focus, advisors and thesis open in a card on hover or focus,
      below the row.
@@ -89,7 +89,7 @@
 {{ end }}
 
 {{ if $items }}
-{{ $items = sort $items "sort" }}
+{{ $items = sort $items "sort" "desc" }}
 <div class="bio-path">
   <span class="bio-path-heading">Education &amp; training</span>
   <ol class="bp-list">
@@ -127,7 +127,9 @@
       </div>
       {{ with .topics }}
       <ul class="bp-topics">
-        {{ range . }}<li>{{ . }}</li>{{ end }}
+        {{/* The dot between directions is real text, so a copied line reads
+             "A · B"; it is hidden from screen readers, which announce a list. */}}
+        {{ range $j, $t := . }}<li>{{ if $j }}<span class="bp-sep" aria-hidden="true"> · </span>{{ end }}{{ $t }}</li>{{ end }}
       </ul>
       {{ end }}
       {{/* The card comes last, under the research directions, so opening it

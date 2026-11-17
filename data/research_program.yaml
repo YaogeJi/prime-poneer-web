@@ -32,9 +32,9 @@
 
 heading: Research Interests and Selected Works
 
-intro: Stochastic optimization; reinforcement learning; healthcare.
-
-current_focus_label: Current focus
+# Optional: `intro` (a sentence under the heading) and `current_focus_label`
+# (a small-caps label over the list). Both are left out: the list alone says
+# it, and the sentence repeated it.
 current_focus:
   - Parameter-Free Optimization
   - Stochastic Optimization

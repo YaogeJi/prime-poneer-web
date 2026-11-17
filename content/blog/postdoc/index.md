@@ -1,7 +1,7 @@
 ---
 title: H. Milton Stewart Postdoctoral Fellow at Georgia Tech
 summary: Starting my new role as a postdoctoral fellow at Georgia Tech.
-date: 2023-05-29
+date: 2024-10-01
 
 authors:
   - me

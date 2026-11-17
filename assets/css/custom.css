@@ -114,6 +114,8 @@ html {
 .text-link:focus-visible,
 .resume-biography .bio-text a:hover,
 .resume-biography .bio-text a:focus-visible,
+.resume-biography .news-body a:hover,
+.resume-biography .news-body a:focus-visible,
 .resume-biography .affiliation-line a:hover,
 .resume-biography .affiliation-line a:focus-visible,
 .teaching .tch-course a:hover,
@@ -129,6 +131,7 @@ html {
    the page has one family: solid = goes somewhere, dotted = explains, none =
    a term. Hover keeps the shared tint and firms the line up. */
 .resume-biography .bio-text a,
+.resume-biography .news-body a,
 .resume-biography .affiliation-line a,
 .teaching .tch-course a {
   color: var(--color-primary-600);
@@ -144,6 +147,7 @@ html {
 }
 
 .dark .resume-biography .bio-text a,
+.dark .resume-biography .news-body a,
 .dark .resume-biography .affiliation-line a,
 .dark .teaching .tch-course a {
   color: var(--color-primary-300);
@@ -152,6 +156,8 @@ html {
 
 .resume-biography .bio-text a:hover,
 .resume-biography .bio-text a:focus-visible,
+.resume-biography .news-body a:hover,
+.resume-biography .news-body a:focus-visible,
 .resume-biography .affiliation-line a:hover,
 .resume-biography .affiliation-line a:focus-visible,
 .teaching .tch-course a:hover,
@@ -165,7 +171,7 @@ html {
    on Stochastic" early with half the row empty above a full-width summary.
    Both are progressive: browsers without them wrap as before. */
 .resume-biography .bio-text p,
-.news-feed-items h3 {
+.news-item-title {
   text-wrap: pretty;
 }
 
@@ -184,6 +190,7 @@ html {
   --rm-past: #c2410c;
   --rm-app: #15803d;
   --rm-ml: #6f4e9b;
+  --rm-focus: var(--color-primary-600);
   margin: 0;
 }
 
@@ -196,6 +203,7 @@ html {
   --rm-past: #fb923c;
   --rm-app: #4ade80;
   --rm-ml: #b79ce6;
+  --rm-focus: var(--color-primary-300);
 }
 
 /* The drawing keeps its proportions; on a phone it scrolls sideways rather
@@ -294,11 +302,12 @@ html {
   stroke-linejoin: round;
 }
 
-/* One hue per branch, set once with rm-k-*; bones, dots and rings read it. */
-.rm-svg .rm-k-blue { --rm-k: var(--rm-blue); }
-.rm-svg .rm-k-past { --rm-k: var(--rm-past); }
-.rm-svg .rm-k-app { --rm-k: var(--rm-app); }
-.rm-svg .rm-k-ml { --rm-k: var(--rm-ml); }
+/* One hue per branch, set once with rm-k-*; bones, dots and rings read it,
+   and so does the works card the branch opens. */
+.rm .rm-k-blue { --rm-k: var(--rm-blue); }
+.rm .rm-k-past { --rm-k: var(--rm-past); }
+.rm .rm-k-app { --rm-k: var(--rm-app); }
+.rm .rm-k-ml { --rm-k: var(--rm-ml); }
 
 .rm-svg .rm-bone {
   fill: none;
@@ -307,26 +316,14 @@ html {
   stroke-linecap: round;
 }
 
-.rm-svg .rm-bone-big { stroke-width: 5.6; }
-.rm-svg .rm-bone-thin { stroke-width: 3.2; }
-
-.rm-svg .rm-stem {
-  fill: none;
-  stroke: color-mix(in oklch, var(--rm-blue) 55%, var(--rm-mix));
-  stroke-width: 3.2;
-  stroke-linecap: round;
-}
-
-/* Filled = completed, shaded = in progress, hollow = next. */
+/* Filled = completed, shaded = in progress, hollow = future direction. */
 .rm-svg .rm-dot { fill: var(--rm-k); }
 .rm-svg .rm-ring { fill: var(--rm-paper); stroke: var(--rm-k); stroke-width: 4.2; }
-.rm-svg .rm-ring-sm { stroke-width: 3.5; }
 .rm-svg .rm-shade {
   fill: color-mix(in oklch, var(--rm-k) 35%, var(--rm-mix));
   stroke: var(--rm-k);
   stroke-width: 4.2;
 }
-.rm-svg .rm-shade-sm { stroke-width: 3.5; }
 
 /* Type: sizes are in drawing units (normal / small / footnote). */
 .rm-svg .rm-fs-n { font-size: 30px; }
@@ -361,50 +358,280 @@ html {
   color: var(--color-primary-300);
 }
 
-/* Pairing with the research paragraph, two ways:
-   - pointing at a term dims every branch outside its topic, so "reinforcement
-     learning" lights all three RL branches at once;
-   - pointing at a branch in the figure keeps only that branch lit (whatever
-     its topic) and lights the paragraph term it belongs to, if any. */
+/* ── Roadmap: directions and their works ─────────────── */
+
+/* The fish shows directions only. Pointing at one (or tapping it, or tabbing
+   to it) fades and softens the others and opens its works card under the
+   drawing. roadmap-works.html keeps that state as classes — .has-active on
+   the figure, .is-active on the branch and its card — so mouse, touch and
+   keyboard all land in the same rules, and a tapped branch does not stay
+   stuck "hovered" on a phone. Without JavaScript the figure is static. */
 .rm-svg .rm-branch {
-  transition: opacity 0.16s ease;
+  transition: opacity 0.18s ease, filter 0.18s ease;
 }
 
-/* Only labels and dots answer the pointer. Bones and stems are long and cross
-   other branches' territory; painted later in the DOM, one would otherwise
-   steal the hover from a label it passes near. */
-.rm-svg .rm-bone,
-.rm-svg .rm-stem {
+.rm.is-ready .rm-svg .rm-branch {
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Only labels, marks and these invisible strokes answer the pointer. The
+   drawn bones do not: they are thin and long, and the hit stroke
+   along each gives a wider, predictable target instead. */
+.rm-svg .rm-bone {
   pointer-events: none;
 }
 
-.resume-biography:has(.rterm[data-topic="parameter-free"]:hover) .rm-branch:not([data-topic~="parameter-free"]),
-.resume-biography:has(.rterm[data-topic="reinforcement-learning"]:hover) .rm-branch:not([data-topic~="reinforcement-learning"]),
-.resume-biography:has(.rterm[data-topic="healthcare"]:hover) .rm-branch:not([data-topic~="healthcare"]),
-.rm-svg:has(.rm-branch:hover) .rm-branch:not(:hover) {
-  opacity: 0.22;
+.rm-svg .rm-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 28;
+  stroke-linecap: round;
+  pointer-events: stroke;
 }
 
-/* Pointing at a branch mirrors the figure's dimming in the prose: the other
+/* Laid behind each label by the script, so the whole label is a target. */
+.rm-svg .rm-hit-box {
+  fill: none;
+  pointer-events: fill;
+}
+
+/* The branch's own outline is off (on an SVG group browsers draw it oddly,
+   or not at all); keyboard focus rings the label instead, in solid accent
+   at 3:1 or better against the page. */
+.rm-svg .rm-branch:focus-visible .rm-hit-box {
+  stroke: var(--rm-focus);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Pairing with the research paragraph, two ways (scoped to .bio-research,
+   the wrapper around just the paragraph and the figure, so :has() checks a
+   small subtree rather than the whole bio):
+   - pointing at a term fades every branch outside its topic, so
+     "reinforcement learning" lights all three RL branches at once;
+   - pointing at a branch keeps only that branch lit (whatever its topic)
+     and lights the paragraph term it belongs to, if any. */
+.bio-research:has(.rterm[data-topic="parameter-free"]:hover) .rm-branch:not([data-topic~="parameter-free"]),
+.bio-research:has(.rterm[data-topic="reinforcement-learning"]:hover) .rm-branch:not([data-topic~="reinforcement-learning"]),
+.bio-research:has(.rterm[data-topic="healthcare"]:hover) .rm-branch:not([data-topic~="healthcare"]),
+.rm.has-active .rm-branch:not(.is-active) {
+  opacity: 0.2;
+  filter: blur(2.5px);
+}
+
+/* Pointing at a branch mirrors the figure's fading in the prose: the other
    research terms become plain paragraph text — colour *and* weight, since a
    500-weight term in body colour reads as bold emphasis — and the paired
    term keeps its accent and gains the tint. */
-.resume-biography:has(.rm-branch[data-topic]:hover) .rterm {
+.bio-research:has(.rm-branch.is-active) .rterm {
   color: inherit;
   font-weight: inherit;
 }
 
-.resume-biography:has(.rm-branch[data-topic~="parameter-free"]:hover) .rterm[data-topic="parameter-free"],
-.resume-biography:has(.rm-branch[data-topic~="reinforcement-learning"]:hover) .rterm[data-topic="reinforcement-learning"],
-.resume-biography:has(.rm-branch[data-topic~="healthcare"]:hover) .rterm[data-topic="healthcare"] {
+.bio-research:has(.rm-branch.is-active[data-topic~="parameter-free"]) .rterm[data-topic="parameter-free"],
+.bio-research:has(.rm-branch.is-active[data-topic~="reinforcement-learning"]) .rterm[data-topic="reinforcement-learning"],
+.bio-research:has(.rm-branch.is-active[data-topic~="healthcare"]) .rterm[data-topic="healthcare"] {
   color: var(--color-primary-600);
   font-weight: 500;
   background: var(--hl-bg);
 }
 
-.dark .resume-biography:has(.rm-branch[data-topic~="parameter-free"]:hover) .rterm[data-topic="parameter-free"],
-.dark .resume-biography:has(.rm-branch[data-topic~="reinforcement-learning"]:hover) .rterm[data-topic="reinforcement-learning"],
-.dark .resume-biography:has(.rm-branch[data-topic~="healthcare"]:hover) .rterm[data-topic="healthcare"] {
+.dark .bio-research:has(.rm-branch.is-active[data-topic~="parameter-free"]) .rterm[data-topic="parameter-free"],
+.dark .bio-research:has(.rm-branch.is-active[data-topic~="reinforcement-learning"]) .rterm[data-topic="reinforcement-learning"],
+.dark .bio-research:has(.rm-branch.is-active[data-topic~="healthcare"]) .rterm[data-topic="healthcare"] {
+  color: var(--color-primary-300);
+}
+
+/* The works cards. All of them sit in one spot just under the drawing,
+   positioned over what follows (the tagline, then Recent News), so opening
+   one moves nothing on the page. Hidden cards let the pointer through; the
+   open one takes it, so the pointer can move onto the card and stay (the
+   script's hide delay covers the trip). */
+.rm-stage {
+  position: relative;
+  z-index: 5;
+}
+
+.rm-cards {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.35rem);
+  pointer-events: none;
+}
+
+.rm-card {
+  --rm-card-rule: color-mix(in oklch, var(--rm-k) 26%, var(--rm-mix));
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  padding: 0.8rem 1.1rem 0.9rem;
+  border: 1px solid var(--rm-card-rule);
+  border-top: 3px solid color-mix(in oklch, var(--rm-k) 70%, var(--rm-mix));
+  border-radius: 0.85rem;
+  background: var(--rm-paper);
+  box-shadow: 0 14px 34px -16px rgb(15 23 42 / 0.3), 0 2px 6px -2px rgb(15 23 42 / 0.08);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+}
+
+/* The small drop into place is motion, so only where it is welcome; the fade
+   is not, and stays for everyone. */
+@media (prefers-reduced-motion: no-preference) {
+  .rm-card {
+    translate: 0 -0.35rem;
+    transition: opacity 0.18s ease, translate 0.18s ease, visibility 0s linear 0.18s;
+  }
+}
+
+.rm-card.is-active {
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+  transition-delay: 0s;
+  pointer-events: auto;
+}
+
+.dark .rm-card {
+  background: color-mix(in oklch, var(--rm-mix) 88%, black);
+  box-shadow: 0 16px 36px -14px rgb(0 0 0 / 0.55);
+}
+
+.rm-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  flex-wrap: wrap;
+}
+
+.rm-card-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--rm-k);
+}
+
+/* The direction's state, in words beside the fish's own mark for it:
+   filled, shaded, hollow. Small and grey, so it never competes with a paper's status. */
+.rm-card-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--rm-dim);
+}
+
+.rm-card-state::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--rm-k);
+  background: var(--rm-k);
+}
+
+.rm-card-state.rm-state-in-progress::before {
+  background: color-mix(in oklch, var(--rm-k) 35%, var(--rm-mix));
+}
+
+.rm-card-state.rm-state-future-direction::before {
+  background: transparent;
+}
+
+.rm-card-note {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--rm-dim);
+}
+
+.rm-works {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One work: title across the top; venue and year under it on the left, the
+   status on the right, in the same voice as the Selected Works cards. */
+.rm-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.15rem 1rem;
+  margin: 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid color-mix(in oklch, var(--rm-k) 14%, var(--rm-mix));
+}
+
+.rm-work:last-child {
+  padding-bottom: 0;
+}
+
+.rm-work-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: pretty;
+  color: var(--rm-ink);
+}
+
+.rm-work-venue {
+  grid-column: 1;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--rm-dim);
+}
+
+/* The year keeps its separator, so a wrap never strands "·" at a line end. */
+.rm-work-year {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rm-work-status {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-primary-700);
+}
+
+/* A status with no venue line above it (work in progress) starts the row. */
+.rm-work-title + .rm-work-status {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.rm-work-status::before {
+  content: '';
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0.18rem color-mix(in oklch, currentColor 16%, transparent);
+}
+
+.dark .rm-work-status {
   color: var(--color-primary-300);
 }
 
@@ -1389,6 +1616,22 @@ html {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The coin photos (and the reveal card's larger copy) are for looking at, not
+   saving: no dragging one out, no long-press save sheet on a phone, and the
+   pointer passes through to the coin or the card, so a right-click finds no
+   image to offer "Save image" for. With draggable="false" on each <img>.
+   A deterrent, not protection: the files are still fetched by the page, and
+   anyone with developer tools can reach them. */
+.hobby-back-photo,
+.hobby-shot img,
+.cat-reveal-figure img {
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
 }
 
 .hobby-face--photo::after {
@@ -3339,7 +3582,7 @@ html {
 /* Sits above the scroll container, so it never scrolls away. Reads as an
    announcement rather than a feed row: a faint tint, a status chip, and a
    heavier title. Kept to the same restraint as the rest of the page — no
-   shadow, no saturated fill. */
+   shadow, no saturated fill. Opens in place like the feed rows below it. */
 .news-pin {
   display: block;
   margin-top: 0.35rem;
@@ -3347,7 +3590,6 @@ html {
   border: 1px solid color-mix(in oklch, var(--color-primary-500) 22%, transparent);
   border-radius: 0.7rem;
   background: color-mix(in oklch, var(--color-primary-500) 5%, transparent);
-  text-decoration: none;
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
@@ -3356,16 +3598,57 @@ html {
   background: color-mix(in oklch, var(--color-primary-400) 9%, transparent);
 }
 
-.news-pin:hover,
-.news-pin:focus-visible {
+.news-pin:has(> summary:hover),
+.news-pin:has(> summary:focus-visible),
+.news-pin.news-closable[open]:hover {
   border-color: color-mix(in oklch, var(--color-primary-500) 42%, transparent);
   background: color-mix(in oklch, var(--color-primary-500) 8%, transparent);
 }
 
-.dark .news-pin:hover,
-.dark .news-pin:focus-visible {
+.dark .news-pin:has(> summary:hover),
+.dark .news-pin:has(> summary:focus-visible),
+.dark .news-pin.news-closable[open]:hover {
   border-color: color-mix(in oklch, var(--color-primary-400) 52%, transparent);
   background: color-mix(in oklch, var(--color-primary-400) 14%, transparent);
+}
+
+/* The theme sets every details > summary in semibold accent; these heads
+   carry their own type, so they start from the body's. */
+.news-pin > .news-pin-head,
+.news-item > .news-item-head {
+  font-weight: 400;
+  color: inherit;
+}
+
+.news-pin-head {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+}
+
+.news-pin-head::-webkit-details-marker {
+  display: none;
+}
+
+/* The marker hangs just before the title, where it reads with the label;
+   everything else in the card lines up with the title text. Closed it points
+   toward the text, open it points down: one icon, rotated. */
+.news-pin-chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-primary-500);
+  rotate: -90deg;
+}
+
+.news-pin[open] .news-pin-chevron {
+  rotate: none;
+}
+
+.news-pin-badge,
+.news-pin-summary,
+.news-pin > .news-body {
+  margin-left: 1.5rem;
 }
 
 .news-pin-badge {
@@ -3389,7 +3672,9 @@ html {
 }
 
 .news-pin-title {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.35rem;
   font-size: 1rem;
   font-weight: 700;
@@ -3401,13 +3686,13 @@ html {
   color: #fff;
 }
 
-.news-pin:hover .news-pin-title,
-.news-pin:focus-visible .news-pin-title {
+.news-pin-head:hover .news-pin-title,
+.news-pin-head:focus-visible .news-pin-title {
   color: var(--color-primary-700);
 }
 
-.dark .news-pin:hover .news-pin-title,
-.dark .news-pin:focus-visible .news-pin-title {
+.dark .news-pin-head:hover .news-pin-title,
+.dark .news-pin-head:focus-visible .news-pin-title {
   color: var(--color-primary-200);
 }
 
@@ -3421,6 +3706,195 @@ html {
 
 .dark .news-pin-summary {
   color: var(--color-gray-300, #d1d5db);
+}
+
+/* Open, the post says it in full; the one-line summary would only repeat it. */
+.news-pin[open] .news-pin-summary {
+  display: none;
+}
+
+.news-pin > .news-body {
+  padding: 0.45rem 0 0;
+}
+
+/* ── News rows, opened in place ───────────────────────── */
+
+/* Each feed row is a disclosure with the post's text inside — there are no
+   news pages to go to. Closed, a row looks as it always did: date, title, one
+   line of summary. Open, the summary gives way to the full text, set under
+   the title so the date column stays clear. An open row is marked by its
+   accent title and turned chevron, not a fill. */
+.news-item {
+  transition: background 0.16s ease;
+}
+
+/* Closed, the title row is the target. Open, the whole item is — the script
+   (news-open.html) closes it from anywhere in its text and marks it
+   .news-closable — so the tint and the hand cover all of it. */
+.news-item:has(> summary:hover),
+.news-item.news-closable[open]:hover {
+  background: rgb(250 250 250);
+}
+
+.dark .news-item:has(> summary:hover),
+.dark .news-item.news-closable[open]:hover {
+  background: rgb(39 39 42 / 0.3);
+}
+
+.news-closable[open] > .news-body {
+  cursor: pointer;
+}
+
+.news-item-head {
+  cursor: pointer;
+  list-style: none;
+  border-radius: 0.5rem;
+}
+
+.news-item-date {
+  margin-right: 1rem;
+}
+
+.news-item-chevron {
+  margin-right: 0.5rem;
+}
+
+.news-item-head::-webkit-details-marker {
+  display: none;
+}
+
+/* Solid accent, 3:1 or better on the page and on the pinned card's tint. */
+.news-item-head:focus-visible,
+.news-pin-head:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 3px;
+}
+
+.dark .news-item-head:focus-visible,
+.dark .news-pin-head:focus-visible {
+  outline-color: var(--color-primary-300);
+}
+
+.news-item-title {
+  transition: color 0.15s ease;
+}
+
+.news-item-head:hover .news-item-title,
+.news-item[open] .news-item-title {
+  color: var(--color-primary-600);
+}
+
+.dark .news-item-head:hover .news-item-title,
+.dark .news-item[open] .news-item-title {
+  color: var(--color-primary-400);
+}
+
+.news-item-chevron {
+  color: var(--color-zinc-500, #71717a);
+  rotate: -90deg;
+  transition: color 0.15s ease;
+}
+
+.dark .news-item-chevron {
+  color: var(--color-zinc-400, #a1a1aa);
+}
+
+.news-item-head:hover .news-item-chevron,
+.news-item[open] .news-item-chevron {
+  color: var(--color-primary-500);
+}
+
+/* none, not 0deg: Hugo's minifier writes 0deg as a bare 0, which the rotate
+   property rejects. none still animates from -90deg. */
+.news-item[open] .news-item-chevron {
+  rotate: none;
+}
+
+/* Turning the marker is motion: animate it only where motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .news-item-chevron {
+    transition: color 0.15s ease, rotate 0.2s ease;
+  }
+
+  .news-pin-chevron {
+    transition: rotate 0.2s ease;
+  }
+}
+
+.news-item[open] .news-item-summary {
+  display: none;
+}
+
+/* Under the title: date column (6rem) + gap (1rem) + marker (1rem) + gap
+   (0.5rem). */
+.news-item > .news-body {
+  padding: 0.4rem 0 0 8.5rem;
+}
+
+@media (max-width: 30rem) {
+  .news-item > .news-body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* The post's own text: small, in the summary's grey, at reading leading. */
+.news-body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-zinc-600, #52525b);
+}
+
+.dark .news-body {
+  color: var(--color-zinc-300, #d4d4d8);
+}
+
+.news-body p,
+.news-body ul,
+.news-body ol {
+  margin: 0 0 0.55em;
+}
+
+.news-body > :last-child {
+  margin-bottom: 0;
+}
+
+.news-body ul {
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.news-body ol {
+  padding-left: 1.2rem;
+  list-style: decimal;
+}
+
+.news-body li {
+  margin: 0.1em 0;
+}
+
+.news-body strong {
+  font-weight: 600;
+  color: var(--color-zinc-800, #27272a);
+}
+
+.dark .news-body strong {
+  color: var(--color-zinc-100, #f4f4f5);
+}
+
+.news-body figure {
+  margin: 0.65rem 0 0.2rem;
+}
+
+.news-body figure .flex {
+  justify-content: flex-start;
+}
+
+.news-body img {
+  width: auto;
+  max-width: 100%;
+  max-height: 14rem;
+  border-radius: 0.5rem;
 }
 
 /* The scroller already carries its own top margin from the shared view; with

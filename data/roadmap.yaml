@@ -1,0 +1,95 @@
+# Research roadmap — the works behind each direction of the homepage fishbone.
+#
+# The fish itself (bones, labels, where each sits on the spine) is drawn by
+# hand in layouts/_partials/hbx/blocks/resume-biography-3/roadmap.html. It
+# shows directions only; every branch there carries data-dir="<key>" matching
+# a key below. Pointing at a direction (or tapping it, or tabbing to it) fades
+# the others and opens a card under the fish listing what is filed here.
+#
+# Per direction:
+#   name:   heading on the card
+#   hue:    past | blue | ml | app — the branch colour, reused for the heading
+#   state:  Completed | In progress | Future direction — named on the card,
+#           and drawn as the branch's mark on the spine (filled, shaded,
+#           hollow)
+#   note:   optional line of context under the heading
+#   works:  newest first; each shows title, venue, status and year.
+#           A work that is also under Selected Works (research_program.yaml)
+#           needs only its exact title — venue, status and year are read from
+#           there, so a status change is made once. Anything given here wins.
+#           With a year and no status, the status reads "Published".
+
+directions:
+  distributed:
+    name: Distributed statistical learning
+    hue: past
+    state: Completed
+    works:
+      - title: Distributed Sparse Regression via Penalization
+      - title: Distributed (ATC) Gradient Descent for High Dimension Sparse Regression
+
+  parameter-free:
+    name: Parameter-free optimization
+    hue: blue
+    state: Completed
+    works:
+      - title: Computation of Strong Solutions to Stochastic Variational Inequalities
+      - title: Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates
+      - title: High-Order Accumulative Regularization for Gradient Minimization in Convex Programming
+
+  nonconvex:
+    name: Nonconvexity and stochasticity
+    hue: blue
+    state: In progress
+    # The CV's "Work in Progress" entries.
+    works:
+      - title: Benchmarking Stochastic Auto-conditioned Fast Gradient Methods for Convex and Nonconvex Problems
+        status: In progress
+      - title: A Unified Stochastic Auto-conditioned Single-loop Method for Gradient Norm Minimization with Optimal Rates
+        status: In progress
+
+  opt-ml:
+    name: Optimization for ML
+    hue: ml
+    state: In progress
+    note: Optimizer design, with Siri at Apple.
+
+  healthcare:
+    name: ML and RL for healthcare
+    hue: app
+    state: Completed
+    note: >-
+      With Cleveland Clinic and Stanford Medicine. Future direction: beyond
+      acute kidney injury and perioperative procedures.
+    works:
+      - title: >-
+          Transformer based offline reinforcement learning for coordinated
+          perioperative kidney risk management in cardiac surgery
+        venue: British Journal of Anaesthesia
+        status: Under review
+        year: 2026
+      - title: >-
+          Transformer-Based Patient Response Modeling Across All Perioperative Phases
+          for Cardiac Surgery-Associated Acute Kidney Injury Management
+
+  policy-evaluation:
+    name: Long-horizon policy evaluation
+    hue: blue
+    state: Completed
+    works:
+      - title: Computation of Strong Solutions to Stochastic Variational Inequalities
+
+  structural:
+    name: Structural refinement
+    hue: blue
+    state: Future direction
+
+  opt-rl:
+    name: Optimization for RL
+    hue: blue
+    state: Future direction
+
+  post-training:
+    name: Large-scale post-training
+    hue: ml
+    state: Future direction

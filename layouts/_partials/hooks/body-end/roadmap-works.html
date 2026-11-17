@@ -1,0 +1,8 @@
+{{/* Loads assets/js/roadmap-works.js — see that file for what it does.
+     A real asset file rather than resources.FromString: `hugo server`
+     keeps a FromString script cached by name, so edits to it never
+     reached the page until the server was restarted. */}}
+{{ with resources.Get "js/roadmap-works.js" }}
+  {{ $js := . | js.Build (dict "minify" true) | resources.Fingerprint "sha256" }}
+  <script defer src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}"></script>
+{{ end }}

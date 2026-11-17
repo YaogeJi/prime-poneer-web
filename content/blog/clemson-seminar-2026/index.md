@@ -16,4 +16,4 @@ I had a wonderful visit, really enjoyed the discussions after the talk, and appr
 
 Thank you to Clemson's School of Mathematical and Statistical Sciences for having me!
 
-<iframe src="/files/flyer_ji_april22_2026.pdf" width="100%" height="800px" style="border: none;"></iframe>
+[Seminar flyer (PDF)](/files/flyer_ji_april22_2026.pdf)

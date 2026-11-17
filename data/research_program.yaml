@@ -11,7 +11,8 @@
 #   status:  where the paper stands there, shown as a status label on the right —
 #            `Major revision`, `Under review`, `Poster`. Leave it out once
 #            published; the year then takes its place.
-#   year:    publication year, shown when there is no status
+#   year:    publication year, shown when there is no status. Give it even
+#            then: the homepage roadmap's hover cards always show it.
 #   label:   optional small-caps eyebrow above the title (`Selected work`)
 #
 # Research Snap options, checked in this order:
@@ -59,6 +60,7 @@ sections:
         authors: Yao Ji and Guanghui Lan
         venue: Mathematical Programming, Series A
         status: Major revision
+        year: '2026'
         detail: 'arXiv:2604.06525, 2026'
         snap: acfgm
         links:
@@ -79,6 +81,7 @@ sections:
         authors: Yao Ji, Guanghui Lan, and Jason Zhu
         venue: Mathematical Programming, Series A
         status: Under review
+        year: '2026'
         detail: 'arXiv:2609.04188, 2026'
         figure_pages:
           - file: research/strong-solutions-vi-1.jpg
@@ -123,6 +126,7 @@ sections:
         authors: Yao Ji and Guanghui Lan
         venue: SIAM Journal on Optimization
         status: R&R 2nd round review
+        year: '2025'
         detail: 'arXiv:2511.03723, 2025'
         snap: ar
         links:
@@ -156,6 +160,7 @@ sections:
           Xiaoyu Chen, Lihui Bai, and Jiapeng Huang
         venue: Society of Cardiovascular Anesthesiologists Annual Meeting
         status: Poster
+        year: '2026'
         detail: Nashville, TN, 2026
         snap_alt: >-
           Research Snap for perioperative patient-response modeling in cardiac

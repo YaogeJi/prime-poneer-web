@@ -384,7 +384,7 @@
                     {{ $ph := resources.Get (printf "media/badges/%s" .photo) }}
                     {{ if not $ph }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" .photo }}{{ end }}
                     {{ $ph = $ph.Fill "420x420 Center webp q82 Lanczos" }}
-                    <img class="hobby-back-photo" src="{{ $ph.RelPermalink }}" alt="" width="{{ $ph.Width }}" height="{{ $ph.Height }}" loading="lazy" decoding="async">
+                    <img class="hobby-back-photo" src="{{ $ph.RelPermalink }}" alt="" width="{{ $ph.Width }}" height="{{ $ph.Height }}" loading="lazy" decoding="async" draggable="false">
                   {{ end }}
                   {{ if ne $kind "photos" }}
                   <span class="hobby-back-text">
@@ -415,7 +415,7 @@
                           {{ with $tier }}data-tier="{{ . }}"{{ end }}
                           {{ with $large }}data-large="{{ .RelPermalink }}" data-large-w="{{ .Width }}" data-large-h="{{ .Height }}"
                           data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}"{{ end }}>
-                      <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async">
+                      <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async" draggable="false">
                       <span class="hobby-shot-caption">
                         {{ with index $tierNames $tier }}<span class="hobby-shot-tier">{{ . }}</span>{{ end }}
                         {{ with $shot.name }}<span class="hobby-shot-name">{{ . }}</span>
@@ -444,7 +444,7 @@
             <p class="cat-reveal-tag" data-reveal-tag></p>
             <h2 class="cat-reveal-title" id="cat-reveal-title" data-reveal-title></h2>
             <div class="cat-reveal-figure">
-              <img data-reveal-img alt="" decoding="async">
+              <img data-reveal-img alt="" decoding="async" draggable="false">
               <span class="cat-reveal-spark cat-reveal-spark--1" aria-hidden="true">✦</span>
               <span class="cat-reveal-spark cat-reveal-spark--2" aria-hidden="true">✦</span>
               <span class="cat-reveal-spark cat-reveal-spark--3" aria-hidden="true">✧</span>
@@ -527,6 +527,12 @@
           {{ end }}
         {{ end }}
 
+        {{/* Research paragraph and roadmap, in one plain wrapper: hovering a
+             research term lights its branches and pointing at a branch lights
+             its term, and .bio-research is the small container those :has()
+             rules are scoped to (custom.css). Adds no box or spacing. */}}
+        <div class="bio-research">
+
         {{/* Research paragraph — sits above the research roadmap.
              Read from the raw author data: get_author_profile only exposes a fixed field set. */}}
         {{ $author_data := index site.Data.authors ($author | urlize) }}
@@ -542,6 +548,7 @@
              Replaces the education / experience timeline; that data stays in
              data/authors/me.yaml for anything else that reads it. */}}
         {{ partial "hbx/blocks/resume-biography-3/roadmap.html" . }}
+        </div>
 
         {{/* Recent news — sits where the job-market callout used to, so the
              announcement now arrives as the pinned item at the top of the feed
@@ -549,8 +556,11 @@
 
              Queried here rather than reusing the collection block so the feed
              can live inside this column; the per-item markup is still the
-             shared views/news-feed.html partial. */}}
-        {{ $news := where site.RegularPages "Type" "blog" }}
+             shared views/news-feed.html partial. Read from the news section,
+             not site.RegularPages: the posts are listed locally only, since
+             they have no pages of their own (see content/blog/_index.md). */}}
+        {{ $news := slice }}
+        {{ with site.GetPage "/blog" }}{{ $news = .RegularPages }}{{ end }}
         {{ $news = where $news "Params.unpublished" "!=" true }}
         {{ $pinned := sort (where $news "Params.pinned" true) "Date" "desc" }}
 
@@ -568,12 +578,14 @@
         {{ $rows = sort $rows "when" "desc" }}
 
         {{ if or (gt (len $pinned) 0) (gt (len $rows) 0) }}
-        <section id="news" class="bio-news">
+        {{/* Named by its heading, as the accordion guidance asks of a group of
+             disclosures that forms its own section of the page. */}}
+        <section id="news" class="bio-news" aria-labelledby="news-heading">
           <div class="flex items-center gap-4 bio-heading-gap">
             <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/50 rounded-full flex items-center justify-center">
               {{ partial "functions/get_icon" (dict "name" "megaphone" "attributes" "class='w-6 h-6 text-primary-600 dark:text-primary-400'") }}
             </div>
-            <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Recent News</h2>
+            <h2 id="news-heading" class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Recent News</h2>
           </div>
 
           {{/* Pinned items sit outside the scroll container, so they stay put

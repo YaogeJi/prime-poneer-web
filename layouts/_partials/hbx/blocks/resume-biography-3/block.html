@@ -400,7 +400,6 @@
                   </span>
                   {{ end }}
                   {{ $caption := .caption }}
-                  {{ $count := 0 }}{{ with .photos }}{{ $count = len . }}{{ end }}
                   {{ range $k, $shot := .photos }}
                     {{ $src := resources.Get (printf "media/badges/%s" $shot.file) }}
                     {{ if not $src }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.file }}{{ end }}
@@ -420,8 +419,7 @@
                     <span class="hobby-shot{{ if eq $k 0 }} is-shown{{ end }}"
                           {{ with $tier }}data-tier="{{ . }}"{{ end }}
                           {{ with $large }}data-large="{{ .RelPermalink }}" data-large-w="{{ .Width }}" data-large-h="{{ .Height }}"
-                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}" data-name="{{ $shot.name }}"
-                          data-no="No. {{ add $k 1 }} / {{ $count }}"{{ end }}>
+                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}" data-name="{{ $shot.name }}"{{ end }}>
                       <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async" draggable="false">
                       <span class="hobby-shot-caption">
                         {{ with index $tierNames $tier }}<span class="hobby-shot-tier">{{ . }}</span>{{ end }}
@@ -439,10 +437,8 @@
         </div>
 
         {{/* The reveal card for epic and legendary pulls: one modal dialog,
-             filled in by the script from the photo that was drawn, laid out
-             as a collectible card (name, framed photo, flavour text, card
-             number and tier) with the close button under it. It closes on
-             that button, Escape, or a click outside (`closedby="any"`, with a
+             filled in by the script from the photo that was drawn. It closes
+             on its button, Escape, or a click outside (`closedby="any"`, with a
              small fallback in the script). */}}
         {{ if $hasReveal }}
         {{ $rv := $bd.reveal }}
@@ -450,25 +446,20 @@
                 data-tag-epic="{{ $rv.epic.tag }}" {{ with $rv.epic.title }}data-title-epic="{{ . }}" {{ end }}data-close-epic="{{ $rv.epic.close }}"
                 data-tag-legendary="{{ $rv.legendary.tag }}" {{ with $rv.legendary.title }}data-title-legendary="{{ . }}" {{ end }}data-close-legendary="{{ $rv.legendary.close }}">
           <div class="cat-reveal-card">
-            <div class="cat-reveal-face">
-              <h2 class="cat-reveal-title" id="cat-reveal-title" data-reveal-title></h2>
-              <div class="cat-reveal-figure">
-                <img data-reveal-img alt="" decoding="async" draggable="false">
-                <span class="cat-reveal-spark cat-reveal-spark--1" aria-hidden="true">✦</span>
-                <span class="cat-reveal-spark cat-reveal-spark--2" aria-hidden="true">✦</span>
-                <span class="cat-reveal-spark cat-reveal-spark--3" aria-hidden="true">✧</span>
-                <span class="cat-reveal-spark cat-reveal-spark--4" aria-hidden="true">✦</span>
-              </div>
-              <p class="cat-reveal-note" data-reveal-note></p>
-              <div class="cat-reveal-foot">
-                <span class="cat-reveal-no" data-reveal-no></span>
-                <span class="cat-reveal-tag" data-reveal-tag></span>
-              </div>
+            <p class="cat-reveal-tag" data-reveal-tag></p>
+            <h2 class="cat-reveal-title" id="cat-reveal-title" data-reveal-title></h2>
+            <div class="cat-reveal-figure">
+              <img data-reveal-img alt="" decoding="async" draggable="false">
+              <span class="cat-reveal-spark cat-reveal-spark--1" aria-hidden="true">✦</span>
+              <span class="cat-reveal-spark cat-reveal-spark--2" aria-hidden="true">✦</span>
+              <span class="cat-reveal-spark cat-reveal-spark--3" aria-hidden="true">✧</span>
+              <span class="cat-reveal-spark cat-reveal-spark--4" aria-hidden="true">✦</span>
             </div>
+            <p class="cat-reveal-note" data-reveal-note></p>
+            <form method="dialog">
+              <button type="submit" class="cat-reveal-close" autofocus data-reveal-close></button>
+            </form>
           </div>
-          <form method="dialog">
-            <button type="submit" class="cat-reveal-close" autofocus data-reveal-close></button>
-          </form>
           <div class="cat-reveal-confetti" aria-hidden="true" data-reveal-confetti></div>
         </dialog>
         {{ end }}
@@ -793,7 +784,6 @@
     // Titled with the photo's name, unless the tier has a title of its own.
     q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier) || shot.getAttribute('data-name');
     q('[data-reveal-note]').textContent = shot.getAttribute('data-note');
-    q('[data-reveal-no]').textContent = shot.getAttribute('data-no') || '';
     q('[data-reveal-close]').textContent = dialog.getAttribute('data-close-' + tier);
     var img = q('[data-reveal-img]');
     img.width = +shot.getAttribute('data-large-w');

@@ -16,9 +16,7 @@
 # the coin a little larger, with no card. Epic and legendary pulls open a
 # reveal card: epic shows the photo larger, legendary shows `full`,
 # the uncropped photo. `alt` describes the photo on that card; `note` is the
-# line under it, as the card's flavour text; its foot shows the photo's place
-# in this list as a card number ("No. 28 / 30"), so keep the rarest last.
-# The card's title is the photo's own `name` (so give epic and
+# line under it. The card's title is the photo's own `name` (so give epic and
 # legendary photos a title-like one), unless the tier sets a `title` under
 # `reveal`, which then titles every card of that tier.
 

@@ -26,10 +26,15 @@ Coin backs (photos supplied by the site owner, Nov 2026). Which coin uses
 which photo, each photo's tier and the odds are all in `data/badges.yaml`:
 `photo-medals.jpg` (half marathon); `climb-1.jpg` to `climb-4.jpg`
 (bouldering); `cat-*.jpg` (cats: common, rare, epic and legendary pulls).
-`cat-legend-full.jpg` is the uncropped legendary photo for its reveal card.
-Each photo was squared on its subject (the `-full` one kept whole) and
-re-encoded with no metadata: the originals carried GPS location, capture date
-and device. Keep it that way for any photo added here.
+Each legendary photo also has a `-full` version (`cat-legend-full.jpg`,
+`cat-swan-full.jpg`, `cat-fence-full.jpg`) for its reveal card, scaled to a
+1600 px long edge.
+Each photo was squared on its subject (the `-full` ones kept whole, except
+that `cat-fence-full.jpg` was trimmed at the bottom to drop the camera's
+watermark) and re-encoded with no metadata: the originals carried GPS
+location, capture date and device. Wide-gamut (Display P3) originals were
+converted to sRGB first, so stripping the colour profile doesn't shift their
+colours. Keep it that way for any photo added here.
 
 Kept for switching back: `bouldering.svg`, `running.svg`, `cats.svg`, the
 site's original one-colour line drawings.

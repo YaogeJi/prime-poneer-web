@@ -63,6 +63,7 @@ coins:
       - { file: cat-oreo.jpg, name: Oreo, tier: common }
       - { file: cat-dove.jpg, name: Dove, tier: common }
       - { file: cat-oreo-2.jpg, name: Oreo, tier: common }
+      - { file: cat-doggy-3.jpg, name: Doggy, tier: common }
       # Rare, 20%
       - { file: cat-doggy-2.jpg, name: Doggy, tier: rare }
       - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
@@ -82,6 +83,16 @@ coins:
         tier: epic
         alt: Doggy, a silver tabby cat, lying on a sunny patio mid-yawn with mouth wide open
         note: Doggy has heard enough about convergence rates for one day. 🐾
+      - file: cat-tunnel.jpg
+        name: Oreo
+        tier: epic
+        alt: Oreo, a black-and-white cat in a red bow tie, lying in a concrete culvert with mouth wide open
+        note: Oreo found a secret tunnel and is shocked that you found it too. 🐾
+      - file: cat-tree.jpg
+        name: Dove
+        tier: epic
+        alt: Dove, a black cat in a red bandana, perched in the fork of a big tree with a pink tongue poking out
+        note: Dove made it up the tree. Getting down is tomorrow's problem. 🐾
       # Legendary, 2%
       - file: cat-legend.jpg
         full: cat-legend-full.jpg
@@ -89,3 +100,15 @@ coins:
         tier: legendary
         alt: Oreo, a black-and-white cat, in soft window light against a dark wall, glancing over a shoulder
         note: Congratulations! You've found a legendary, ridiculously good-looking Don Oreo. ✨
+      - file: cat-swan.jpg
+        full: cat-swan-full.jpg
+        name: Doggy
+        tier: legendary
+        alt: Doggy, a silver tabby cat, sitting in the sun on a stone ledge beside a white swan statue
+        note: Congratulations! You've found a legendary Doggy, keeping a very serious eye on the swan. ✨
+      - file: cat-fence.jpg
+        full: cat-fence-full.jpg
+        name: Dove
+        tier: legendary
+        alt: Dove, a black cat, lying along the top of a wooden fence behind tall grass, gazing into the distance
+        note: Congratulations! You've spotted a legendary Dove on fence patrol. ✨

@@ -64,9 +64,24 @@ coins:
       - { file: cat-dove.jpg, name: Dove, tier: common }
       - { file: cat-oreo-2.jpg, name: Oreo, tier: common }
       - { file: cat-doggy-3.jpg, name: Doggy, tier: common }
+      - { file: cat-dandelions.jpg, name: Oreo, tier: common }
+      - { file: cat-forest.jpg, name: Oreo, tier: common }
+      - { file: cat-oreo-fence.jpg, name: Oreo, tier: common }
+      - { file: cat-upside-down.jpg, name: Oreo, tier: common }
+      - { file: cat-yoga.jpg, name: Oreo, tier: common }
+      - { file: cat-lake.jpg, name: Dove, tier: common }
+      - { file: cat-railing.jpg, name: Dove, tier: common }
+      - { file: cat-big-tree.jpg, name: Oreo & Dove, tier: common }
+      - { file: cat-crown.jpg, name: Doggy, tier: common }
+      - { file: cat-belly.jpg, name: Doggy, tier: common }
+      - { file: cat-grass.jpg, name: Doggy, tier: common }
       # Rare, 20%
       - { file: cat-doggy-2.jpg, name: Doggy, tier: rare }
       - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
+      - { file: cat-kittens.jpg, name: Dove & Oreo, tier: rare }
+      - { file: cat-paper.jpg, name: Oreo, tier: rare }
+      - { file: cat-sunbath.jpg, name: Doggy, tier: rare }
+      - { file: cat-glasses.jpg, name: Doggy, tier: rare }
       # Epic, 8%
       - file: cat-picnic.jpg
         name: Sunday Best
@@ -93,6 +108,11 @@ coins:
         tier: epic
         alt: Dove, a black cat in a red bandana, perched in the fork of a big tree with a pink tongue poking out
         note: Dove sent this V0 on his first try. Getting down was never part of the plan. 🐾
+      - file: cat-birthday.jpg
+        name: Birthday Doggy
+        tier: epic
+        alt: Doggy, a silver tabby cat, mouth wide open behind a kitchen counter covered in birthday treats, goat milk and bowls of food
+        note: A whole table of birthday treats, and Doggy is still yelling for more. 🐾
       # Legendary, 2%
       - file: cat-legend.jpg
         full: cat-legend-full.jpg

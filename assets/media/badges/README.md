@@ -29,12 +29,14 @@ which photo, each photo's tier and the odds are all in `data/badges.yaml`:
 Each legendary photo also has a `-full` version (`cat-legend-full.jpg`,
 `cat-swan-full.jpg`, `cat-fence-full.jpg`) for its reveal card, scaled to a
 1600 px long edge.
-Each photo was squared on its subject (the `-full` ones kept whole, except
-that `cat-fence-full.jpg` was trimmed at the bottom to drop the camera's
-watermark) and re-encoded with no metadata: the originals carried GPS
-location, capture date and device. Wide-gamut (Display P3) originals were
-converted to sRGB first, so stripping the colour profile doesn't shift their
-colours. Keep it that way for any photo added here.
+Each photo was squared on its subject (480 px for common and rare, 900 px for
+epic and legendary; the `-full` ones kept whole, except that
+`cat-fence-full.jpg` was trimmed at the bottom to drop the camera's
+watermark, and `cat-glasses.jpg`, cut from a screenshot, leaves out the
+Photos app's Search button) and re-encoded with no metadata: the originals
+carried GPS location, capture date and device. Wide-gamut (Display P3)
+originals were converted to sRGB first, so stripping the colour profile
+doesn't shift their colours. Keep it that way for any photo added here.
 
 Kept for switching back: `bouldering.svg`, `running.svg`, `cats.svg`, the
 site's original one-colour line drawings.

@@ -3,6 +3,12 @@
 # file in assets/media/badges/ (see the README there for where each came from
 # and how it was processed: photos are cropped and stripped of metadata).
 #
+# A coin's `photos` are not written into the page: their names, notes and
+# picture addresses go into one encoded list that the coin's script decodes,
+# and only the photo drawn is loaded; pictures are published under opaque
+# names. This keeps crawlers from reading the collection off the page. It
+# does not hide this file, which is public in the GitHub repo.
+#
 # A coin has an `icon` (its front), a `label` (the full sentence, read out as
 # the button's name) and one kind of back:
 #   kicker + lines (+ big)   a short inscription; `big` makes the first line large
@@ -75,6 +81,16 @@ coins:
       - { file: cat-crown.jpg, name: Doggy, tier: common }
       - { file: cat-belly.jpg, name: Doggy, tier: common }
       - { file: cat-grass.jpg, name: Doggy, tier: common }
+      - { file: cat-chair.jpg, name: Oreo & Dove, tier: common }
+      - { file: cat-scratcher.jpg, name: Dove & Oreo, tier: common }
+      - { file: cat-car.jpg, name: Oreo, tier: common }
+      - { file: cat-lawn.jpg, name: Oreo, tier: common }
+      - { file: cat-redwood.jpg, name: Oreo, tier: common }
+      - { file: cat-dove-wall.jpg, name: Dove, tier: common }
+      - { file: cat-window.jpg, name: Dove, tier: common }
+      - { file: cat-catio.jpg, name: Doggy, tier: common }
+      - { file: cat-table-leg.jpg, name: Dove, tier: common }
+      - { file: cat-wrestle.jpg, name: Dove & Oreo, tier: common }
       # Rare, 20%
       - { file: cat-doggy-2.jpg, name: Doggy, tier: rare }
       - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
@@ -82,6 +98,16 @@ coins:
       - { file: cat-oreo-3.jpg, name: Oreo, tier: rare }
       - { file: cat-sunbath.jpg, name: Doggy, tier: rare }
       - { file: cat-glasses.jpg, name: Doggy, tier: rare }
+      - { file: cat-sunbeam.jpg, name: Doggy, tier: rare }
+      - { file: cat-roses.jpg, name: Oreo, tier: rare }
+      - { file: cat-collar.jpg, name: Dove, tier: rare }
+      - { file: cat-cuddle.jpg, name: Oreo & Dove, tier: rare }
+      - { file: cat-octopus.jpg, name: Dove, tier: rare }
+      - { file: cat-doggy-portrait.jpg, name: Doggy, tier: rare }
+      - { file: cat-wide-eyed.jpg, name: Doggy, tier: rare }
+      - { file: cat-chair-wheel.jpg, name: Oreo, tier: rare }
+      - { file: cat-smackdown.jpg, name: Dove & Oreo, tier: rare }
+      - { file: cat-lounger.jpg, name: Doggy & Oreo, tier: rare }
       # Epic, 8%
       - file: cat-picnic.jpg
         name: Sunday Best

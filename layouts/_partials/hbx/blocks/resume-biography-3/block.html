@@ -353,6 +353,18 @@
         {{ $bd := site.Data.badges }}
         {{ $tierNames := $bd.tiers | default dict }}
         {{ $hasReveal := false }}
+        {{/* A photo coin's photos are not in the page as such: their names,
+             notes and picture addresses go into one list on the coin
+             (data-deck) as JSON in base64, each base64 character swapped
+             through this key, so nothing in the HTML reads as a card. The
+             script holds the same key ($deckKeyStr) and decodes the list,
+             loading only the photo it draws. The pictures are published under
+             opaque names (an md5 of the source file), not their file names.
+             Hiding, not security: the script can decode what it is given.
+             The two forms of the key must match; the dict is written out
+             because `merge` folds the case of its keys. */}}
+        {{ $deckKeyStr := "TQMGJrmz5ZUs+lE8nXIKFLhWRkHuiq4P0dAYDgf17SxVBj/ye2ptOw6a39vCbNoc" }}
+        {{ $deckKey := dict "A" "T" "B" "Q" "C" "M" "D" "G" "E" "J" "F" "r" "G" "m" "H" "z" "I" "5" "J" "Z" "K" "U" "L" "s" "M" "+" "N" "l" "O" "E" "P" "8" "Q" "n" "R" "X" "S" "I" "T" "K" "U" "F" "V" "L" "W" "h" "X" "W" "Y" "R" "Z" "k" "a" "H" "b" "u" "c" "i" "d" "q" "e" "4" "f" "P" "g" "0" "h" "d" "i" "A" "j" "Y" "k" "D" "l" "g" "m" "f" "n" "1" "o" "7" "p" "S" "q" "x" "r" "V" "s" "B" "t" "j" "u" "/" "v" "y" "w" "e" "x" "2" "y" "p" "z" "t" "0" "O" "1" "w" "2" "6" "3" "a" "4" "3" "5" "9" "6" "v" "7" "C" "8" "b" "9" "N" "+" "o" "/" "c" }}
         <div class="hobby-block">
         <span class="hobby-heading">Beyond research</span>
         <div class="hobby-row">
@@ -366,9 +378,51 @@
           {{ range .photos }}{{ if .tier }}{{ $tiered = true }}{{ end }}{{ end }}
           {{ $odds := slice }}
           {{ if $tiered }}{{ range $t, $w := $bd.odds }}{{ $odds = $odds | append (printf "%s:%v" $t $w) }}{{ end }}{{ end }}
+          {{ $deck := "" }}
+          {{ if eq $kind "photos" }}
+            {{ $caption := .caption | default "" }}
+            {{ $cards := slice }}
+            {{ range $shot := .photos }}
+              {{ $src := resources.Get (printf "media/badges/%s" $shot.file) }}
+              {{ if not $src }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.file }}{{ end }}
+              {{ $id := md5 $src.Content }}
+              {{ $sp := $src.Fill "420x420 Center webp q82 Lanczos" | resources.Copy (printf "media/p/%s.webp" (substr (md5 (print $id "-s")) 0 16)) }}
+              {{ $tier := $shot.tier | default "" }}
+              {{/* Epic and legendary pulls open the reveal card, which needs a
+                   larger picture: the square photo for epic, the uncropped
+                   `full` one for legendary. */}}
+              {{ $large := "" }}
+              {{ $l := "" }}{{ $lw := 0 }}{{ $lh := 0 }}
+              {{ if eq $tier "epic" }}{{ $large = $src.Fill "720x720 Center webp q84 Lanczos" }}{{ end }}
+              {{ if eq $tier "legendary" }}
+                {{ $full := resources.Get (printf "media/badges/%s" ($shot.full | default $shot.file)) }}
+                {{ if not $full }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.full }}{{ end }}
+                {{ $large = $full.Resize "x1200 webp q84 Lanczos" }}
+              {{ end }}
+              {{ with $large }}
+                {{ $big := . | resources.Copy (printf "media/p/%s.webp" (substr (md5 (print $id "-l")) 0 16)) }}
+                {{ $l = $big.RelPermalink }}{{ $lw = $big.Width }}{{ $lh = $big.Height }}
+                {{ $hasReveal = true }}
+              {{ end }}
+              {{ $name := $shot.name | default "" }}
+              {{ $cards = $cards | append (dict
+                  "s" $sp.RelPermalink
+                  "t" $tier
+                  "g" (index $tierNames $tier | default "")
+                  "n" $name
+                  "c" (cond (eq $name "") $caption "")
+                  "a" ($shot.alt | default "")
+                  "o" ($shot.note | default "")
+                  "l" $l "w" $lw "h" $lh) }}
+            {{ end }}
+            {{ $out := slice }}
+            {{ range split ($cards | jsonify | encoding.Base64Encode) "" }}{{ $out = $out | append (index $deckKey . | default .) }}{{ end }}
+            {{ $deck = delimit $out "" }}
+          {{ end }}
           <div class="hobby-item">
             <button type="button" class="hobby-badge hobby-badge--{{ $kind }}" aria-pressed="false" aria-label="{{ .label }}"
-                    {{ with $odds }}data-odds="{{ delimit . "," }}"{{ end }}>
+                    {{ with $odds }}data-odds="{{ delimit . "," }}"{{ end }}
+                    {{ with $deck }}data-deck="{{ . }}"{{ end }}>
               <span class="hobby-coin" aria-hidden="true">
                 {{/* The coin's edge: thin discs stacked between the two faces,
                      so the coin shows its thickness when it tilts or turns.
@@ -399,34 +453,13 @@
                     {{ end }}
                   </span>
                   {{ end }}
-                  {{ $caption := .caption }}
-                  {{ range $k, $shot := .photos }}
-                    {{ $src := resources.Get (printf "media/badges/%s" $shot.file) }}
-                    {{ if not $src }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.file }}{{ end }}
-                    {{ $sp := $src.Fill "420x420 Center webp q82 Lanczos" }}
-                    {{ $tier := $shot.tier | default "" }}
-                    {{/* Epic and legendary pulls open the reveal card, which
-                         needs a larger picture: the square photo for epic, the
-                         uncropped `full` one for legendary. */}}
-                    {{ $large := "" }}
-                    {{ if eq $tier "epic" }}{{ $large = $src.Fill "720x720 Center webp q84 Lanczos" }}{{ end }}
-                    {{ if eq $tier "legendary" }}
-                      {{ $full := resources.Get (printf "media/badges/%s" ($shot.full | default $shot.file)) }}
-                      {{ if not $full }}{{ errorf "bio badges: photo %q not found under assets/media/badges/" $shot.full }}{{ end }}
-                      {{ $large = $full.Resize "x1200 webp q84 Lanczos" }}
-                    {{ end }}
-                    {{ if $large }}{{ $hasReveal = true }}{{ end }}
-                    <span class="hobby-shot{{ if eq $k 0 }} is-shown{{ end }}"
-                          {{ with $tier }}data-tier="{{ . }}"{{ end }}
-                          {{ with $large }}data-large="{{ .RelPermalink }}" data-large-w="{{ .Width }}" data-large-h="{{ .Height }}"
-                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}" data-name="{{ $shot.name }}"{{ end }}>
-                      <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async" draggable="false">
-                      <span class="hobby-shot-caption">
-                        {{ with index $tierNames $tier }}<span class="hobby-shot-tier">{{ . }}</span>{{ end }}
-                        {{ with $shot.name }}<span class="hobby-shot-name">{{ . }}</span>
-                        {{ else }}{{ with $caption }}<span class="hobby-shot-note">{{ . }}</span>{{ end }}{{ end }}
-                      </span>
-                    </span>
+                  {{ if eq $kind "photos" }}
+                  {{/* One shot, filled in by the script with the photo it
+                       draws, while the back still faces away. */}}
+                  <span class="hobby-shot is-shown" data-shot>
+                    <img alt="" width="420" height="420" decoding="async" draggable="false">
+                    <span class="hobby-shot-caption"></span>
+                  </span>
                   {{ end }}
                 </span>
               </span>
@@ -663,10 +696,13 @@
      carries the full sentence.
 
      A coin with several photos shows one per turn, swapped while its back
-     still faces away. With tiers (`data-odds` on the coin, `data-tier` on each
-     photo) a tier is drawn first, by its odds, then a photo within it; never
-     the same photo twice in a row where there is a choice. An epic or
-     legendary pull opens the reveal card once the coin has landed.
+     still faces away. Its photos come as an encoded list (data-deck, see
+     above), decoded here; only the photo drawn is put in the page, and the
+     next one is drawn ahead and loaded early so the coin never turns to a
+     blank. With tiers (`data-odds` on the coin, `t` on each photo) a tier is
+     drawn first, by its odds, then a photo within it; never the same photo
+     twice in a row where there is a choice. An epic or legendary pull opens
+     the reveal card once the coin has landed.
 
      With a mouse or pen, a hovered coin also tips with the pointer, the side
      under it dipping away as if pressed, and the light on its rim swings
@@ -679,6 +715,13 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   var dialog = document.querySelector('[data-reveal]');
   var revealTimer;
+
+  // No right-click menu over the coins or the reveal card, on top of the
+  // pass-through pointer in custom.css, so there is no "Save image" to pick.
+  // Like that rule, a deterrent: the files are still fetched by the page.
+  Array.prototype.forEach.call(document.querySelectorAll('.hobby-block, [data-reveal]'), function (el) {
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
 
   // A coin that changes sides stops following the pointer for the length of
   // the turn (0.65s, as in custom.css), so the turn keeps its spring.
@@ -747,49 +790,97 @@
     return odds.length ? odds[odds.length - 1][0] : null;
   }
 
-  function nextShot(coin) {
-    var shots = Array.prototype.slice.call(coin.querySelectorAll('.hobby-shot'));
-    if (shots.length < 2) { return null; }
-    var current = -1;
-    shots.forEach(function (shot, k) { if (shot.classList.contains('is-shown')) { current = k; } });
-    var pool = shots.map(function (shot, k) { return k; });
+  // The coin's photos, from data-deck: undo the character swap, then base64,
+  // then UTF-8 JSON. Each photo: s (coin picture), t (tier), g (tier tag),
+  // n (name) or c (caption), and for the reveal card a (alt), o (note),
+  // l, w, h (larger picture and its size).
+  var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  var DECK_KEY = {{ $deckKeyStr }};
+  function deckOf(coin) {
+    if (coin.deck) { return coin.deck; }
+    var enc = coin.getAttribute('data-deck') || '', b64 = '';
+    for (var i = 0; i < enc.length; i++) {
+      var k = DECK_KEY.indexOf(enc.charAt(i));
+      b64 += k < 0 ? enc.charAt(i) : B64.charAt(k);
+    }
+    var bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (var j = 0; j < bin.length; j++) { bytes[j] = bin.charCodeAt(j); }
+    coin.deck = JSON.parse(new TextDecoder().decode(bytes));
+    return coin.deck;
+  }
+
+  function draw(coin) {
+    var deck = deckOf(coin);
+    var pool = deck.map(function (card, k) { return k; });
     var odds = coin.getAttribute('data-odds');
     if (odds) {
       var byTier = {};
-      shots.forEach(function (shot, k) {
-        var t = shot.getAttribute('data-tier') || 'common';
+      deck.forEach(function (card, k) {
+        var t = card.t || 'common';
         (byTier[t] = byTier[t] || []).push(k);
       });
       pool = byTier[drawTier(odds, byTier)] || pool;
     }
-    if (coin.hasAttribute('data-turned') && pool.length > 1) {
-      pool = pool.filter(function (k) { return k !== current; });
+    if (coin.shown != null && pool.length > 1) {
+      pool = pool.filter(function (k) { return k !== coin.shown; });
     }
-    var next = pick(pool);
-    coin.setAttribute('data-turned', '');
-    shots.forEach(function (shot, k) { shot.classList.toggle('is-shown', k === next); });
+    return pick(pool);
+  }
+
+  // Draw the next photo ahead and fetch its pictures, so the turn shows it at
+  // once; only this one photo is loaded before it is needed.
+  function queue(coin) {
+    var card = deckOf(coin)[coin.queued = draw(coin)];
+    new Image().src = card.s;
+    if (card.l) { new Image().src = card.l; }
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    e.className = cls;
+    e.textContent = text;
+    return e;
+  }
+
+  function nextShot(coin) {
+    if (!coin.hasAttribute('data-deck') || !deckOf(coin).length) { return null; }
+    if (coin.queued == null) { queue(coin); }
+    var card = coin.deck[coin.shown = coin.queued];
+    var shot = coin.querySelector('[data-shot]');
+    shot.querySelector('img').src = card.s;
+    var cap = shot.querySelector('.hobby-shot-caption');
+    cap.textContent = '';
+    if (card.g) { cap.appendChild(el('span', 'hobby-shot-tier', card.g)); }
+    if (card.n) { cap.appendChild(el('span', 'hobby-shot-name', card.n)); }
+    else if (card.c) { cap.appendChild(el('span', 'hobby-shot-note', card.c)); }
     // The coin takes the photo's tier, which sets the colour of its frame.
-    var tier = shots[next].getAttribute('data-tier');
-    if (tier) { coin.setAttribute('data-tier', tier); } else { coin.removeAttribute('data-tier'); }
-    return shots[next];
+    if (card.t) {
+      coin.setAttribute('data-tier', card.t);
+      shot.setAttribute('data-tier', card.t);
+    } else {
+      coin.removeAttribute('data-tier');
+      shot.removeAttribute('data-tier');
+    }
+    queue(coin);
+    return card;
   }
 
   // The reveal card: filled from the drawn photo, then shown as a modal.
-  function reveal(shot) {
+  function reveal(card) {
     if (!dialog || dialog.open) { return; }
-    var tier = shot.getAttribute('data-tier');
+    var tier = card.t;
     var q = function (sel) { return dialog.querySelector(sel); };
     dialog.className = 'cat-reveal cat-reveal--' + tier;
     q('[data-reveal-tag]').textContent = dialog.getAttribute('data-tag-' + tier);
     // Titled with the photo's name, unless the tier has a title of its own.
-    q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier) || shot.getAttribute('data-name');
-    q('[data-reveal-note]').textContent = shot.getAttribute('data-note');
+    q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier) || card.n;
+    q('[data-reveal-note]').textContent = card.o;
     q('[data-reveal-close]').textContent = dialog.getAttribute('data-close-' + tier);
     var img = q('[data-reveal-img]');
-    img.width = +shot.getAttribute('data-large-w');
-    img.height = +shot.getAttribute('data-large-h');
-    img.alt = shot.getAttribute('data-alt');
-    img.src = shot.getAttribute('data-large');
+    img.width = card.w;
+    img.height = card.h;
+    img.alt = card.a;
+    img.src = card.l;
     // Confetti for the legendary one, fresh each time; none with reduced motion.
     var confetti = q('[data-reveal-confetti]');
     confetti.textContent = '';
@@ -817,11 +908,11 @@
   Array.prototype.forEach.call(coins, function (coin) {
     coin.addEventListener('click', function () {
       var over = coin.getAttribute('aria-pressed') !== 'true';
-      var shot = over ? nextShot(coin) : null;
+      var card = over ? nextShot(coin) : null;
       turn(coin, over);
-      if (shot && /^(epic|legendary)$/.test(shot.getAttribute('data-tier') || '')) {
+      if (card && /^(epic|legendary)$/.test(card.t || '') && card.l) {
         clearTimeout(revealTimer);
-        revealTimer = setTimeout(function () { reveal(shot); }, reduced.matches ? 0 : 700);
+        revealTimer = setTimeout(function () { reveal(card); }, reduced.matches ? 0 : 700);
       }
     });
     coin.addEventListener('pointermove', function (e) { tilt(coin, e); });
@@ -843,6 +934,15 @@
       if (!coin.contains(e.target)) { turn(coin, false); }
     });
   });
+
+  // Once the page has loaded, draw each photo coin's first photo and fetch it.
+  function queueAll() {
+    Array.prototype.forEach.call(coins, function (coin) {
+      if (coin.hasAttribute('data-deck') && coin.queued == null && deckOf(coin).length) { queue(coin); }
+    });
+  }
+  if (document.readyState === 'complete') { queueAll(); }
+  else { window.addEventListener('load', queueAll); }
 })();
 </script>
 

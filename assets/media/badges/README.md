@@ -10,14 +10,17 @@ rendered by `layouts/_partials/hbx/blocks/resume-biography-3/block.html`.
 - **PNG / WebP** works too and is shown as an image (use at least 128 px).
 
 In use: `bouldering-sheen.png`, `running-sheen.png`, `cats-sheen.png`: the
-flat designs below with only their cream background replaced by spun silver,
-after the look of Apple's Activity award medals: a cool grey base (about
-rgb(200)) with two narrow bright lobes on the upper-left to lower-right
-diagonal, broader soft shade across it, a white specular hotspot toward the
-upper left and a slight dome. It is smooth, with no grain: the metal comes
-from the contrast between shade and highlight. (An earlier, low-contrast
-light-grey sheen with faint brushing looked dirty; lifting it toward white
-lost the metal.) Each pixel of the flat design was unmixed into cream plus
+flat designs below with only their cream background replaced by polished
+silver: a cool grey base (about rgb(200)) crossed by soft light bands, a
+bright one toward the light on the left, shade right of centre and a faint
+second highlight at the right edge, plus a slight dome. The bands run at
+the same 105deg as the hover glint (`.hobby-face--front::after` in
+`assets/css/custom.css`), so the glint reads as the same reflection sliding
+across; change one and the other should follow. It is smooth, with no grain:
+the metal comes from the contrast between shade and highlight. (Tried before:
+a low-contrast light-grey sheen with faint brushing looked dirty; lifting it
+toward white lost the metal; spun-metal lobes on the other diagonal clashed
+with the glint.) Each pixel of the flat design was unmixed into cream plus
 navy or sage with a coverage, and only the cream share was swapped for the
 silver, so the figures and their anti-aliased edges are exactly as drawn.
 

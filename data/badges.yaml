@@ -16,7 +16,8 @@
 # the coin a little larger, with no card. Epic and legendary pulls open a
 # reveal card: epic shows the photo larger, legendary shows `full`,
 # the uncropped photo. `alt` describes the photo on that card; `note` is the
-# line under it.
+# line under it. The card's title is the tier's `title` under `reveal`; a tier
+# with no `title` (legendary) is titled with the photo's own `name`.
 
 odds:            # percent of turns; a tier with no photos is skipped
   common: 70
@@ -36,7 +37,6 @@ reveal:
     close: Yay!
   legendary:
     tag: Legendary
-    title: Legendary cat unlocked!
     close: Purr-fect!
 
 coins:
@@ -102,13 +102,13 @@ coins:
         note: Congratulations! You've found a legendary, ridiculously good-looking Don Oreo. ✨
       - file: cat-swan.jpg
         full: cat-swan-full.jpg
-        name: Doggy
+        name: Swan Lake Doggy
         tier: legendary
         alt: Doggy, a silver tabby cat, sitting in the sun on a stone ledge beside a white swan statue
-        note: Congratulations! You've found a legendary Doggy, keeping a very serious eye on the swan. ✨
+        note: 'Doggy, keeping a very serious eye on the swan: "Is it edible?" ✨'
       - file: cat-fence.jpg
         full: cat-fence-full.jpg
-        name: Dove
+        name: Panther Dove
         tier: legendary
         alt: Dove, a black cat, lying along the top of a wooden fence behind tall grass, gazing into the distance
         note: Congratulations! You've spotted a legendary Dove on fence patrol. ✨

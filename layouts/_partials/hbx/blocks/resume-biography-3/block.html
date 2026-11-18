@@ -419,7 +419,7 @@
                     <span class="hobby-shot{{ if eq $k 0 }} is-shown{{ end }}"
                           {{ with $tier }}data-tier="{{ . }}"{{ end }}
                           {{ with $large }}data-large="{{ .RelPermalink }}" data-large-w="{{ .Width }}" data-large-h="{{ .Height }}"
-                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}"{{ end }}>
+                          data-alt="{{ $shot.alt }}" data-note="{{ $shot.note }}" data-name="{{ $shot.name }}"{{ end }}>
                       <img src="{{ $sp.RelPermalink }}" alt="" width="{{ $sp.Width }}" height="{{ $sp.Height }}" loading="lazy" decoding="async" draggable="false">
                       <span class="hobby-shot-caption">
                         {{ with index $tierNames $tier }}<span class="hobby-shot-tier">{{ . }}</span>{{ end }}
@@ -443,8 +443,8 @@
         {{ if $hasReveal }}
         {{ $rv := $bd.reveal }}
         <dialog class="cat-reveal" closedby="any" aria-labelledby="cat-reveal-title" data-reveal
-                data-tag-epic="{{ $rv.epic.tag }}" data-title-epic="{{ $rv.epic.title }}" data-close-epic="{{ $rv.epic.close }}"
-                data-tag-legendary="{{ $rv.legendary.tag }}" data-title-legendary="{{ $rv.legendary.title }}" data-close-legendary="{{ $rv.legendary.close }}">
+                data-tag-epic="{{ $rv.epic.tag }}" {{ with $rv.epic.title }}data-title-epic="{{ . }}" {{ end }}data-close-epic="{{ $rv.epic.close }}"
+                data-tag-legendary="{{ $rv.legendary.tag }}" {{ with $rv.legendary.title }}data-title-legendary="{{ . }}" {{ end }}data-close-legendary="{{ $rv.legendary.close }}">
           <div class="cat-reveal-card">
             <p class="cat-reveal-tag" data-reveal-tag></p>
             <h2 class="cat-reveal-title" id="cat-reveal-title" data-reveal-title></h2>
@@ -781,7 +781,8 @@
     var q = function (sel) { return dialog.querySelector(sel); };
     dialog.className = 'cat-reveal cat-reveal--' + tier;
     q('[data-reveal-tag]').textContent = dialog.getAttribute('data-tag-' + tier);
-    q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier);
+    // A tier with no title of its own (legendary) is titled with the photo's name.
+    q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier) || shot.getAttribute('data-name');
     q('[data-reveal-note]').textContent = shot.getAttribute('data-note');
     q('[data-reveal-close]').textContent = dialog.getAttribute('data-close-' + tier);
     var img = q('[data-reveal-img]');

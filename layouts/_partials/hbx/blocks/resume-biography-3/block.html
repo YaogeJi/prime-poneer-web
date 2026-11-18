@@ -781,7 +781,7 @@
     var q = function (sel) { return dialog.querySelector(sel); };
     dialog.className = 'cat-reveal cat-reveal--' + tier;
     q('[data-reveal-tag]').textContent = dialog.getAttribute('data-tag-' + tier);
-    // A tier with no title of its own (legendary) is titled with the photo's name.
+    // Titled with the photo's name, unless the tier has a title of its own.
     q('[data-reveal-title]').textContent = dialog.getAttribute('data-title-' + tier) || shot.getAttribute('data-name');
     q('[data-reveal-note]').textContent = shot.getAttribute('data-note');
     q('[data-reveal-close]').textContent = dialog.getAttribute('data-close-' + tier);

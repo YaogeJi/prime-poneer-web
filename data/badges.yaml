@@ -16,8 +16,9 @@
 # the coin a little larger, with no card. Epic and legendary pulls open a
 # reveal card: epic shows the photo larger, legendary shows `full`,
 # the uncropped photo. `alt` describes the photo on that card; `note` is the
-# line under it. The card's title is the tier's `title` under `reveal`; a tier
-# with no `title` (legendary) is titled with the photo's own `name`.
+# line under it. The card's title is the photo's own `name` (so give epic and
+# legendary photos a title-like one), unless the tier sets a `title` under
+# `reveal`, which then titles every card of that tier.
 
 odds:            # percent of turns; a tier with no photos is skipped
   common: 70
@@ -33,7 +34,6 @@ tiers:           # the small tag on the coin, per tier (common has none)
 reveal:
   epic:
     tag: Epic pull
-    title: Ooh, an epic cat!
     close: Yay!
   legendary:
     tag: Legendary
@@ -69,46 +69,46 @@ coins:
       - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
       # Epic, 8%
       - file: cat-picnic.jpg
-        name: Dove & Oreo
+        name: Sunday Best
         tier: epic
         alt: Dove, a black cat, and Oreo, a black-and-white cat, in red collars on the grass under a blue sky
         note: Dove and Oreo, dressed up for a picnic. Lucky paws! 🐾
       - file: cat-sink.jpg
-        name: Oreo
+        name: Occupied
         tier: epic
         alt: Oreo, a black-and-white cat, curled up in a bathroom sink and looking up
         note: Oreo has claimed the sink. Please wash your hands elsewhere. 🐾
       - file: cat-doggy.jpg
-        name: Doggy
+        name: Math Phobia Cat
         tier: epic
         alt: Doggy, a silver tabby cat, lying on a sunny patio mid-yawn with mouth wide open
         note: Doggy has heard enough about convergence rates for one day. 🐾
       - file: cat-tunnel.jpg
-        name: Oreo
+        name: Busted!
         tier: epic
         alt: Oreo, a black-and-white cat in a red bow tie, lying in a concrete culvert with mouth wide open
         note: Oreo found a secret tunnel and is shocked that you found it too. 🐾
       - file: cat-tree.jpg
-        name: Dove
+        name: Climber Dove
         tier: epic
         alt: Dove, a black cat in a red bandana, perched in the fork of a big tree with a pink tongue poking out
-        note: Dove made it up the tree. Getting down is tomorrow's problem. 🐾
+        note: Dove sent this V0 on his first try. Getting down was never part of the plan. 🐾
       # Legendary, 2%
       - file: cat-legend.jpg
         full: cat-legend-full.jpg
         name: Don Oreo
         tier: legendary
         alt: Oreo, a black-and-white cat, in soft window light against a dark wall, glancing over a shoulder
-        note: Congratulations! You've found a legendary, ridiculously good-looking Don Oreo. ✨
+        note: Look at this ridiculously good-looking Don Oreo. ✨
       - file: cat-swan.jpg
         full: cat-swan-full.jpg
-        name: Swan Lake Doggy
+        name: Chef Doggy
         tier: legendary
         alt: Doggy, a silver tabby cat, sitting in the sun on a stone ledge beside a white swan statue
         note: 'Doggy, keeping a very serious eye on the swan: "Is it edible?" ✨'
       - file: cat-fence.jpg
         full: cat-fence-full.jpg
-        name: Panther Dove
+        name: Officer Dove
         tier: legendary
         alt: Dove, a black cat, lying along the top of a wooden fence behind tall grass, gazing into the distance
-        note: Congratulations! You've spotted a legendary Dove on fence patrol. ✨
+        note: 'What a workaholic: Officer Dove, on fence patrol even on weekends. ✨'

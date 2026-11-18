@@ -1898,14 +1898,15 @@ html {
   font-size: 0.21rem;
 }
 
-/* Legendary: names like "Don Oreo" just overrun the usual caption width, so
-   they get a little more room and stay on one line; a longer one ("Swan Lake
-   Doggy") breaks into two even lines rather than running off the coin. */
-.hobby-badge--photos[data-tier='legendary'] .hobby-shot-caption {
+/* Epic and legendary: their names are titles ("Don Oreo", "Math Phobia Cat")
+   that overrun the usual caption width, so they get a little more room; a
+   short one stays on one line, a longer one breaks into two even lines rather
+   than three ragged ones or running off the coin. */
+.hobby-badge--photos:is([data-tier='epic'], [data-tier='legendary']) .hobby-shot-caption {
   padding: 0 0.5rem;
 }
 
-.hobby-badge--photos[data-tier='legendary'] .hobby-shot-name {
+.hobby-badge--photos:is([data-tier='epic'], [data-tier='legendary']) .hobby-shot-name {
   text-wrap: balance;
 }
 

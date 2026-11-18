@@ -1202,7 +1202,7 @@ html {
   font: inherit;
   color: inherit;
   text-align: left;
-  cursor: help;
+  cursor: default;
   transition: background 0.16s ease;
 }
 
@@ -4112,8 +4112,8 @@ html {
 
 /* Same card language as the timeline's hover cards. The trigger is a button
    rather than a bare span, so the note opens on keyboard focus as well as on
-   hover; `cursor: help` plus the dotted underline is what signals there is
-   anything to hover in the first place. */
+   hover; the dotted underline is what signals there is anything to hover
+   in the first place. */
 .teaching .tch-annot {
   position: relative;
   display: inline-block;
@@ -4126,7 +4126,7 @@ html {
   font: inherit;
   color: inherit;
   text-align: left;
-  cursor: help;
+  cursor: default;
   text-decoration: underline dotted;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.22em;

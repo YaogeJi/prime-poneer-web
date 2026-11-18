@@ -79,7 +79,7 @@ coins:
       - { file: cat-doggy-2.jpg, name: Doggy, tier: rare }
       - { file: cat-trail.jpg, name: Oreo & Dove, tier: rare }
       - { file: cat-kittens.jpg, name: Dove & Oreo, tier: rare }
-      - { file: cat-paper.jpg, name: Oreo, tier: rare }
+      - { file: cat-oreo-3.jpg, name: Oreo, tier: rare }
       - { file: cat-sunbath.jpg, name: Doggy, tier: rare }
       - { file: cat-glasses.jpg, name: Doggy, tier: rare }
       # Epic, 8%

@@ -10,13 +10,16 @@ rendered by `layouts/_partials/hbx/blocks/resume-biography-3/block.html`.
 - **PNG / WebP** works too and is shown as an image (use at least 128 px).
 
 In use: `bouldering-sheen.png`, `running-sheen.png`, `cats-sheen.png`: the
-flat designs below with only their cream background replaced by a silver
-metallic sheen (a spun-metal highlight along the upper-left to lower-right
-diagonal, faint concentric brushing). The navy and sage figures were unmixed
-from each picture and laid back unchanged, colours and edges included. The
-silver read a little grey on the page, so it was later lifted halfway to
-white (light pixels only, eased in by lightness, so the figures and their
-edges are untouched): the background went from about rgb(235) to rgb(245).
+flat designs below with only their cream background replaced by spun silver,
+after the look of Apple's Activity award medals: a cool grey base (about
+rgb(200)) with two narrow bright lobes on the upper-left to lower-right
+diagonal, broader soft shade across it, a white specular hotspot toward the
+upper left and a slight dome. It is smooth, with no grain: the metal comes
+from the contrast between shade and highlight. (An earlier, low-contrast
+light-grey sheen with faint brushing looked dirty; lifting it toward white
+lost the metal.) Each pixel of the flat design was unmixed into cream plus
+navy or sage with a coverage, and only the cream share was swapped for the
+silver, so the figures and their anti-aliased edges are exactly as drawn.
 
 `bouldering-flat.png`, `running-flat.png`, `cats-flat.png`: the flat
 navy-and-sage designs supplied by the site owner (Nov 2026), kept for

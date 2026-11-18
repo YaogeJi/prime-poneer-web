@@ -13,7 +13,10 @@ In use: `bouldering-sheen.png`, `running-sheen.png`, `cats-sheen.png`: the
 flat designs below with only their cream background replaced by a silver
 metallic sheen (a spun-metal highlight along the upper-left to lower-right
 diagonal, faint concentric brushing). The navy and sage figures were unmixed
-from each picture and laid back unchanged, colours and edges included.
+from each picture and laid back unchanged, colours and edges included. The
+silver read a little grey on the page, so it was later lifted halfway to
+white (light pixels only, eased in by lightness, so the figures and their
+edges are untouched): the background went from about rgb(235) to rgb(245).
 
 `bouldering-flat.png`, `running-flat.png`, `cats-flat.png`: the flat
 navy-and-sage designs supplied by the site owner (Nov 2026), kept for

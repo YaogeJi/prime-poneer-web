@@ -112,7 +112,7 @@ coins:
         name: Birthday Doggy
         tier: epic
         alt: Doggy, a silver tabby cat, mouth wide open behind a kitchen counter covered in birthday treats, goat milk and bowls of food
-        note: A whole table of birthday treats, and Doggy is still yelling for more. 🐾
+        note: '"Is the photo shoot done yet? Can I start the feast now?" 🐾'
       # Legendary, 2%
       - file: cat-legend.jpg
         full: cat-legend-full.jpg

@@ -8,7 +8,7 @@
 #
 # Per direction:
 #   name:   heading on the card
-#   state:  Completed | In progress | Future direction — named on the card,
+#   state:  Established | In progress | Future direction — named on the card,
 #           and drawn as the branch's mark on the spine (filled, shaded,
 #           hollow)
 #   note:   optional line of context under the heading
@@ -21,14 +21,14 @@
 directions:
   distributed:
     name: Distributed statistical learning
-    state: Completed
+    state: Established
     works:
       - title: Distributed Sparse Regression via Penalization
       - title: Distributed (ATC) Gradient Descent for High Dimension Sparse Regression
 
   parameter-free:
     name: Parameter-free optimization
-    state: Completed
+    state: Established
     works:
       - title: Computation of Strong Solutions to Stochastic Variational Inequalities
       - title: Stochastic Auto-conditioned Fast Gradient Methods with Optimal Rates
@@ -51,10 +51,11 @@ directions:
 
   healthcare:
     name: ML and RL for healthcare
-    state: Completed
+    state: Established
     note: >-
-      With Cleveland Clinic and Stanford Medicine. Future direction: beyond
-      acute kidney injury and perioperative procedures.
+      With Cleveland Clinic and Stanford Medicine; next, beyond acute kidney
+      injury and perioperative procedures. A new project with Georgia Tech
+      Civil and Environmental Engineering brings RL to wastewater treatment.
     works:
       - title: >-
           Transformer based offline reinforcement learning for coordinated
@@ -68,7 +69,13 @@ directions:
 
   policy-evaluation:
     name: Long-horizon policy evaluation
-    state: Completed
+    state: Established
+    # Also filed under parameter-free above; this says why it is here too.
+    note: >-
+      Policy evaluation with linear function approximation is a stochastic
+      VI. Over long horizons (discount factor near 1) it is only barely
+      monotone and unconstrained, the regime where this paper computes strong
+      solutions.
     works:
       - title: Computation of Strong Solutions to Stochastic Variational Inequalities
 

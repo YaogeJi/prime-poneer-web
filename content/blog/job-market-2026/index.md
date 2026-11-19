@@ -1,5 +1,5 @@
 ---
-title: Fall 2026 academic job market
+title: On the 2026–27 academic job market
 summary: Seeking position in operations research.
 date: 2026-09-01
 
@@ -16,7 +16,7 @@ tags:
   - job market
 ---
 
-Seeking a faculty position in operations research, starting **Fall 2026**.
+Seeking a faculty position in operations research, starting **Fall 2027**.
 
 My work is on the design and analysis of optimization methods, particularly for
 stochastic problems, drawing on a strong background in probability and

@@ -311,7 +311,7 @@ html {
   stroke-linecap: round;
 }
 
-/* Filled = completed, shaded = in progress, hollow = future direction. */
+/* Filled = established, shaded = in progress, hollow = future direction. */
 .rm-svg .rm-dot { fill: var(--rm-k); }
 .rm-svg .rm-ring { fill: var(--rm-paper); stroke: var(--rm-k); stroke-width: 4.2; }
 .rm-svg .rm-shade {

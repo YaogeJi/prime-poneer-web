@@ -1559,7 +1559,7 @@ html {
    a soft bevel at the rim (light along the top, shade along the foot), a
    gentle dome (lighter in the middle, a little darker toward the rim, so the
    face looks slightly convex) and, with motion allowed, a glint that crosses
-   it on hover. */
+   it on hover (on a touch screen, now and then on its own). */
 .hobby-face--front {
   background: var(--coin-paper);
   transform: translateZ(calc(var(--thick) / 2));
@@ -1913,8 +1913,9 @@ html {
 /* The turn. With motion allowed the coin rotates (with a little overshoot,
    so it lands like a coin) and lifts. On hover it rises a little and tips
    with the pointer, the side under it dipping away as if pressed, so its rim
-   shows; its shadow spreads and a glint crosses its face. With reduced motion
-   the faces cross-fade in place, flat, with no rim. */
+   shows; its shadow spreads and a glint crosses its face. On a touch screen,
+   which has no hover, the glint crosses each coin now and then instead. With
+   reduced motion the faces cross-fade in place, flat, with no rim. */
 @media (prefers-reduced-motion: no-preference) {
   .hobby-coin,
   .hobby-badge::before {
@@ -1992,6 +1993,24 @@ html {
     }
   }
 
+  /* A touch screen has no hover, so there the coins would never catch the
+     light. Instead the glint crosses them on its own now and then: the light
+     runs along the row, one coin just after the other, every eight seconds,
+     each crossing as quick as the hover one. */
+  @media (hover: none) {
+    .hobby-face--front::after {
+      animation: coin-glint 8s ease-out 1.5s infinite;
+    }
+
+    .hobby-item:nth-child(2) .hobby-face--front::after {
+      animation-delay: 1.8s;
+    }
+
+    .hobby-item:nth-child(3) .hobby-face--front::after {
+      animation-delay: 2.1s;
+    }
+  }
+
   .hobby-badge[aria-pressed='true'] .hobby-coin {
     transform: rotateX(0deg) rotateY(180deg) scale(var(--lift));
     translate: 0 0;
@@ -2008,6 +2027,20 @@ html {
   .hobby-item:first-child .hobby-badge[aria-pressed='true'] .hobby-coin,
   .hobby-item:first-child .hobby-badge[aria-pressed='true']::before {
     translate: calc(var(--coin) * (var(--lift) - 1) / 2) 0;
+  }
+}
+
+/* The idle glint: the band sweeps across in the first tenth (0.8s), then
+   waits off the far side; the jump back to the start between rounds is out
+   of sight. The second layer is the dome, which stays put. */
+@keyframes coin-glint {
+  0% {
+    background-position: 100% 0, 0 0;
+  }
+
+  10%,
+  100% {
+    background-position: 0 0, 0 0;
   }
 }
 
